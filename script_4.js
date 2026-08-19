@@ -5353,7 +5353,7 @@ window.closeCompanyModal = function() {
       }
     };
   }
-  function applyFeatureVisibility(){const f=window.SERVER_CONFIG?.features||{};const revealBtn=$('genBtn'),matchBtn=$('matchBtn'),chat=$('chatCard'),matchTab=$('tabKundli');if(revealBtn)revealBtn.disabled=f.reveal===false;if(matchBtn)matchBtn.disabled=f.match===false;if(matchTab)matchTab.style.display=f.match===false?'none':'';if(chat&&f.chat===false)chat.style.display='none';}
+  function applyFeatureVisibility(){const f=(window.SERVER_CONFIG && window.SERVER_CONFIG.features) || {};const revealBtn=$('genBtn'),matchBtn=$('matchBtn'),chat=$('chatCard'),matchTab=$('tabKundli');if(revealBtn)revealBtn.disabled=f.reveal===false;if(matchBtn)matchBtn.disabled=f.match===false;if(matchTab)matchTab.style.display=f.match===false?'none':'';if(chat&&f.chat===false)chat.style.display='none';}
   function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
   window.applyFeatureVisibility=applyFeatureVisibility;
   window.addEventListener('server-config-ready',applyFeatureVisibility);

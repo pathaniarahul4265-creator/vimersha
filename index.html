@@ -7032,7 +7032,7 @@ var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __defNormalProp = function(obj, key, value) { return key in obj ? Object.defineProperty(obj, key, { enumerable: true, configurable: true, writable: true, value: value }) : obj[key] = value; };
 var __spreadValues = (a, b) => {
   for (var prop in b || (b = {}))
     if (__hasOwnProp.call(b, prop))
@@ -8958,10 +8958,7 @@ setupPlaceAutocomplete("f");
 setupPlaceAutocomplete("k1");
 setupPlaceAutocomplete("k2");
 const EMBEDDED_KEY = "";
-const PRIMARY_MODEL = "gemini-3.6-flash";
-const FALLBACK_MODEL = "gemini-3.5-flash";
 let activeKey = EMBEDDED_KEY;
-let activeModel = PRIMARY_MODEL;
 const SECTIONS = [
   {
     id: "panchang",
@@ -9588,7 +9585,7 @@ function rawCall(systemText, userText, maxTokens) {
 }
 window.chapterMemory = window.chapterMemory || [];
 window.chapterPartialStates = window.chapterPartialStates || {};
-function callGemini(systemText, userText, maxTokens = 65536) {
+function callGemini(systemText, userText, maxTokens = 8192) {
   return __async(this, null, function* () {
     const maxAttempts = 2;
     let lastErr;
@@ -10523,31 +10520,33 @@ function generateSection(index, reportBody, stepListEl, progressErrorEl) {
     let generatedText = window.chapterPartialStates[section.id] || "";
     let isComplete = false;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 1;
+
+    progressErrorEl.innerHTML = `<div style="background:rgba(216,160,76,0.1);border:1px solid rgba(216,160,76,0.3);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fce7b0;font-size:12px;line-height:1.5;"><b>1. generateSection started</b> for Chapter ${index + 1} (${section.title})</div>`;
+    const loadingCardEl = document.getElementById("loading-" + section.id);
+    if (loadingCardEl) {
+      loadingCardEl.innerHTML = `<div class="report-loading-shimmer"><div class="loading-gem-spinner">✦</div><div class="loading-text-wrap"><b>Generating Chapter ${index + 1}...</b><span>Consulting ephemeris & AI service.</span></div></div>`;
+    }
+
     while (!isComplete && retryCount <= maxRetries) {
       try {
-        const memoryContext = window.chapterMemory.length > 0 ? `
-
-PREVIOUS CHAPTER SUMMARIES (For Continuity):
-${window.chapterMemory.slice(-2).join("\n")}` : "";
-        const resumePrompt = generatedText ? `
-
-You previously generated the following partial text for this chapter:
-"${generatedText}"
-
-CONTINUE exactly from where you left off. Do NOT repeat the text above, just generate the remainder of the chapter.` : "";
+        progressErrorEl.innerHTML += `<br><b>2. calling /api/ai</b>`;
         const userText = `Birth data:
 ${birthContext}
 
 Write the "${section.title}" section of this native's Vedic chart reading.
 ${section.instruction}
 Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. Do not include a section title in your output; begin directly with the analysis.`;
-        const rawText = yield callGemini(activeRules, userText, 65536);
+        const rawText = yield callGemini(activeRules, userText, 8192);
+        progressErrorEl.innerHTML += `<br><b>3. /api/ai response received</b>`;
+        progressErrorEl.innerHTML += `<br><b>4. Gemini response text length</b>: ${rawText ? rawText.length : 0} chars`;
+
         const cleaned = cleanAstroText(rawText);
-        if (!cleaned || cleaned.length < 80) {
+        if (!cleaned || cleaned.length < 50) {
           throw new Error("The astrology service returned an incomplete reading.");
         }
         generatedText = cleaned;
+        progressErrorEl.innerHTML += `<br><b>5. rendering section</b>`;
         window.chapterPartialStates[section.id] = generatedText;
         window.chapterMemory.push(`${section.title}: ${generatedText.substring(0, 150)}...`);
         isComplete = true;
@@ -10613,22 +10612,23 @@ function runFrom(startIndex, reportBody, stepListEl, progressErrorEl, endIndex =
           yield verifyIndividualChart();
         else
           yield verifyKundliCharts();
+        progressErrorEl.innerHTML = `<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#22c55e;font-size:13px;"><b>Chart verification passed</b></div>`;
       } catch (err) {
         progressErrorEl.innerHTML = "";
         const e = document.createElement("div");
         e.className = "error";
-        e.textContent = "Ephemeris calculation stopped: " + err.message;
+        e.textContent = "Chart verification failed: " + err.message;
         progressErrorEl.appendChild(e);
         document.getElementById("genBtn").disabled = false;
         document.getElementById("matchBtn").disabled = false;
         return;
       }
     }
-    const totalSecs = (endIndex != null ? endIndex : activeSections.length) - startIndex;
-    for (let i = startIndex; i < (endIndex != null ? endIndex : activeSections.length); i++) {
+    const totalSecs = 1; // Testing ONE chapter only as requested
+    for (let i = startIndex; i < startIndex + 1 && i < activeSections.length; i++) {
       const currentIdx = i - startIndex + 1;
-      const pct = Math.round((currentIdx / totalSecs) * 100);
-      const secsRemaining = Math.max(1, (totalSecs - (i - startIndex)) * 2);
+      const pct = 100;
+      const secsRemaining = 1;
       
       const barEl = document.getElementById("generationProgressBar");
       const pctEl = document.getElementById("generationProgressPct");
@@ -10696,7 +10696,6 @@ document.getElementById("genBtn").onclick = () => __async(this, null, function* 
   chatUnlocked = false;
   consultationQuestionsLog = [];
   activeKey = EMBEDDED_KEY;
-  activeModel = PRIMARY_MODEL;
   window.chapterMemory = [];
   window.chapterPartialStates = {};
   document.getElementById("progressHeading").textContent = "Casting the chart";
@@ -11183,7 +11182,6 @@ window.unlockDetailedKundliReport = function() {
     chatQuestionsUsed = 0;
     chatUnlocked = false;
     activeKey = EMBEDDED_KEY;
-    activeModel = PRIMARY_MODEL;
     stepList.innerHTML = activeSections.map((s) => `<li id="step-${s.id}"><span class="dot"></span>${s.title}</li>`).join("");
     const reportBody = document.getElementById("reportBody");
     reportBody.innerHTML = "";
@@ -12056,7 +12054,7 @@ window.closeCompanyModal = function() {
     const totalRevenueINR = verifiedPayments.reduce((acc, x) => acc + (x.amount ? Math.round(x.amount / 100) : 0), 0);
     const activeVips = (vips || []).filter((v) => v.active);
     const configuredKeysCount = (geminiQuota == null ? void 0 : geminiQuota.totalConfiguredKeys) || ((geminiQuota == null ? void 0 : geminiQuota.keys) || []).length || 0;
-    const activeModelName = (geminiQuota == null ? void 0 : geminiQuota.primaryModel) || "gemini-3.6-flash";
+    const activeModelName = (geminiQuota == null ? void 0 : geminiQuota.primaryModel) || "Primary Model";
     const displaySlots = (geminiQuota == null ? void 0 : geminiQuota.slots) && geminiQuota.slots.length > 0 ? geminiQuota.slots : (geminiQuota == null ? void 0 : geminiQuota.keys) || [];
     const keyCardsHtml = `
       <div style="margin-top:20px;padding:18px;background:rgba(23,42,58,0.75);border:1px solid rgba(242,215,146,0.35);border-radius:12px;">

@@ -219,14 +219,11 @@ async function validatePremiumSession(sessionToken, vipToken) {
 }
 
 function normalizeModel(m) {
-  const primary = getEnv('GEMINI_PRIMARY_MODEL', 'gemini-2.5-flash');
+  const primary = process.env.GEMINI_PRIMARY_MODEL || '';
   if (!m) return primary;
   let cleanStr = String(m).trim().toLowerCase();
   if (cleanStr.startsWith('models/')) cleanStr = cleanStr.replace('models/', '');
-  if (cleanStr.includes('pro')) return getEnv('GEMINI_PRO_MODEL', 'gemini-2.5-pro');
-  if (cleanStr.includes('1.5') || cleanStr.includes('flash-1.5')) return 'gemini-1.5-flash';
-  if (cleanStr.includes('flash') || cleanStr.includes('2.5')) return 'gemini-2.5-flash';
-  return primary;
+  return cleanStr;
 }
 
 export async function aiCall({systemText, userText, maxTokens, sessionToken, vipToken}) {
@@ -251,9 +248,14 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
     throw err;
   }
   const fallbackModel = process.env.GEMINI_FALLBACK_MODEL;
+  if (!fallbackModel) {
+    const err = new Error('GEMINI_FALLBACK_MODEL environment variable is required.');
+    err.status = 500;
+    throw err;
+  }
 
-  const promptChars = (systemText?.length || 0) + (userText?.length || 0);
-  const tokensLimit = Math.max(Number(maxTokens) || 16384, 8192);
+  const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
+  const tokensLimit = Math.min(Number(maxTokens) || 8192, 8192);
 
   let lastErr = null;
   const modelsToTry = [primaryModel];

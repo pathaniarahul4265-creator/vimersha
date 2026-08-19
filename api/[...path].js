@@ -177,8 +177,8 @@ async function createOrder(amount, plan, receiptCustom){
     };
   } catch (err) {
     console.error('[Razorpay Order Creation Error]', err);
-    const status = err.statusCode || (err.error?.code === 'BAD_REQUEST_ERROR' ? 400 : 500);
-    const errorObj = new Error(err.error?.description || err.message || 'Failed to create Razorpay order.');
+    const status = err.statusCode || ((err.error && err.error.code) === 'BAD_REQUEST_ERROR' ? 400 : 500);
+    const errorObj = new Error((err.error && err.error.description) || err.message || 'Failed to create Razorpay order.');
     errorObj.statusCode = status;
     throw errorObj;
   }
@@ -188,14 +188,14 @@ async function createOrder(amount, plan, receiptCustom){
 export default async function handler(req,res){
   let rawPath = req.path || (req.url ? req.url.split('?')[0] : '');
   rawPath = rawPath.replace(/^\/api\/?/, '').replace(/^\/+/, '');
-  const pathParts = Array.isArray(req.query?.path) ? req.query.path : (rawPath ? rawPath.split('/').filter(Boolean) : []);
+  const pathParts = Array.isArray((req.query && req.query.path)) ? req.query.path : (rawPath ? rawPath.split('/').filter(Boolean) : []);
   const path = '/' + pathParts.join('/');
   try{
     if(req.method==='GET'&&path==='/health') return json(res,200,{ok:true,service:'jyotish-vimarsha',time:new Date().toISOString()});
     if(req.method==='GET'&&path==='/config'){const s=await getSettings();return json(res,200,pricing(s));}
 
     if(req.method==='GET'&&path==='/panchang'){
-      const dateQuery = req.query?.date || req.query?.d;
+      const dateQuery = (req.query && req.query.date) || (req.query && req.query.d);
       const latQuery = parseFloat(req.query?.lat || '28.6139');
       const lonQuery = parseFloat(req.query?.lon || '77.2090');
       const targetDate = dateQuery ? new Date(dateQuery) : new Date();
@@ -398,7 +398,10 @@ export default async function handler(req,res){
       const pool = getGeminiKeyPool(b?.key);
       if(pool.length === 0) return json(res, 503, { success: false, error: 'AI service is not configured on the server. Please ensure GEMINI_API_KEY is provided.' });
       if(!process.env.GEMINI_PRIMARY_MODEL) {
-        return json(res, 500, { success: false, error: 'GEMINI_PRIMARY_MODEL environment variable is required.' });
+        process.env.GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
+      }
+      if(!process.env.GEMINI_FALLBACK_MODEL) {
+        process.env.GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
       }
       if(!b.systemText || !b.userText) return json(res, 400, { success: false, error: 'AI request is incomplete.' });
       try {
@@ -683,8 +686,8 @@ export default async function handler(req,res){
       if (req.method === 'GET' && path === '/admin/gemini-quota') {
         const pool = getGeminiKeyPool();
         const now = Date.now();
-        const primaryModel = normalizeModel(getEnv('GEMINI_PRIMARY_MODEL', 'gemini-3.6-flash'));
-        const fallbackModel = normalizeModel(getEnv('GEMINI_FALLBACK_MODEL', 'gemini-3.5-flash'));
+        const primaryModel = normalizeModel(getEnv('GEMINI_PRIMARY_MODEL'));
+        const fallbackModel = normalizeModel(getEnv('GEMINI_FALLBACK_MODEL'));
 
         const slotDefs = [
           { slot: 1, name: 'Gemini Key 1 (Primary)', envVar: 'GEMINI_API_KEY', val: getEnv('GEMINI_API_KEY') || getEnv('GEMINI_API_KEY_1') },
@@ -708,17 +711,17 @@ export default async function handler(req,res){
             isConfigured,
             masked: isConfigured ? maskApiKey(s.val) : 'Not configured in environment',
             isActive,
-            status: !isConfigured ? 'UNCONFIGURED' : isCoolingDown ? 'COOLING_DOWN' : (rpm >= 14 ? 'NEAR_RPM_LIMIT' : ((stats?.requestsToday || 0) >= 1450 ? 'NEAR_RPD_LIMIT' : 'HEALTHY')),
+            status: !isConfigured ? 'UNCONFIGURED' : isCoolingDown ? 'COOLING_DOWN' : (rpm >= 14 ? 'NEAR_RPM_LIMIT' : ((stats && stats.requestsToday || 0) >= 1450 ? 'NEAR_RPD_LIMIT' : 'HEALTHY')),
             rpmCurrent: rpm,
             rpmLimit: 15,
-            requestsToday: stats?.requestsToday || 0,
+            requestsToday: (stats && stats.requestsToday) || 0,
             rpdLimit: 1500,
-            estimatedTokensToday: stats?.estimatedTokensToday || 0,
-            totalSuccess: stats?.totalSuccess || 0,
-            totalFailures: stats?.totalFailures || 0,
+            estimatedTokensToday: (stats && stats.estimatedTokensToday) || 0,
+            totalSuccess: (stats && stats.totalSuccess) || 0,
+            totalFailures: (stats && stats.totalFailures) || 0,
             remainingCooldownSec,
-            exhaustionReason: stats?.exhaustionReason || null,
-            lastUsed: stats?.lastUsed || null
+            exhaustionReason: (stats && stats.exhaustionReason) || null,
+            lastUsed: (stats && stats.lastUsed) || null
           };
         });
 
