@@ -6229,7 +6229,26 @@ body input, body select, body textarea {
 </section>
 
 <div class="card" id="progressCard" style="display:none;">
-  <h2 id="progressHeading">Casting the chart</h2>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h2 id="progressHeading" style="margin:0;">Casting the chart</h2>
+    <div style="font-family:'Cinzel',serif;font-size:12px;color:#d8a04c;" id="generationEtaText">ETA: Calculating...</div>
+  </div>
+  
+  <!-- Adaptive ETA & Progress Bar -->
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(216,160,76,0.25);border-radius:10px;padding:14px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;">
+      <span id="generationAdaptiveStatus" style="color:#fce7b0;font-weight:500;">Initializing Sidereal Ephemeris & Ayanamsha...</span>
+      <span id="generationProgressPct" style="color:#d8a04c;font-weight:bold;">0%</span>
+    </div>
+    <div style="width:100%;height:8px;background:rgba(0,0,0,0.4);border-radius:4px;overflow:hidden;position:relative;">
+      <div id="generationProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg, #d8a04c, #f5d061);transition:width 0.4s ease;border-radius:4px;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:#a0aec0;">
+      <span id="generationTimeEstimatedText">Estimated Time: ~15s total</span>
+      <span>Adaptive Vedic AI Engine v2.1</span>
+    </div>
+  </div>
+
   <ul class="steplist" id="stepList"></ul>
   <div id="progressError"></div>
 </div>
@@ -6375,43 +6394,13 @@ body input, body select, body textarea {
       <span style="color:var(--marigold);">✦</span> COMPREHENSIVE REPORT CHAPTERS
     </span>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button id="printReportBtn" type="button" class="small payment-nav-btn" style="padding:6px 14px;font-size:12px;border-radius:6px;height:auto;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" onclick="window.printReportDoc()"><span>🖨️</span> Save PDF / Print</button>
       <button id="expandAllSectionsBtn" type="button" class="small secondary" style="padding:5px 12px;font-size:12px;border-radius:6px;height:auto;cursor:pointer;">Expand All</button>
       <button id="collapseAllSectionsBtn" type="button" class="small secondary" style="padding:5px 12px;font-size:12px;border-radius:6px;height:auto;cursor:pointer;">Collapse All</button>
     </div>
   </div>
 
-  <!-- Printable Cover Page (Rendered for Print & PDF export) -->
-  <div class="report-print-cover" id="reportPrintCover" style="display:none;">
-    <div>
-      <div class="print-cover-seal">☸</div>
-      <span class="print-cover-kicker">SACRED VEDIC ASTROLOGY ARCHIVE</span>
-      <h1 class="print-cover-title">JYOTISH VIMARSHA</h1>
-      <div class="print-cover-sub">Sacred Vedic Janma Kundli &amp; Comprehensive Parashari Life Reading</div>
-      <div class="print-cover-shloka">॥ ग्रहाधीनं जगत्सर्वं ग्रहाधीना नराधिपाः ॥</div>
-    </div>
-
-    <div class="print-cover-meta-grid" id="printCoverMetaGrid">
-      <div class="print-cover-meta-item"><small>Native Name</small><b id="covName">—</b></div>
-      <div class="print-cover-meta-item"><small>Gender</small><b id="covGender">—</b></div>
-      <div class="print-cover-meta-item"><small>Date of Birth</small><b id="covDob">—</b></div>
-      <div class="print-cover-meta-item"><small>Time of Birth</small><b id="covTob">—</b></div>
-      <div class="print-cover-meta-item"><small>Place of Birth</small><b id="covPob">—</b></div>
-      <div class="print-cover-meta-item"><small>Coordinates &amp; Ayanamsha</small><b id="covCoords">Lahiri Sidereal (Chitrapaksha)</b></div>
-      <div class="print-cover-meta-item"><small>Lagna (Ascendant)</small><b id="covLagna">—</b></div>
-      <div class="print-cover-meta-item"><small>Janma Rashi &amp; Nakshatra</small><b id="covMoon">—</b></div>
-      <div class="print-cover-meta-item" style="grid-column: 1/-1;"><small>Active Vimshottari Period</small><b id="covDasha">—</b></div>
-    </div>
-
-    <div class="print-cover-footer">
-      <div>Calculated via Parashari Siddhanta &amp; Jaimini Upadesha Sutras · Lahiri Sidereal Ephemeris</div>
-      <div style="margin-top:2mm;font-size:8pt;color:#998a76;">Jyotish Vimarsha Platform · Document generated for personal reflection and guidance.</div>
-    </div>
-  </div>
-
   <div class="report" id="reportBody"></div>
   <div class="end-reading-wrap" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
-    <button id="printPdfBtn" type="button" class="action-btn" style="background:rgba(216,160,76,0.15);color:#d8a04c;border:1px solid #d8a04c;padding:12px 24px;border-radius:12px;cursor:pointer;font-family:var(--font-heading);font-weight:600;">Print / Save PDF</button>
     <button id="endReadingBtn" type="button" style="padding:12px 24px;margin:0;">End reading</button>
   </div>
 </div>
@@ -10693,11 +10682,32 @@ function runFrom(startIndex, reportBody, stepListEl, progressErrorEl, endIndex =
         return;
       }
     }
+    const totalSecs = (endIndex != null ? endIndex : activeSections.length) - startIndex;
     for (let i = startIndex; i < (endIndex != null ? endIndex : activeSections.length); i++) {
+      const currentIdx = i - startIndex + 1;
+      const pct = Math.round((currentIdx / totalSecs) * 100);
+      const secsRemaining = Math.max(1, (totalSecs - (i - startIndex)) * 2);
+      
+      const barEl = document.getElementById("generationProgressBar");
+      const pctEl = document.getElementById("generationProgressPct");
+      const statusEl = document.getElementById("generationAdaptiveStatus");
+      const etaEl = document.getElementById("generationEtaText");
+      
+      if (barEl) barEl.style.width = pct + "%";
+      if (pctEl) pctEl.textContent = pct + "%";
+      if (statusEl) statusEl.textContent = `Analyzing Chapter ${currentIdx} of ${totalSecs}: ${activeSections[i].title}...`;
+      if (etaEl) etaEl.textContent = `ETA: ~${secsRemaining}s remaining`;
+
       yield generateSection(i, reportBody, stepListEl, progressErrorEl);
       if (i + 1 < (endIndex != null ? endIndex : activeSections.length)) {
         yield sleep(300);
       }
+    }
+    if (document.getElementById("generationProgressBar")) {
+      document.getElementById("generationProgressBar").style.width = "100%";
+      document.getElementById("generationProgressPct").textContent = "100%";
+      document.getElementById("generationAdaptiveStatus").textContent = "Generation complete! ✨ All chapters successfully synthesized.";
+      document.getElementById("generationEtaText").textContent = "Completed";
     }
     if (endIndex !== null && endIndex < activeSections.length) {
       document.getElementById("genBtn").disabled = false;
@@ -11498,10 +11508,7 @@ function jumpToChatQuestion(qId) {
     target.classList.remove("chat-msg-highlight");
   }, 3600);
 }
-const printPdfBtn = document.getElementById("printPdfBtn");
-if (printPdfBtn) {
-  printPdfBtn.addEventListener("click", () => window.printReportDoc());
-}
+
 document.getElementById("endReadingBtn").onclick = () => {
   if (!confirm("End this reading and clear the current chart session?"))
     return;
@@ -15471,62 +15478,7 @@ window.updateFreeMoonTransitDisplay = function(signKey) {
     }
   }, 45e3);
 })();
-window.printReportDoc = function() {
-  const name = document.getElementById("name") ? document.getElementById("name").value.trim() : "";
-  const gender = document.getElementById("gender") ? document.getElementById("gender").value : "";
-  const dob = document.getElementById("dob") ? document.getElementById("dob").value : "";
-  const tob = document.getElementById("tob") ? document.getElementById("tob").value : "";
-  const pob = document.getElementById("pob") ? document.getElementById("pob").value.trim() : "";
-  const lat = document.getElementById("lat") ? document.getElementById("lat").value : "";
-  const lon = document.getElementById("lon") ? document.getElementById("lon").value : "";
-  const covName = document.getElementById("covName");
-  if (covName)
-    covName.textContent = name || "Native";
-  const covGender = document.getElementById("covGender");
-  if (covGender)
-    covGender.textContent = gender || "Unspecified";
-  const covDob = document.getElementById("covDob");
-  if (covDob)
-    covDob.textContent = dob || "\u2014";
-  const covTob = document.getElementById("covTob");
-  if (covTob)
-    covTob.textContent = tob || "\u2014";
-  const covPob = document.getElementById("covPob");
-  if (covPob)
-    covPob.textContent = pob || "\u2014";
-  const covCoords = document.getElementById("covCoords");
-  if (covCoords) {
-    covCoords.textContent = lat && lon ? `${Number(lat).toFixed(4)}\xB0 N, ${Number(lon).toFixed(4)}\xB0 E \xB7 Lahiri Sidereal (Chitrapaksha)` : "Lahiri Sidereal (Chitrapaksha)";
-  }
-  const covLagna = document.getElementById("covLagna");
-  const covMoon = document.getElementById("covMoon");
-  const covDasha = document.getElementById("covDasha");
-  if (window.lastVerifiedChart && window.lastVerifiedChart.normalized) {
-    const norm = window.lastVerifiedChart.normalized;
-    if (covLagna)
-      covLagna.textContent = `${norm.ascendant.rashiName} (${norm.ascendant.degreesFormatted}) \xB7 ${norm.ascendant.nakshatra} Pada ${norm.ascendant.pada}`;
-    if (covMoon) {
-      const mo = norm.planets.find((p) => p.key === "Mo" || p.key === "Moon");
-      if (mo)
-        covMoon.textContent = `${mo.rashiName} (${mo.degreesFormatted}) \xB7 ${mo.nakshatra} Pada ${mo.pada}`;
-    }
-    if (covDasha && norm.dashaTimeline && norm.dashaTimeline.current) {
-      const cur = norm.dashaTimeline.current;
-      covDasha.textContent = `${cur.mahadasha} Mahadasha / ${cur.antardasha} Antardasha (Approx. ${cur.startDate || ""} \u2013 ${cur.endDate || ""})`;
-    }
-  } else if (window.lastVerifiedChart && window.lastVerifiedChart.signs) {
-    const s = window.lastVerifiedChart.signs;
-    if (covLagna)
-      covLagna.textContent = s.Ascendant || "\u2014";
-    if (covMoon)
-      covMoon.textContent = s.Moon || "\u2014";
-  }
-  document.querySelectorAll(".report-section-block").forEach((b) => b.classList.remove("collapsed"));
-  const cov = document.getElementById("reportPrintCover");
-  if (cov)
-    cov.style.display = "flex";
-  window.print();
-};
+
 
 </script>
 <!-- Export preparation timestamp: Wed Aug 19 08:30:35 PM UTC 2026 -->
