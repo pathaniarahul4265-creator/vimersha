@@ -1,0 +1,11 @@
+[
+  {
+    "id": "1",
+    "display_code": "TESTVIP2026",
+    "internal_ref": "TESTVIP2026",
+    "max_uses": 100,
+    "uses": 0,
+    "active": true,
+    "createdAt": "2026-08-19T00:00:00Z"
+  }
+]

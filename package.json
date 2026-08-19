@@ -1,0 +1,30 @@
+{
+  "name": "jyotish-vimarsha",
+  "version": "2.1.0",
+  "description": "High-Precision Vedic Astrology Platform with Deterministic Swiss Ephemeris Engine and Parallel Gemini AI Synthesis",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "vedic-astrology",
+    "kundli",
+    "guna-milan",
+    "ashta-koota",
+    "vimshottari-dasha",
+    "navamsha",
+    "dashamsha",
+    "gemini-ai"
+  ],
+  "author": "Rahul Pathania",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "razorpay": "^2.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

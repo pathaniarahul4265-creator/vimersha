@@ -1,0 +1,19 @@
+{
+  "key_1_AQ.Ab8": {
+    "index": 0,
+    "label": "Primary (Key 1)",
+    "masked": "AQ.Ab8...JShg",
+    "day": "2026-08-19",
+    "requestsToday": 2,
+    "recentTimestamps": [
+      1787171197244,
+      1787171212305
+    ],
+    "estimatedTokensToday": 40,
+    "totalSuccess": 2,
+    "totalFailures": 0,
+    "exhaustedUntil": 0,
+    "exhaustionReason": "",
+    "lastUsed": "2026-08-19T20:26:52.305Z"
+  }
+}
