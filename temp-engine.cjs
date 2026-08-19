@@ -1,4 +1,8 @@
-(function(window2) {
+
+  const window = {
+    SERVER_CONFIG: {}
+  };
+  (function(window2) {
   "use strict";
   const RASHIS = [
     { name: "Aries", hindi: "\u092E\u0947\u0937", sanskrit: "Mesha", lord: "Mars", element: "Fire", modality: "Chara", varna: "Kshatriya" },
@@ -1267,3 +1271,5 @@ Synthesizing your birth chart with **${lagna} Lagna**, **Moon in ${moon} (${nak}
     module.exports = engineExports;
   }
 })(typeof window !== "undefined" ? window : globalThis);
+
+  module.exports = window.VedicEngine;

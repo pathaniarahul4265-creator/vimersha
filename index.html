@@ -4970,43 +4970,57 @@ body input, body select, body textarea {
   }
 }
 
-/* === UNCOPYABLE & NON-DOWNLOADABLE REPORT PROTECTION === */
-.report,
-#reportCard,
-.report-section-block,
-.report-section-content,
-.report-paragraph,
-.report-subhead,
-.report-insight-card,
-.visual-card,
-.kundli-chart-wrap,
-.placement-table,
-#interpretationTableCard,
-#chatCard .chatlog {
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-}
-
-/* === PRINT PROTECTION (DISALLOW PRINTING / EXPORT) === */
+/* === PRINT STYLES === */
 @media print {
   html, body {
-    background: #0b0820 !important;
-    color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
-  body * {
+  body > * {
     display: none !important;
   }
-  body::before {
-    content: "Vedic Astrology Reading (Protected Content). Digital downloading, copying, and printing are disabled.";
+  .wrap {
     display: block !important;
-    text-align: center;
-    margin: 80px auto;
-    font-size: 16px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #888888;
+  }
+  .header, #readingModes, #progressCard, #chatCard, .end-reading-wrap, .dakshina-card, #fixed-nav, .premium-gate, .disclaimer {
+    display: none !important;
+  }
+  #reportCard {
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+  #reportCard * {
+    color: #000000 !important;
+  }
+  .card, .visual-card, .report-section-block, .report-insight-card {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #dddddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px !important;
+  }
+  .placement-table th, .placement-table td {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #dddddd !important;
+  }
+  .report-subhead, h1, h2, h3, h4, h5, h6 {
+    color: #000000 !important;
+  }
+  .report-paragraph, span, div {
+    color: #222222 !important;
+  }
+  canvas, svg {
+    max-width: 100% !important;
+  }
+  .visual-card .ring {
+    border-color: #dddddd !important;
   }
 }
 
@@ -6396,7 +6410,10 @@ body input, body select, body textarea {
   </div>
 
   <div class="report" id="reportBody"></div>
-  <div class="end-reading-wrap"><button id="endReadingBtn" type="button">End reading</button></div>
+  <div class="end-reading-wrap" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button id="printPdfBtn" type="button" class="action-btn" style="background:rgba(216,160,76,0.15);color:#d8a04c;border:1px solid #d8a04c;padding:12px 24px;border-radius:12px;cursor:pointer;font-family:var(--font-heading);font-weight:600;">Print / Save PDF</button>
+    <button id="endReadingBtn" type="button" style="padding:12px 24px;margin:0;">End reading</button>
+  </div>
 </div>
 
 <div class="card" id="chatCard" style="display:none;">
@@ -10034,20 +10051,38 @@ function extractChartData(text) {
   const sourceChart = currentMode === "individual" ? verifiedChart : verifiedCharts.partnerA;
   if (sourceChart) {
     const rows = apiPlanetRows(sourceChart);
-    if (sourceChart.ascSign)
-      out.lagna = sourceChart.ascSign;
+    const ascSign = sourceChart.ascSign || (sourceChart.lagna && sourceChart.lagna.sign) || sourceChart.lagnaRashi || (sourceChart.lagnaDetails && sourceChart.lagnaDetails.sign);
+    if (ascSign)
+      out.lagna = ascSign;
+    
+    // We need RASHIS to compute house if missing
+    const rashiNames = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+    const ascIdx = rashiNames.indexOf(ascSign);
     rows.forEach((p) => {
       if (p.sign)
         out.signs[p.name] = p.sign;
-      if (p.house != null)
-        out.placements[p.name] = Number(p.house);
+        
+      let computedHouse = p.house;
+      if (computedHouse == null && p.sign && ascIdx !== -1) {
+         const pIdx = rashiNames.indexOf(p.sign);
+         if (pIdx !== -1) {
+            computedHouse = (pIdx - ascIdx + 12) % 12 + 1;
+         }
+      }
+      
+      if (computedHouse != null)
+        out.placements[p.name] = Number(computedHouse);
       if (p.degree != null)
         out.degrees[p.name] = p.degree;
       out.retrograde[p.name] = p.retrograde;
       if (p.nakshatra)
         out.nakshatra[p.name] = p.nakshatra;
-      if (p.dignity)
-        out.dignity[p.name] = p.dignity;
+      let computedDignity = p.dignity;
+      if ((!computedDignity || computedDignity === "—" || computedDignity === "—") && window.VedicEngine && typeof window.VedicEngine.getDignity === "function") {
+         computedDignity = window.VedicEngine.getDignity(p.name, p.sign, p.degree || 0, p.combust || false, p.retrograde || false);
+      }
+      if (computedDignity)
+        out.dignity[p.name] = computedDignity;
     });
     const moon = rows.find((p) => p.name === "Moon");
     if (moon == null ? void 0 : moon.sign)
@@ -11463,6 +11498,10 @@ function jumpToChatQuestion(qId) {
     target.classList.remove("chat-msg-highlight");
   }, 3600);
 }
+const printPdfBtn = document.getElementById("printPdfBtn");
+if (printPdfBtn) {
+  printPdfBtn.addEventListener("click", () => window.printReportDoc());
+}
 document.getElementById("endReadingBtn").onclick = () => {
   if (!confirm("End this reading and clear the current chart session?"))
     return;
@@ -11642,29 +11681,7 @@ document.getElementById("chatInput").addEventListener("keydown", (e) => {
     document.getElementById("chatSend").click();
   }
 });
-["copy", "cut", "contextmenu", "dragstart", "selectstart"].forEach((evtName) => {
-  document.addEventListener(evtName, (e) => {
-    if (e.target && e.target.closest && e.target.closest(".report, .visual-card, .chatlog, #reportCard, #kundliVisualCard, .report-section-block, .report-insight-card")) {
-      e.preventDefault();
-      return false;
-    }
-  }, { capture: true });
-});
-window.addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-  if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
-    const sel = window.getSelection ? window.getSelection() : null;
-    if (sel && sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest(".report, .visual-card, .chatlog, #reportCard")) {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-  }
-}, { capture: true });
+
 window.openModal = function(id) {
   const m = typeof id === "string" ? document.getElementById(id) : id;
   if (m) {
