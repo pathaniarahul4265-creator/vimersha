@@ -4,7 +4,7 @@
   "description": "High-Precision Vedic Astrology Platform with Deterministic Swiss Ephemeris Engine and Parallel Gemini AI Synthesis",
   "type": "module",
   "main": "server.js",
-  "scripts": {
+  "scripts": { "build": "echo \"No build step\"",
     "start": "node server.js",
     "dev": "node server.js"
   },
