@@ -329,13 +329,13 @@ body h1, body h2, body h3, body h4, body label, body button, .subtitle, .intro-e
   /* Subheadings */
   .report-subhead-banner{display:flex;align-items:center;gap:10px;margin:28px 0 14px;padding:10px 16px;background:linear-gradient(90deg, rgba(216,160,76,0.16) 0%, rgba(216,160,76,0.02) 100%);border-left:4px solid #d8a04c;border-radius:0 10px 10px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
   .subhead-gem{color:#d8a04c;font-size:14px;flex-shrink:0;}
-  .report-subhead{font-family:'Marcellus','Cinzel',serif !important;font-size:16px !important;font-weight:700 !important;color:#fae29c !important;letter-spacing:0.05em !important;text-transform:uppercase !important;margin:0 !important;padding:0 !important;}
+  .report-subhead{font-family:'Marcellus','Cinzel',serif !important;font-size:16px !important;font-weight:700 !important;color:#fae29c !important;letter-spacing:0.05em !important;text-transform:uppercase !important;margin:0 !important;padding:0 !important;text-align:left !important;}
   .report-subhead-minor-wrap{display:flex;align-items:center;gap:8px;margin:20px 0 10px;padding:6px 12px;background:rgba(127,197,192,0.08);border-left:3px solid #7fc5c0;border-radius:0 8px 8px 0;}
   .minor-gem{color:#7fc5c0;font-size:11px;flex-shrink:0;}
-  .report-subhead-minor{font-family:'Manrope',sans-serif !important;font-size:13.5px !important;font-weight:700 !important;color:#99ded9 !important;letter-spacing:0.04em !important;margin:0 !important;text-transform:uppercase !important;}
+  .report-subhead-minor{font-family:'Manrope',sans-serif !important;font-size:13.5px !important;font-weight:700 !important;color:#99ded9 !important;letter-spacing:0.04em !important;margin:0 !important;text-transform:uppercase !important;text-align:left !important;}
 
   /* Body text & inline typography */
-  .report-paragraph{font-family:'Plus Jakarta Sans','Manrope',-apple-system,sans-serif !important;font-size:15.5px !important;line-height:1.8 !important;color:#f2ece1 !important;margin-bottom:16px !important;text-align:left !important;text-wrap:pretty !important;word-break:break-word;}
+  .report-paragraph{font-family:'Plus Jakarta Sans','Manrope',-apple-system,sans-serif !important;font-size:15.5px !important;line-height:1.8 !important;color:#f2ece1 !important;margin-bottom:16px !important;text-align:justify !important;text-wrap:pretty !important;word-break:break-word;}
   .report-paragraph strong{color:#fae29c !important;font-weight:700 !important;}
   .report-paragraph em{color:#e8d8b8 !important;font-style:italic !important;}
 
@@ -2467,7 +2467,7 @@ body {
   text-align: left;
 }
 
-.report-paragraph, .disclaimer, .modal-box p, .guide-card p, .faq-answer {
+.disclaimer, .modal-box p, .guide-card p, .faq-answer {
   text-align: left !important;
   text-wrap: pretty !important;
   word-break: break-word !important;
@@ -8815,32 +8815,18 @@ let activeKey = EMBEDDED_KEY;
 let activeModel = PRIMARY_MODEL;
 
 const SECTIONS = [
-  { id:'overview', title:'Chart overview and key themes',
-    instruction:`Write an impact-first executive reading. Start with what the chart appears to mean for this person's lived experience: temperament, decision-making, emotional patterns, relationships, career direction, money habits, resilience, and recurring life themes. Then identify the chart's strongest three to five patterns and explain exactly which houses, lords, signs, dignities, yogas or dashas create them. Use the verified ephemeris values supplied in the chart context and distinguish calculation data from interpretive uncertainty. Do not write a textbook introduction.` },
-  { id:'panchang', title:'Panchang and foundational placements',
-    instruction:`Present the Panchang — Tithi, Nakshatra with lord and pada, Yoga, Karana, Vara, Rahu Kaal window, Abhijit Muhurat window, and active/upcoming Hindu festivals or national events (such as Independence Day, Sawan Maas, Raksha Bandhan, Janmashtami, Navratri, Diwali, Maha Shivratri, etc.) — using the verified calculation and almanac context provided. Explicitly guide the reader on Rahu Kaal timing (times to avoid starting major new contracts or journeys) and Abhijit Muhurat (Shubh Muhurat for starting positive ventures), weaving in any active festival or seasonal blessings. Then give Lagna, Moon sign and all nine grahas by exact sidereal sign, degree, house, dignity and retrograde status. Never replace a returned ephemeris value with an estimate. Keep the visible prose readable, but at the very end include structured lines exactly in this form for rendering: "PLANET | SIGN | HOUSE | DIGNITY" for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu and Ketu; then "LAGNA | SIGN" and "MOON SIGN | SIGN". If a placement cannot be supported, write "Not reliably assessable" rather than inventing it. These machine-readable lines are hidden from the reader.` },
-  { id:'identity', title:'Identity, temperament and behavioural pattern',
-    instruction:`Explain how the chart can show up in this person's actual behaviour. Cover Lagna and Lagna lord, Moon, Mercury, Sun, Saturn and the 5th house. For every major indication, explain the likely behaviour, emotional response, decision style, communication style, confidence pattern, learning style, stress response and interpersonal tendencies. Use concrete life-language such as "you may tend to..." rather than generic planet definitions. Distinguish strengths from patterns that may need conscious management. Ground every conclusion in the chart.` },
-  { id:'relationships', title:'Love, marriage, family and social life',
-    instruction:`Make this deeply personal and practical. Explain how the 7th house, 7th lord, Venus, Jupiter, Moon, 5th, 8th and 11th houses may influence attraction, attachment, communication in relationships, emotional needs, conflict style, trust, commitment, spouse tendencies, family dynamics, children, friendships and social belonging. Explain what the native may repeatedly experience in relationships and what helps relationships work well. Include indicative timing windows only where supported by the Dasha/transit picture. Never make a marriage verdict.` },
-  { id:'career', title:'Career, wealth and material life',
-    instruction:`Focus on lived career impact rather than definitions. Explain what environments, roles, industries or working styles may fit the chart and why. Cover 10th house/lord, 6th, 2nd, 11th, Saturn, Sun, Mercury, Mars and Rahu as relevant. Discuss leadership, employment versus entrepreneurship, authority, negotiation, risk appetite, income patterns, reputation, professional conflict and wealth-building tendencies. Explain how the native may behave at work and what kinds of opportunities or friction may recur. Name supported Dhana/Raja/Vipreet yogas and explain their real-world impact.` },
-  { id:'yogas', title:'Classical Yogas: Formation, Strength and Life Impact',
-    instruction:`Build a dedicated classical Yoga analysis. Identify every major supported Yoga that can be established from the verified chart data, including Raja Yogas, Dhana Yogas, Dharma-Karmadhipati combinations, Gaja Kesari where actually formed, Budhaditya, Bhadra, Hamsa, Malavya, Ruchaka, Shasha, Vipreet Raja Yoga and other materially relevant combinations. Do not list a Yoga merely because a planet is strong. For every Yoga state: exact formation, planets and houses involved, strength/limitations, whether clearly present or not reliably assessable, and most importantly the practical impact on this person's behaviour, decision-making, career, wealth, relationships, resilience and life direction. Explain how multiple Yogas reinforce or modify each other. Do not make deterministic promises.` },
-  { id:'health', title:'Vitality, stress patterns, yogas and doshas',
-    instruction:`Give a careful non-medical reading of vitality and stress patterns through the 1st, 3rd, 6th, 8th and 12th houses, their lords, Mars, Rahu, Moon and Saturn. Explain possible behavioural patterns around energy, overwork, impulsivity, recovery, sleep and stress only as classical symbolism, never diagnosis. Then create a comprehensive Yoga Catalog: each supported major yoga, exact planets/houses forming it, whether clearly present/unclear, and its practical impact on personality, career, wealth, relationships or resilience. Assess Kaal Sarpa, Mangal/Kuja, Grahan and other material doshas individually as Present, Not clearly present, or Not assessable, with precise configuration and non-fear-based meaning. Include the user's lived experience rather than only naming combinations.` },
-  { id:'karakas', title:'Jaimini Karakas: Atmakaraka and Amatyakaraka',
-    instruction:`Analyze Atmakaraka and Amatyakaraka. Atmakaraka is traditionally the graha with the highest longitude among the seven classical planets; Amatyakaraka is the second-highest. Identify them directly from the verified planetary longitudes supplied by the ephemeris calculation. Do not infer them from prose. Where reliably inferable, explain Atmakaraka's sign/house/dignity and its implications for recurring life lessons, inner motivation, identity and growth; explain Amatyakaraka's sign/house/dignity and its implications for vocation, responsibility, professional style and contribution. Translate both into lived behaviour and choices.` },
-  { id:'vargas', title:'Divisional charts: Navamsa and Dashamsa',
-    instruction:`Discuss the traditional role of Navamsa (D9) and Dashamsa (D10), but distinguish explanation from actual calculation. If reliable divisional placements can be derived from the available data, interpret D9 for marriage, maturity, inner potential and the later unfolding of planetary strength, and D10 for professional direction, status and career development. If the software cannot calculate reliable D9/D10 placements, say so plainly and do not fabricate them. In that case, explain which questions D9 and D10 would answer and keep the main interpretation based on the verified natal chart.` },
-  { id:'transits', title:'Sade Sati, Saturn and major transit windows',
-    instruction:`Assess Saturn's and Jupiter's transit significance relative to the natal Moon sign. Explicitly determine whether Sade Sati or Shani Dhaiya/Ashtama Shani is supportable from the available timing data. Explain how major transit periods can feel in real life — responsibilities, career restructuring, relationship maturity, emotional pressure, learning, expansion or changed priorities — without fear language. Separate current, near-term and longer-term windows and label estimates clearly.` },
-  { id:'dashaAnalysis', title:'Dasha: What Each Life Phase Is Likely to Emphasize',
-    instruction:`Go beyond listing Mahadashas. Explain the psychological and practical storyline of the active and upcoming periods. For each major Mahadasha and relevant Antardasha, connect the dasha lord to its natal house, lordship, sign, dignity, aspects and Yogas, then explain likely changes in career, relationships, money, family, confidence, learning, responsibility and inner priorities. Distinguish a period's opportunity from its pressure. Highlight transitions between periods and explain why a life theme may become more prominent at that time. Use approximate dates only when supported by calculated chart data and label them indicative.` },
-  { id:'timeline', title:'Dasha timeline and life phases',
-    instruction:`Provide a full Vimshottari Mahadasha sequence where reasonably inferable, with approximate dates or age ranges. Identify current Mahadasha/Antardasha and upcoming sub-periods where supportable. For each major phase, explain what may actually change in career, relationships, money, family, confidence, learning and inner priorities based on the dasha lord's natal condition. Build a coherent life-stage narrative rather than merely listing planets and dates. Label all estimated timing.` },
-  { id:'synthesis', title:'Strengths, purpose and closing synthesis',
-    instruction:`End with a powerful, humane synthesis. Explain the person's strongest capacities, recurring blind spots, emotional and behavioural patterns, relationship lessons, career potential, resilience and the central tension the chart asks them to work through. Include Atmakaraka and soul-purpose only if reliably inferable. Do not use deterministic language. Finish by answering: "What kind of life does this chart seem to be asking this person to build?" in grounded, chart-specific language. Then provide exactly six structured rows, one per line, in this form: "AREA | INTERPRETATION | ASTROLOGICAL BASIS | TIMING" for Career, Relationships, Wealth, Personal Growth, Family and Inner Life. Make each interpretation describe lived impact, behaviour and practical experience, not a planet definition.` }
+  { id:'overview', title:'1. Chart Overview & Core Placements',
+    instruction:`Write an impact-first executive reading. Start with what the chart appears to mean for this person's lived experience: temperament, decision-making, emotional patterns, relationships, career direction, money habits, resilience, and recurring life themes. Then identify the chart's strongest patterns and explain exactly which houses, lords, signs, dignities, or yogas create them. Include a section that lists the core sidereal placements (Lagna, Moon, Sun, and all 9 grahas) with their signs, houses, and dignities.` },
+  { id:'identity_health', title:'2. Identity, Temperament & Vitality',
+    instruction:`Explain how the chart shows up in this person's actual behavior, focusing on identity, temperament, and health. Cover Lagna and Lagna lord, Moon, Mercury, Sun, and the 1st/6th/8th houses. Explain the likely behavior, emotional response, decision style, communication style, learning style, stress response, and vitality. Identify strengths and patterns that need conscious management. Ground every conclusion in the chart. Include an analysis of any relevant Yogas or Doshas (like Mangal or Kaal Sarpa) and how they impact resilience.` },
+  { id:'relationships', title:'3. Love, Marriage, Family & Social Life',
+    instruction:`Make this deeply personal and practical. Explain how the 7th house, 7th lord, Venus, Jupiter, Moon, 5th, 8th and 11th houses influence attraction, attachment, communication in relationships, emotional needs, conflict style, trust, commitment, spouse tendencies, family dynamics, children, friendships and social belonging. Explain what the native may repeatedly experience in relationships and what helps relationships work well. Never make a marriage verdict.` },
+  { id:'career_wealth', title:'4. Career, Wealth & Material Success',
+    instruction:`Focus on lived career impact and wealth-building. Explain what environments, roles, industries or working styles fit the chart and why. Cover 10th house/lord, 6th, 2nd, 11th, Saturn, Sun, Mercury, Mars and Rahu. Discuss leadership, employment versus entrepreneurship, authority, negotiation, risk appetite, income patterns, reputation, and professional conflict. Name supported Dhana/Raja/Vipreet yogas and explain their real-world impact. Incorporate Amatyakaraka (AmK) to explain vocational responsibility.` },
+  { id:'timing_dashas', title:'5. Life Phases, Vimshottari Dasha & Transits',
+    instruction:`Provide a full Vimshottari Mahadasha narrative and analyze major transits (like Sade Sati or Jupiter transits). Identify the current Mahadasha/Antardasha and upcoming sub-periods. For each major phase, explain what may actually change in career, relationships, money, family, confidence, and priorities based on the dasha lord's natal condition. Build a coherent life-stage narrative rather than merely listing planets and dates. Explain the psychological and practical storyline of the active periods.` },
+  { id:'synthesis', title:'6. Synthesis & Life Purpose',
+    instruction:`End with a powerful, humane synthesis. Explain the person's strongest capacities, recurring blind spots, relationship lessons, career potential, resilience and the central tension the chart asks them to work through. Incorporate Atmakaraka (AK) to explain their soul-purpose and evolutionary lesson. Finish by answering: "What kind of life does this chart seem to be asking this person to build?" in grounded, chart-specific language.` }
 ];
 
 const RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer, deeply versed in Brihat Parashara Hora Shastra, Brihat Jataka, Phaladeepika, Saravali, Jaimini Sutras, Uttara Kalamrita, KP Astrology (for timing only), classical Yogas, Dasha systems, divisional charts (Vargas), planetary strengths, and transit analysis. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague.
@@ -8867,11 +8853,11 @@ Strict rules you always follow:
 
 const KUNDLI_SECTIONS = [
   { id:'ashtakoot', title:'Ashtakoot Guna Milan (36-Point Compatibility)',
-    instruction:`Use the deterministic Ashtakoot Guna Milan Result provided in the context (including the exact Total Score out of 36, and the individual koota scores). Explain the meaning of this score, naming the specific signs, nakshatras, and planetary lords compared in each: Varna (spiritual/ego compatibility), Vashya (mutual attraction and control), Tara (birth-star compatibility and wellbeing), Yoni (physical and instinctive compatibility), Graha Maitri (compatibility between the Moon-sign lords), Gana (temperament grouping), Bhakoot (Moon-sign relationship governing family welfare and prosperity), and Nadi (health and genetic compatibility). For each koota, state the points scored out of its maximum with the precise reasoning, then a running subtotal. Close with the clearly stated final Total Guna Score out of 36, and note the traditional reference bands strictly as classical reference points, not as a personal verdict on the couple.` },
+    instruction:`Write a detailed, narrative-heavy interpretation of the deterministic Ashtakoot Guna Milan Result provided in the context (including the exact Total Score out of 36, and the individual koota scores). Expand deeply on what this means for their lived experience together, naming the specific signs, nakshatras, and planetary lords compared in each: Varna (spiritual/ego), Vashya (mutual attraction/control), Tara (wellbeing), Yoni (physical/instinctive), Graha Maitri (emotional bond between Moon lords), Gana (temperament), Bhakoot (family welfare), and Nadi (genetic/health compatibility). Do not just list statistics; explain the practical relationship dynamics. Close with the clearly stated final Total Guna Score out of 36.` },
   { id:'doshas', title:'Mangal Dosha and Compatibility Doshas',
-    instruction:`Assess Mangal (Kuja) Dosha separately for each partner: Mars's placement counted from the Lagna, the Moon, and Venus, checking the 1st, 2nd, 4th, 7th, 8th, and 12th houses in each case, and state plainly whether each partner's chart shows Mangal Dosha and why. Then explain whether any classical cancellation (Mangal Dosha Bhanga) conditions apply — such as both partners carrying comparable Mangal Dosha, or Mars's placement in its own or exalted sign — describing the classical logic only, never a remedy. Revisit the Nadi koota result from the Ashtakoot section and note whether Nadi Dosha applies and whether any classical exception (such as differing Nakshatra padas or Rashi) is relevant. Note Bhakoot Dosha status similarly if the Bhakoot koota scored zero. Describe every finding factually and reverently, and never suggest a remedy for any dosha found.` },
+    instruction:`Provide a deeply personalized and detailed narrative assessing Mangal (Kuja) Dosha separately for each partner: Mars's placement counted from the Lagna, the Moon, and Venus, checking the 1st, 2nd, 4th, 7th, 8th, and 12th houses in each case. State plainly whether each partner's chart shows Mangal Dosha and why. Then explain whether any classical cancellation (Mangal Dosha Bhanga) conditions apply. Revisit the Nadi koota result and note whether Nadi Dosha applies and whether any classical exception is relevant. Explain how these doshas (or lack thereof) will practically impact their domestic life, conflict resolution, and shared energy. Never suggest a remedy.` },
   { id:'synthesis', title:'Compatibility Outlook and Synthesis',
-    instruction:`Cover, comparing both charts directly against each other: emotional and temperamental compatibility (both Moon signs and Gana results), intellectual rapport and communication style (both Mercury placements), domestic and family harmony (both 7th houses and their lords, and both 4th houses), long-term stability indicators (both 7th and 8th house conditions, and relevant current Dasha periods for each partner if they bear on the relationship), shared strengths the combination brings out, and specific points of friction or difference to be mindful of, named with the specific placements behind them. Frame this section reflectively, as material for the couple's own understanding — never as a final pronouncement on whether they should marry. Close with one warm, balanced synthesis paragraph weaving the whole match together.` }
+    instruction:`Write a rich, detailed, narrative-heavy synthesis comparing both charts directly against each other: emotional and temperamental compatibility (Moon signs and Gana), intellectual rapport (Mercury), domestic harmony (7th and 4th houses), long-term stability indicators (7th/8th houses and current Dashas), shared strengths, and specific points of friction. Frame this section reflectively, as material for the couple's own understanding. Close with one warm, balanced synthesis paragraph weaving the whole match together into a cohesive story.` }
 ];
 
 const KUNDLI_RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer specializing in marriage compatibility (Kundli Milan), deeply versed in the Ashtakoot Guna Milan system from Brihat Parashara Hora Shastra and Muhurta texts, Mangal (Kuja) Dosha analysis and its classical cancellations, and general synastry between two natal charts. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague, and never delivering a blunt "should marry / should not marry" verdict.
@@ -8924,6 +8910,7 @@ function apiPlanetRows(chart){
     sign:x.sign || x.rashi || x.zodiac || '—',
     degree:Number.isFinite(Number(x.degree))?Number(x.degree):Number.isFinite(Number(x.longitude))?Number(x.longitude):null,
     house:x.house ?? x.bhava ?? null,
+    dignity:x.dignity || '—',
     retrograde:Boolean(x.retrograde || x.isRetrograde),
     combust:Boolean(x.combust || x.isCombust),
     nakshatra:x.nakshatra || x.star || ''
@@ -9454,9 +9441,11 @@ function cleanAstroText(text){
   return String(text)
     .replace(/\r/g, '')
     .replace(/[ \t]+\n/g, '\n')
+    .replace(/```[a-z]*\n[\s\S]*?```/g, '') // Remove code blocks and JSON
     .replace(/^[ \t]*[\*\-_#]{3,}[ \t]*$/gm, '') // Remove horizontal rules like ***, ---, ###
     .replace(/^#{1,6}\s*(.*?)\s*#{1,6}$/gm, '### $1') // Normalize closed headers like ### Title ###
     .replace(/^([ \t]*[•\-\*+]\s*)\*+([^*\n]+)\*+/gm, '$1**$2**') // Clean messy bullets
+    .replace(/[\+\|](?:---+[\+\|])+/g, '') // Remove ASCII box borders
     .replace(/\bundefined\b/g, '')
     .replace(/\bnull\b/g, '')
     .trim();
@@ -9832,7 +9821,7 @@ function extractChartData(text){
   if(sourceChart){
     const rows=apiPlanetRows(sourceChart);
     if(sourceChart.ascSign) out.lagna=sourceChart.ascSign;
-    rows.forEach(p=>{ if(p.sign) out.signs[p.name]=p.sign; if(p.house!=null) out.placements[p.name]=Number(p.house); if(p.degree!=null) out.degrees[p.name]=p.degree; out.retrograde[p.name]=p.retrograde; if(p.nakshatra) out.nakshatra[p.name]=p.nakshatra; });
+    rows.forEach(p=>{ if(p.sign) out.signs[p.name]=p.sign; if(p.house!=null) out.placements[p.name]=Number(p.house); if(p.degree!=null) out.degrees[p.name]=p.degree; out.retrograde[p.name]=p.retrograde; if(p.nakshatra) out.nakshatra[p.name]=p.nakshatra; if(p.dignity) out.dignity[p.name]=p.dignity; });
     const moon=rows.find(p=>p.name==='Moon'); if(moon?.sign) out.moonSign=moon.sign;
     return out;
   }
@@ -10296,15 +10285,18 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
   renderClassicalModules();
   if(section.id === 'timeline') renderDashaTimeline();
 
-  // 2. Synthesize via AI with immediate graceful fallback to classical baseline if load/rate limit occurs
+  // 2. Synthesize via AI with strict automatic retries (No classical fallback)
   let generatedText = window.chapterPartialStates[section.id] || '';
-  let isBaselineFallback = false;
+  let isComplete = false;
+  let retryCount = 0;
+  const maxRetries = 3;
 
-  try {
-    const memoryContext = window.chapterMemory.length > 0 ? `\n\nPREVIOUS CHAPTER SUMMARIES (For Continuity):\n${window.chapterMemory.slice(-2).join('\n')}` : '';
-    const resumePrompt = generatedText ? `\n\nYou previously generated the following partial text for this chapter:\n"${generatedText}"\n\nCONTINUE exactly from where you left off. Do NOT repeat the text above, just generate the remainder of the chapter.` : '';
+  while (!isComplete && retryCount <= maxRetries) {
+    try {
+      const memoryContext = window.chapterMemory.length > 0 ? `\n\nPREVIOUS CHAPTER SUMMARIES (For Continuity):\n${window.chapterMemory.slice(-2).join('\n')}` : '';
+      const resumePrompt = generatedText ? `\n\nYou previously generated the following partial text for this chapter:\n"${generatedText}"\n\nCONTINUE exactly from where you left off. Do NOT repeat the text above, just generate the remainder of the chapter.` : '';
 
-    const userText = `Birth data & Verified Ephemeris:
+      const userText = `Birth data & Verified Ephemeris:
 ${birthContext}${memoryContext}
 
 TASK:
@@ -10333,71 +10325,56 @@ PRESENTATION & FORMATTING GUIDELINES:
 - Do not output raw markdown hashes or unclosed asterisks in the middle of sentences.
 - Do not repeat the chapter title at the very start.${resumePrompt}`;
 
-    let currentChunkRenderTime = 0;
-    const finalContentDiv = document.getElementById('content-' + section.id);
-    
-    const streamHandler = (chunkText, fullSoFar) => {
-      const combined = generatedText + fullSoFar;
-      window.chapterPartialStates[section.id] = combined;
-      const now = Date.now();
-      if (now - currentChunkRenderTime > 200 && finalContentDiv) {
-        currentChunkRenderTime = now;
-        finalContentDiv.innerHTML = formatReportSectionHtml(combined) + ' <span class="loading-gem-spinner" style="display:inline-block;font-size:12px;">✦</span>';
-      }
-    };
+      let currentChunkRenderTime = 0;
+      const finalContentDiv = document.getElementById('content-' + section.id);
+      
+      const streamHandler = (chunkText, fullSoFar) => {
+        const combined = generatedText + fullSoFar;
+        window.chapterPartialStates[section.id] = combined;
+        const now = Date.now();
+        if (now - currentChunkRenderTime > 200 && finalContentDiv) {
+          currentChunkRenderTime = now;
+          finalContentDiv.innerHTML = formatReportSectionHtml(combined) + ' <span class="loading-gem-spinner" style="display:inline-block;font-size:12px;">✦</span>';
+        }
+      };
 
-    const rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
-    const combinedFinal = generatedText + rawText;
-    const cleaned = cleanAstroText(combinedFinal);
-    if(!cleaned || cleaned.length < 80){
-      throw new Error('The astrology service returned an incomplete reading.');
-    }
-    generatedText = cleaned;
-    window.chapterPartialStates[section.id] = generatedText;
-    window.chapterMemory.push(`${section.title}: ${generatedText.substring(0, 150)}...`);
-  } catch(err) {
-    console.warn(`AI generation load/error for ${section.title}, using classical calculation engine fallback:`, err.message);
-    const targetChart = currentMode === 'individual' ? verifiedChart : (verifiedCharts?.partnerA || verifiedChart);
-    if (window.VedicEngine && typeof window.VedicEngine.generateSectionBaseline === 'function' && targetChart) {
-      try {
-        generatedText = window.VedicEngine.generateSectionBaseline(section.id, targetChart, verifiedChart, window.currentVedicLang);
-      } catch (calcErr) {
-        console.warn('VedicEngine baseline calc error:', calcErr);
+      const rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
+      const combinedFinal = generatedText + rawText;
+      const cleaned = cleanAstroText(combinedFinal);
+      
+      if(!cleaned || cleaned.length < 80){
+        throw new Error('The astrology service returned an incomplete reading.');
       }
+      
+      generatedText = cleaned;
+      window.chapterPartialStates[section.id] = generatedText;
+      window.chapterMemory.push(`${section.title}: ${generatedText.substring(0, 150)}...`);
+      isComplete = true; // Generation succeeded
+      
+    } catch (err) {
+      console.warn(`AI generation error for ${section.title}. Retry ${retryCount}/${maxRetries}. Error:`, err.message);
+      retryCount++;
+      if (retryCount > maxRetries) {
+        progressErrorEl.innerHTML = `<span style="color:var(--danger);">Failed to generate ${section.title} after multiple attempts. Please refresh and try again.</span>`;
+        // Hard stop, don't continue to next chapter
+        throw new Error(`Failed to generate chapter ${section.title}`);
+      }
+      // Wait before retrying
+      await sleep(2000 * retryCount);
     }
-    if (!generatedText || generatedText.length < 40) {
-      generatedText = `### 1. ${section.title}\n\n${section.instruction || 'Comprehensive astrological analysis computed according to classical Parashari principles.'}`;
-    }
-    isBaselineFallback = true;
   }
 
   // 3. Update section UI with final text & badge
   fullReportText += `\n\n## ${section.title}\n\n${generatedText}`;
   const finalContentDiv = document.getElementById('content-' + section.id);
   if(finalContentDiv) {
-    let sectionHtml = formatReportSectionHtml(generatedText);
-    if(isBaselineFallback){
-      sectionHtml += `
-        <div style="margin-top:16px;padding:10px 14px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12.5px;">
-          <span style="color:var(--muted);">${isHi ? 'शास्त्रीय गणितीय गणना द्वारा प्रस्तुत' : 'Calculated via classical sidereal engine (AI load fallback)'}</span>
-          <button type="button" class="header-nav-btn" onclick="retrySingleSection(${index})" style="padding:4px 12px;font-size:11.5px;cursor:pointer;">
-            ${isHi ? 'AI से विस्तृत करें ↻' : 'Enrich via AI ↻'}
-          </button>
-        </div>
-      `;
-    }
-    finalContentDiv.innerHTML = sectionHtml;
+    finalContentDiv.innerHTML = formatReportSectionHtml(generatedText);
   }
 
   const tagEl = document.getElementById('tag-' + section.id);
   if(tagEl){
-    if(isBaselineFallback){
-      tagEl.className = 'report-chapter-tag classical-ready';
-      tagEl.textContent = isHi ? '✨ शास्त्रीय गणना' : '✨ Classical Calculation';
-    } else {
-      tagEl.className = 'report-chapter-tag ai-enriched';
-      tagEl.textContent = isHi ? '✨ शास्त्रीय + AI परिष्कृत' : '✨ Classical + AI Enriched';
-    }
+    tagEl.className = 'report-chapter-tag ai-enriched';
+    tagEl.textContent = isHi ? '✨ शास्त्रीय + AI परिष्कृत' : '✨ Classical + AI Enriched';
   }
 
   renderKundliVisuals();
