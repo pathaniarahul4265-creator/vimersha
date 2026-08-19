@@ -229,7 +229,7 @@ function normalizeModel(m) {
   return primary;
 }
 
-export async function aiCall({model, systemText, userText, maxTokens, sessionToken, vipToken}) {
+export async function aiCall({systemText, userText, maxTokens, sessionToken, vipToken}) {
   const isValid = await validatePremiumSession(sessionToken, vipToken);
   if (!isValid) {
     const e = new Error('Valid Premium Session or VIP Code required');
@@ -244,107 +244,129 @@ export async function aiCall({model, systemText, userText, maxTokens, sessionTok
     throw err;
   }
 
-  const primaryModel = normalizeModel(getEnv('GEMINI_PRIMARY_MODEL', model || 'gemini-2.5-flash'));
-  const fallbackModel = normalizeModel(getEnv('GEMINI_FALLBACK_MODEL', 'gemini-1.5-flash'));
+  const primaryModel = process.env.GEMINI_PRIMARY_MODEL;
+  if (!primaryModel) {
+    const err = new Error('GEMINI_PRIMARY_MODEL environment variable is required.');
+    err.status = 500;
+    throw err;
+  }
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL;
+
   const promptChars = (systemText?.length || 0) + (userText?.length || 0);
+  const tokensLimit = Math.max(Number(maxTokens) || 16384, 8192);
 
   let lastErr = null;
-  const attemptsMax = Math.max(pool.length * 2, 4);
-  let attemptCount = 0;
+  const modelsToTry = [primaryModel];
+  if (fallbackModel && fallbackModel !== primaryModel) {
+    modelsToTry.push(fallbackModel);
+  }
 
-  while (attemptCount < attemptsMax) {
-    attemptCount++;
-    const keyIdx = selectNextAvailableKeyIndex(pool);
-    const chosenKey = pool[keyIdx];
+  for (const modelToTry of modelsToTry) {
+    let attempt = 0;
+    const maxAttemptsPerModel = 2; // Maximum 2 attempts per model
+    while (attempt < maxAttemptsPerModel) {
+      attempt++;
+      const keyIdx = selectNextAvailableKeyIndex(pool);
+      const chosenKey = pool[keyIdx];
 
-    let targetModel = (attemptCount > 1 && primaryModel !== fallbackModel) ? fallbackModel : primaryModel;
-    if (lastErr && (String(lastErr.message).includes('not available') || String(lastErr.message).includes('404') || String(lastErr.message).includes('not found'))) {
-      targetModel = 'gemini-1.5-flash';
-    }
-    const tokensLimit = Math.max(Number(maxTokens) || 8192, 8192);
+      recordKeyRequest(chosenKey, keyIdx, promptChars);
 
-    recordKeyRequest(chosenKey, keyIdx, promptChars);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelToTry)}:generateContent`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 300000); // 300s max timeout
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(targetModel)}:generateContent`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120s max timeout
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': chosenKey
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemText }] },
+            contents: [{ role: 'user', parts: [{ text: userText }] }],
+            generationConfig: {
+              maxOutputTokens: tokensLimit,
+              temperature: 0.7
+            }
+          })
+        });
+        clearTimeout(timeout);
 
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': chosenKey
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemText }] },
-          contents: [{ role: 'user', parts: [{ text: userText }] }],
-          generationConfig: {
-            maxOutputTokens: tokensLimit,
-            temperature: 0.7
-          }
-        })
-      });
-      clearTimeout(timeout);
-
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        const errMsg = j?.error?.message || `Gemini API returned HTTP ${r.status}`;
-        recordKeyFailure(chosenKey, keyIdx, r.status, errMsg);
-
-        activeKeyPoolIndex = (keyIdx + 1) % pool.length;
-
-        const isRotatable = r.status === 429 || r.status === 400 || r.status === 401 || r.status === 403 || r.status === 503 || r.status === 504 || r.status === 404;
-        if (isRotatable && attemptCount < attemptsMax) {
-          lastErr = new Error(errMsg);
-          lastErr.status = r.status;
-          await new Promise(res => setTimeout(res, Math.min(attemptCount * 500, 1500)));
-          continue;
-        }
-
-        const e = new Error(errMsg);
-        e.status = r.status;
-        throw e;
-      }
-
-      const text = j?.candidates?.[0]?.content?.parts?.map(x => x.text || '').join('') || '';
-      if (!text) {
-        recordKeyFailure(chosenKey, keyIdx, 500, 'Empty response from Gemini');
-        if (attemptCount < attemptsMax) {
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const errMsg = j?.error?.message || `Gemini API returned HTTP ${r.status}`;
+          recordKeyFailure(chosenKey, keyIdx, r.status, errMsg);
           activeKeyPoolIndex = (keyIdx + 1) % pool.length;
-          await new Promise(res => setTimeout(res, 400));
+
+          const isModelError = r.status === 404 || errMsg.toLowerCase().includes('not found') || errMsg.toLowerCase().includes('not available');
+          if (isModelError && modelToTry === primaryModel && fallbackModel) {
+            lastErr = new Error(errMsg);
+            lastErr.status = r.status;
+            break;
+          }
+
+          const isRotatable = r.status === 429 || r.status === 503 || r.status === 504 || r.status === 502 || r.status === 500;
+          if (isRotatable && attempt < maxAttemptsPerModel) {
+            lastErr = new Error(errMsg);
+            lastErr.status = r.status;
+            await new Promise(res => setTimeout(res, 1000));
+            continue;
+          }
+
+          const e = new Error(errMsg);
+          e.status = r.status;
+          throw e;
+        }
+
+        const text = j?.candidates?.[0]?.content?.parts?.map(x => x.text || '').join('') || '';
+        if (!text) {
+          recordKeyFailure(chosenKey, keyIdx, 500, 'Empty response from Gemini');
+          if (attempt < maxAttemptsPerModel) {
+            activeKeyPoolIndex = (keyIdx + 1) % pool.length;
+            await new Promise(res => setTimeout(res, 500));
+            continue;
+          }
+          throw new Error('No text generated by AI service.');
+        }
+
+        recordKeySuccess(chosenKey, keyIdx, text.length);
+        return text;
+      } catch (err) {
+        clearTimeout(timeout);
+        lastErr = err;
+        const status = err.name === 'AbortError' ? 504 : (err.status || 500);
+        recordKeyFailure(chosenKey, keyIdx, status, err.message);
+
+        const isModelError = err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found'));
+        if (isModelError && modelToTry === primaryModel && fallbackModel) {
+          break;
+        }
+
+        if (attempt < maxAttemptsPerModel) {
+          activeKeyPoolIndex = (keyIdx + 1) % pool.length;
+          await new Promise(res => setTimeout(res, 1000));
           continue;
         }
-        throw new Error('No text generated by AI service.');
-      }
-
-      recordKeySuccess(chosenKey, keyIdx, text.length);
-      return text;
-    } catch (err) {
-      clearTimeout(timeout);
-      lastErr = err;
-      const status = err.name === 'AbortError' ? 504 : (err.status || 500);
-      recordKeyFailure(chosenKey, keyIdx, status, err.message);
-
-      if (attemptCount < attemptsMax) {
-        activeKeyPoolIndex = (keyIdx + 1) % pool.length;
-        await new Promise(res => setTimeout(res, Math.min(attemptCount * 600, 1800)));
-        continue;
       }
     }
+    if (modelToTry === primaryModel && fallbackModel) {
+      continue;
+    }
+    break;
   }
 
   if (lastErr) {
     if (lastErr.name === 'AbortError') {
-      const e = new Error('AI generation timed out upstream (35s limit reached).');
+      const e = new Error('AI generation timed out upstream.');
       e.status = 504;
       throw e;
     }
     throw lastErr;
   }
 
-  const timeoutErr = new Error('AI request timed out or hit rate limit (429) across all available API keys.');
+  const timeoutErr = new Error('AI request failed across all available keys and models.');
   timeoutErr.status = 504;
   throw timeoutErr;
 }

@@ -7025,6 +7025,7 @@ var __async = (__this, __arguments, generator) => {
 </script>
 <script src="/vedic-engine.js"></script>
 <script>
+var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2, _o2, _p2, _q2, _r2, _s2, _t2, _u2, _v2, _w2, _x2, _y2, _z2, _a3, _b3, _c3, _d3, _e3, _f3, _g3, _h3, _i3, _j3, _k3, _l3, _m3, _n3, _o3, _p3, _q3, _r3, _s3, _t3, _u3, _v3, _w3, _x3, _y3, _z3;
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
 var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
@@ -9552,19 +9553,18 @@ function isAuthError(status, message) {
   const m = (message || "").toLowerCase();
   return status === 400 || status === 401 || status === 403 || m.includes("api key") || m.includes("api_key") || m.includes("permission") || m.includes("unauthenticated");
 }
-function rawCall(model, key, systemText, userText, maxTokens) {
+function rawCall(systemText, userText, maxTokens) {
   return __async(this, null, function* () {
     let res, data;
     try {
       res = yield fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, systemText, userText, maxTokens, sessionToken: window.lastSessionToken || "", vipToken: window.lastVipCode || "" })
+        body: JSON.stringify({ systemText, userText, maxTokens, sessionToken: window.lastSessionToken || "", vipToken: window.lastVipCode || "" })
       });
     } catch (networkErr) {
-      const e = new Error("The secure astrology service could not be reached. Please try again.");
+      const e = new Error("The secure astrology service could not be reached. Please check your network connection.");
       e.status = 0;
-      e.isAuth = false;
       throw e;
     }
     try {
@@ -9572,18 +9572,15 @@ function rawCall(model, key, systemText, userText, maxTokens) {
     } catch (parseErr) {
       data = null;
     }
-    if (!res.ok) {
+    if (!res.ok || (data && data.success === false)) {
       const msg = data && data.error ? data.error : `Request failed (HTTP ${res.status})`;
       const e = new Error(msg);
       e.status = res.status;
-      e.isAuth = isAuthError(res.status, msg);
-      e.modelNotFound = res.status === 404;
       throw e;
     }
     if (!data || !data.text) {
-      const e = new Error("No response returned by the astrology service.");
+      const e = new Error("No text response returned by the astrology service.");
       e.status = res.status;
-      e.isAuth = false;
       throw e;
     }
     return data.text;
@@ -9593,22 +9590,15 @@ window.chapterMemory = window.chapterMemory || [];
 window.chapterPartialStates = window.chapterPartialStates || {};
 function callGemini(systemText, userText, maxTokens = 65536) {
   return __async(this, null, function* () {
-    const maxAttempts = 3;
+    const maxAttempts = 2;
     let lastErr;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        return yield rawCall(activeModel, activeKey, systemText, userText, maxTokens);
+        return yield rawCall(systemText, userText, maxTokens);
       } catch (err) {
         lastErr = err;
-        if (err == null ? void 0 : err.isAuth)
-          throw err;
-        if (((err == null ? void 0 : err.modelNotFound) || (err == null ? void 0 : err.status) === 404) && activeModel !== FALLBACK_MODEL) {
-          activeModel = FALLBACK_MODEL;
-          continue;
-        }
-        const transient = (err == null ? void 0 : err.status) === 429 || (err == null ? void 0 : err.status) === 504 || (err == null ? void 0 : err.status) === 503 || (err == null ? void 0 : err.status) === 502 || (err == null ? void 0 : err.status) === 500 || (err == null ? void 0 : err.status) === 408 || (err == null ? void 0 : err.status) === 0;
-        if (transient && attempt < maxAttempts) {
-          yield sleep(attempt * 1200);
+        if (attempt < maxAttempts) {
+          yield sleep(1000);
           continue;
         }
         throw err;
@@ -13323,6 +13313,7 @@ button:hover{transform:translateY(-1px);filter:brightness(1.035);}
 }
 </style>
 <script>
+var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2, _o2, _p2, _q2, _r2, _s2, _t2, _u2, _v2, _w2, _x2, _y2, _z2, _a3, _b3, _c3, _d3, _e3, _f3, _g3, _h3, _i3, _j3, _k3, _l3, _m3, _n3, _o3, _p3, _q3, _r3, _s3, _t3, _u3, _v3, _w3, _x3, _y3, _z3;
 var __async = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {
@@ -14578,6 +14569,7 @@ window.resetPanchangDateToToday = resetPanchangDateToToday;
 </script>
 
 <script>
+var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2, _o2, _p2, _q2, _r2, _s2, _t2, _u2, _v2, _w2, _x2, _y2, _z2, _a3, _b3, _c3, _d3, _e3, _f3, _g3, _h3, _i3, _j3, _k3, _l3, _m3, _n3, _o3, _p3, _q3, _r3, _s3, _t3, _u3, _v3, _w3, _x3, _y3, _z3;
 var __async = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {

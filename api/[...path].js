@@ -396,15 +396,18 @@ export default async function handler(req,res){
     if(req.method==='POST'&&path==='/ai'){
       const b = await readBody(req);
       const pool = getGeminiKeyPool(b?.key);
-      if(pool.length === 0) return json(res,503,{error:'AI service is not configured on the server. Please ensure GEMINI_API_KEY is provided.'});
-      if(!b.systemText || !b.userText) return json(res,400,{error:'AI request is incomplete.'});
+      if(pool.length === 0) return json(res, 503, { success: false, error: 'AI service is not configured on the server. Please ensure GEMINI_API_KEY is provided.' });
+      if(!process.env.GEMINI_PRIMARY_MODEL) {
+        return json(res, 500, { success: false, error: 'GEMINI_PRIMARY_MODEL environment variable is required.' });
+      }
+      if(!b.systemText || !b.userText) return json(res, 400, { success: false, error: 'AI request is incomplete.' });
       try {
         const text = await aiCall(b);
-        return json(res, 200, { text });
+        return json(res, 200, { success: true, text });
       } catch (e) {
         console.error('[AI Handler Error]', e);
         const status = Number(e.status) || 500;
-        return json(res, status, { error: e.message || 'AI request failed' });
+        return json(res, status, { success: false, error: e.message || 'AI request failed' });
       }
     }
 
