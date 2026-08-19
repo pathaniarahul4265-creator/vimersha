@@ -9589,75 +9589,9 @@ function rawCall(model, key, systemText, userText, maxTokens) {
     return data.text;
   });
 }
-function callGeminiStream(systemText, userText, maxTokens, onChunk) {
-  return __async(this, null, function* () {
-    const maxAttempts = 3;
-    let lastErr;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const res = yield fetch("/api/ai-stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: activeModel, systemText, userText, maxTokens, sessionToken: window.lastSessionToken || "", vipToken: window.lastVipCode || "" })
-        });
-        if (!res.ok) {
-          const data = yield res.json().catch(() => ({}));
-          const msg = data && data.error ? data.error : `Request failed (HTTP ${res.status})`;
-          const e = new Error(msg);
-          e.status = res.status;
-          e.isAuth = isAuthError(res.status, msg);
-          e.modelNotFound = res.status === 404;
-          throw e;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let fullText = "";
-        while (true) {
-          const { done, value } = yield reader.read();
-          if (done)
-            break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.error)
-                  throw new Error(data.error);
-                if (data.text) {
-                  fullText += data.text;
-                  if (onChunk)
-                    onChunk(data.text, fullText);
-                }
-              } catch (e) {
-                if (e.message && e.message.includes("interrupted"))
-                  throw e;
-              }
-            }
-          }
-        }
-        return fullText;
-      } catch (err) {
-        lastErr = err;
-        if (err == null ? void 0 : err.isAuth)
-          throw err;
-        if (((err == null ? void 0 : err.modelNotFound) || (err == null ? void 0 : err.status) === 404) && activeModel !== FALLBACK_MODEL) {
-          activeModel = FALLBACK_MODEL;
-          continue;
-        }
-        const transient = (err == null ? void 0 : err.status) === 429 || (err == null ? void 0 : err.status) === 504 || (err == null ? void 0 : err.status) === 503 || (err == null ? void 0 : err.status) === 502 || (err == null ? void 0 : err.status) === 500 || (err == null ? void 0 : err.status) === 408 || (err == null ? void 0 : err.status) === 0;
-        if (transient && attempt < maxAttempts) {
-          yield sleep(attempt * 1200);
-          continue;
-        }
-        throw err;
-      }
-    }
-  });
-}
 window.chapterMemory = window.chapterMemory || [];
 window.chapterPartialStates = window.chapterPartialStates || {};
-function callGemini(systemText, userText, maxTokens = 3200) {
+function callGemini(systemText, userText, maxTokens = 65536) {
   return __async(this, null, function* () {
     const maxAttempts = 3;
     let lastErr;
@@ -10618,20 +10552,8 @@ ${birthContext}
 Write the "${section.title}" section of this native's Vedic chart reading.
 ${section.instruction}
 Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. Do not include a section title in your output; begin directly with the analysis.`;
-        let currentChunkRenderTime = 0;
-        const finalContentDiv2 = document.getElementById("content-" + section.id);
-        const streamHandler = (chunkText, fullSoFar) => {
-          const combined = generatedText + fullSoFar;
-          window.chapterPartialStates[section.id] = combined;
-          const now = Date.now();
-          if (now - currentChunkRenderTime > 200 && finalContentDiv2) {
-            currentChunkRenderTime = now;
-            finalContentDiv2.innerHTML = formatReportSectionHtml(combined) + ' <span class="loading-gem-spinner" style="display:inline-block;font-size:12px;">\u2726</span>';
-          }
-        };
-        const rawText = yield callGeminiStream(activeRules, userText, 8192, streamHandler);
-        const combinedFinal = generatedText + rawText;
-        const cleaned = cleanAstroText(combinedFinal);
+        const rawText = yield callGemini(activeRules, userText, 65536);
+        const cleaned = cleanAstroText(rawText);
         if (!cleaned || cleaned.length < 80) {
           throw new Error("The astrology service returned an incomplete reading.");
         }

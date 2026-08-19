@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Razorpay from 'razorpay';
 import { db, getSettings, pricing } from './_lib/supabase.js';
-import { aiCall, aiStreamCall, getGeminiKeyPool } from './_lib/gemini.js';
+import { aiCall, getGeminiKeyPool } from './_lib/gemini.js';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 function ensureDataDir() {
@@ -406,26 +406,6 @@ export default async function handler(req,res){
         const status = Number(e.status) || 500;
         return json(res, status, { error: e.message || 'AI request failed' });
       }
-    }
-
-    if(req.method==='POST'&&path==='/ai-stream'){
-      const b = await readBody(req);
-      const pool = getGeminiKeyPool(b?.key);
-      if(pool.length === 0) return json(res,503,{error:'AI service is not configured on the server. Please ensure GEMINI_API_KEY is provided.'});
-      if(!b.systemText || !b.userText) return json(res,400,{error:'AI request is incomplete.'});
-      try {
-        await aiStreamCall(req, res, b);
-      } catch (e) {
-        console.error('[AI Stream Handler Error]', e);
-        if (!res.headersSent) {
-          const status = Number(e.status) || 500;
-          return json(res, status, { error: e.message || 'AI request failed' });
-        } else {
-          res.write(`data: ${JSON.stringify({ error: e.message || 'AI stream interrupted' })}\n\n`);
-          res.end();
-        }
-      }
-      return;
     }
 
     if(req.method==='POST'&&path==='/create-order'){
