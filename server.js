@@ -9,6 +9,32 @@ const PORT = 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Explicit favicon handler
+app.get(['/favicon.svg', '/public/favicon.svg', '/favicon.ico'], (req, res) => {
+  const p = path.join(process.cwd(), 'public', 'favicon.svg');
+  if (fs.existsSync(p)) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    return res.sendFile(p);
+  }
+  const rootFav = path.join(process.cwd(), 'favicon.svg');
+  if (fs.existsSync(rootFav)) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    return res.sendFile(rootFav);
+  }
+  res.status(404).end();
+});
+
+// Handle all API routes first to guarantee JSON responses and prevent HTML fallthrough
+app.all(/^\/api(\/.*)?$/, async (req, res, next) => {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(err.status || 500).json({ error: err.message || 'Unexpected server error.' });
+    }
+  }
+});
+
 // Serve static assets with explicit mappings
 app.use('/images', express.static(path.join(process.cwd(), 'public', 'images')));
 app.use('/public/images', express.static(path.join(process.cwd(), 'public', 'images')));
@@ -38,32 +64,18 @@ app.get(['/images/zodiac/:sign.:ext', '/images/zodiac_gold/:sign.:ext', '/public
   next();
 });
 
-// Explicit favicon handler
-app.get(['/favicon.svg', '/public/favicon.svg', '/favicon.ico'], (req, res) => {
-  const p = path.join(process.cwd(), 'public', 'favicon.svg');
-  if (fs.existsSync(p)) {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    return res.sendFile(p);
-  }
-  const rootFav = path.join(process.cwd(), 'favicon.svg');
-  if (fs.existsSync(rootFav)) {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    return res.sendFile(rootFav);
-  }
-  res.status(404).end();
-});
-
-// Handle API routes
-app.all(/^\/api(\/.*)?$/, async (req, res, next) => {
-  try {
-    await handler(req, res);
-  } catch (err) {
-    next(err);
+// Fallback for API routes that were unmatched
+app.use('/api', (req, res) => {
+  if (!res.headersSent) {
+    res.status(404).json({ error: 'API route not found' });
   }
 });
 
-// Fallback to index.html for SPA routes
+// Fallback to index.html for SPA client routes
 app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
   if (req.method !== 'GET') return next();
   res.sendFile(path.join(process.cwd(), 'index.html'));
 });

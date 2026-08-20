@@ -1,11 +1,46 @@
 [
   {
-    "id": "1",
+    "id": "vip_1",
     "display_code": "TESTVIP2026",
     "internal_ref": "TESTVIP2026",
-    "max_uses": 100,
+    "code_hash": "d3934d7bc79c963e799ec79f0bd098529183d107cc64a66655ae04873c4fa370",
+    "max_uses": 1000,
+    "uses": 2,
+    "active": true,
+    "assigned_to": "Beta Tester",
+    "created_at": "2026-08-20T10:57:49.837Z"
+  },
+  {
+    "id": "vip_2",
+    "display_code": "JYOTISH2026",
+    "internal_ref": "JYOTISH2026",
+    "code_hash": "8ff0bf49a5f9ce469d6d225b2fd9a458e39c69d294052a6cece8ece12a567b41",
+    "max_uses": 1000,
+    "uses": 1,
+    "active": true,
+    "assigned_to": "Astrologer Partner",
+    "created_at": "2026-08-20T10:57:49.838Z"
+  },
+  {
+    "id": "vip_3",
+    "display_code": "VIP2026",
+    "internal_ref": "VIP2026",
+    "code_hash": "ad020949c04a1d1e5b84bcbd87dfde8506a7c86c4d2968287a193b336a8a1c8b",
+    "max_uses": 1000,
+    "uses": 1,
+    "active": true,
+    "assigned_to": "Master Access",
+    "created_at": "2026-08-20T10:57:49.838Z"
+  },
+  {
+    "id": "vip_4",
+    "display_code": "VIP100",
+    "internal_ref": "VIP100",
+    "code_hash": "03b8e26ab4bd05766e415039efc0a1e2cdafc31e5c3cc3e3c3a91757b889d197",
+    "max_uses": 1000,
     "uses": 0,
     "active": true,
-    "createdAt": "2026-08-19T00:00:00Z"
+    "assigned_to": "VIP Tier",
+    "created_at": "2026-08-20T10:57:49.838Z"
   }
 ]
