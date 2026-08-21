@@ -457,17 +457,61 @@ export default async function handler(req,res){
 
     if (req.method==='POST'&&path==='/verify-promo') {
        const b = await readBody(req);
-       const codeStr = (b.code || '').toUpperCase().trim();
-       let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+       const codeStr = (b.code || '').trim();
+       const upperCode = codeStr.toUpperCase();
+       
+       // 1. Try finding as active promo code
+       let found = inMemoryPromoCodes.find(x => x.code === upperCode && x.active);
        if (!found) {
          try { 
-           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
+           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&limit=1`);
            if (data && data[0]) found = data[0];
          } catch {}
        }
        if (found) {
          return json(res, 200, { valid: true, code: found.code, discount_percentage: found.discount_percentage, free_chat_minutes: found.free_chat_minutes, message: "Promo code applied successfully!" });
        }
+
+       // 2. Try finding as active VIP code
+       const hUpper = hashCode(upperCode);
+       const hRaw = hashCode(codeStr);
+       let isVipValid = false;
+       
+       try {
+         const data = await db.rpc('consume_vip_code', { p_hash: hUpper });
+         const row = data && data[0];
+         if (row && row.valid) {
+           isVipValid = true;
+         }
+       } catch {}
+
+       if (!isVipValid) {
+         const memCode = inMemoryVipCodes.find(x => 
+           (x.code_hash === hUpper || x.code_hash === hRaw ||
+            (x.display_code && x.display_code.toUpperCase() === upperCode) ||
+            (x.internal_ref && x.internal_ref.toUpperCase() === upperCode) ||
+            (x.id && String(x.id).toUpperCase() === upperCode)) &&
+           x.active !== false &&
+           (x.uses === undefined || x.uses < (x.max_uses || 1000))
+         );
+
+         if (memCode) {
+           memCode.uses = (memCode.uses || 0) + 1;
+           saveJsonFile('vip_codes.json', inMemoryVipCodes);
+           isVipValid = true;
+         }
+       }
+
+       if (isVipValid) {
+         return json(res, 200, { 
+           valid: true, 
+           code: upperCode, 
+           discount_percentage: 100, 
+           is_vip: true, 
+           message: "✨ VIP Access Code applied successfully!" 
+         });
+       }
+
        return json(res, 400, { valid: false, error: 'Invalid or expired promo code.' });
     }
 

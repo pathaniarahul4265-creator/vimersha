@@ -217,17 +217,17 @@ async function validatePremiumSession(sessionToken, vipToken) {
   return true; // Bypass for now so AI can generate reports
 }
 
-export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') {
+export function sanitizeModelName(modelName, defaultModel = 'gemini-2.5-flash') {
   if (!modelName) return defaultModel;
   const m = String(modelName).trim().replace(/^models\//, '');
   // Sanitize deprecated models to modern valid models
-  if (/^(gemini-1\.5|gemini-2\.0|gemini-2\.5|gemini-pro$)/i.test(m)) {
+  if (/^(gemini-1\.5|gemini-2\.0|gemini-pro$)/i.test(m)) {
     return defaultModel;
   }
   return m;
 }
 
-export function normalizeModel(m, defaultModel = 'gemini-3.7-flash') {
+export function normalizeModel(m, defaultModel = 'gemini-2.5-flash') {
   return sanitizeModelName(m, defaultModel);
 }
 
@@ -250,8 +250,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
     throw err;
   }
 
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
-  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-2.5-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-2.5-pro');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
@@ -262,8 +262,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   };
   addCandidate(primaryModel);
   addCandidate(fallbackModel);
-  addCandidate('gemini-3.7-flash');
-  addCandidate('gemini-3.1-flash-lite');
+  addCandidate('gemini-2.5-flash');
+  addCandidate('gemini-2.5-pro');
 
   let lastErr = null;
 
@@ -295,8 +295,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
           maxOutputTokens: Math.max(256, Number(maxTokens) || 8192),
         };
 
-        // Enable low thinking for fast generation without hitting token/latency limits
-        if (modelToTry.includes('3.7') || modelToTry.includes('3.1')) {
+        // Enable low thinking for pro/reasoning models
+        if (modelToTry.includes('pro') || modelToTry.includes('3.7') || modelToTry.includes('3.1')) {
           configPayload.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
         }
 

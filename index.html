@@ -14156,8 +14156,7 @@ document.getElementById("chatSend").onclick = () => __async(this, null, function
 
   const isVipQuestion = window.isVipActive ? window.isVipActive() : Boolean(window.vipAccess || document.body.classList.contains("vip-active") || (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || window.isVipUser);
 
-  const hasTimer = typeof chatTimerSeconds !== "undefined" && chatTimerSeconds > 0;
-  if (!isVipQuestion && !hasTimer && !(window.SERVER_CONFIG?.features?.chat === false)) {
+  if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {
     if (chatTimerSeconds <= 0) {
       alert("Please select a time package to start or continue the consultation.");
       return;
@@ -14534,6 +14533,12 @@ window.closeCompanyModal = function() {
   window.enableVipAccess = function() {
     window.vipAccess = true;
     document.body.classList.add("vip-active");
+    if (typeof updateVipUi === "function") {
+      updateVipUi();
+    }
+    if (typeof window.updateChatTimerDisplay === "function") {
+      window.updateChatTimerDisplay();
+    }
     const genBtn = $("genBtn");
     if (genBtn)
       genBtn.textContent = "Cast this chart (VIP Unlocked)";
@@ -14676,7 +14681,8 @@ window.closeCompanyModal = function() {
             if (data && data.valid) {
               window.activePromoCode = data;
               window.enableVipAccess();
-              alert(`Promo code "${data.code}" applied successfully! Discount: ${data.discount_percentage}% OFF`);
+              const msg = data.message || `Promo code "${data.code}" applied successfully! Discount: ${data.discount_percentage}% OFF`;
+              alert(msg);
               $("promoInput").value = "";
               apiVerified = true;
             }
@@ -14686,15 +14692,7 @@ window.closeCompanyModal = function() {
         }
 
         if (!apiVerified) {
-          const promoCodes = JSON.parse(localStorage.getItem("jyotish_promo_codes") || "[]");
-          // Accept stored promos, PROMO100, or any code starting with VIP (per user request)
-          if (promoCodes.includes(code) || code === "PROMO100" || code.toUpperCase().startsWith("VIP")) {
-               window.enableVipAccess();
-               alert("Code applied successfully!");
-               $("promoInput").value = "";
-          } else {
-               alert("Invalid code");
-          }
+          alert("Invalid or expired promo code.");
         }
     }
   }));
