@@ -1,0 +1,89 @@
+8469:      } catch (e) {
+8476:      } catch (e) {
+8494:    } catch (e) {
+8529:      } catch (e) {
+8536:      } catch (e) {
+8752:  } catch (err) {
+9731:  } catch (e) {
+10238:  } catch (err) {
+10268:  } catch (err) {
+10395:  } catch (err) {
+10532:  } catch (e) {
+10635:  } catch (e) {
+11065:    } catch (networkErr) {
+11128:    } catch (err) {
+11498:      } catch (e) {
+11522:        } catch (e) {
+11527:      } catch (e) {
+11794:  } catch (e) {
+11803:  } catch (e) {
+11816:      } catch (e) {
+11832:    } catch (err) {
+12000:    } catch (networkErr) {
+12009:    } catch (parseErr) {
+12035:      } catch (err) {
+13050:      } catch (err) {
+13110:      } catch (err) {
+13204:    } catch (e) {
+14239:  } catch (err) {
+14410:    } catch (e) {
+14440:    } catch (err) {
+14473:      const j = yield r.json().catch(() => ({}));
+14488:    } catch (err) {
+14520:      } catch (e2) {
+14538:    } catch (err) {
+14581:      } catch (e) {
+14612:      } catch (e2) {
+14624:    } catch (err) {
+14638:    } catch (e) {
+14680:          adminFetch("/api/admin/promos").catch(() => ({ promos: [] })),
+14682:          adminFetch("/api/admin/payments").catch(() => ({ payments: [] })),
+14683:          adminFetch("/api/admin/audit-logs").catch(() => ({ logs: [] })),
+14684:          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] })),
+14685:          adminFetch("/api/admin/promos").catch(() => ({ promos: [] }))
+14701:      } catch (e) {
+14770:        } catch (err) {
+14840:      } catch (err) {
+14921:      } catch (e) {
+14936:        } catch (e) {
+14939:          } catch (err2) {
+14973:          } catch (e) {
+14984:          } catch (e) {
+14997:          } catch (e) {
+15003:            } catch (err2) {
+15078:        } catch (e) {
+15088:         } catch(e) { alert("Could not clear reports."); }
+15177:          } catch (err) {
+15189:          } catch (err) {
+15295:       } catch (e) { alert(e.message); }
+15304:        } catch(e) { alert(e.message); }
+15385:      } catch (e) {
+16109:      } catch (e) {
+16116:      } catch (e) {
+16136:    } catch (e) {
+16145:    } catch (e) {
+16159:    } catch (e) {
+16171:      } catch (e) {}
+16249:          } catch (e) {
+16320:              } catch (err) {
+16335:      } catch (err) {
+16380:    } catch (e) {
+16394:    } catch (e) {
+17678:    } catch(e) {}
+17858:      try { input.focus(); } catch(e) {}
+17900:        try { if (item && item.osc) { item.osc.stop(0); item.osc.disconnect(); } } catch (e) {}
+17901:        try { if (item && item.gain) { item.gain.disconnect(); } } catch (e) {}
+17902:        try { if (item && item.lfo) { item.lfo.stop(0); item.lfo.disconnect(); } } catch (e) {}
+17911:      } catch (e) {}
+17976:        try { osc.disconnect(); gain.disconnect(); } catch(e) {}
+17987:      } catch(e) {}
+18872:      } catch (e) {
+18879:      } catch (e) {
+18894:  } catch (e) {
+18996:  } catch (e) {
+19040:  } catch (e) {
+19064:  } catch (e) {
+19072:  } catch (e) {
+19483:  } catch (e) {
+19673:  } catch (e) {
+19681:      } catch (e) {
