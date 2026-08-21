@@ -217,7 +217,7 @@ async function validatePremiumSession(sessionToken, vipToken) {
   return true; // Bypass for now so AI can generate reports
 }
 
-export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') {
+export function sanitizeModelName(modelName, defaultModel = 'gemini-3.6-flash') {
   if (!modelName) return defaultModel;
   const m = String(modelName).trim().replace(/^models\//, '');
   // Sanitize deprecated models to modern valid models
@@ -227,7 +227,7 @@ export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') 
   return m;
 }
 
-export function normalizeModel(m, defaultModel = 'gemini-3.7-flash') {
+export function normalizeModel(m, defaultModel = 'gemini-3.6-flash') {
   return sanitizeModelName(m, defaultModel);
 }
 
@@ -250,8 +250,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
     throw err;
   }
 
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
-  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.6-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.6-flash');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
@@ -262,7 +262,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   };
   addCandidate(primaryModel);
   addCandidate(fallbackModel);
-  addCandidate('gemini-3.7-flash');
+  addCandidate('gemini-3.6-flash');
   addCandidate('gemini-3.1-flash-lite');
 
   let lastErr = null;
@@ -307,7 +307,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
         });
 
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI generation timed out after 90 seconds')), 90000)
+          setTimeout(() => reject(new Error('AI generation timed out after 20 seconds')), 20000)
         );
 
         const response = await Promise.race([callPromise, timeoutPromise]);
