@@ -100,33 +100,33 @@
     }
     return "aries";
   };
-  window.getZodiacSvgUrl = function(signStr) {
-    const key = window.getZodiacSignKey(signStr);
-    if (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
-      return window.ZODIAC_EMBEDDED_SVGS[key];
-    }
-    return `/images/zodiac/${key}.svg`;
-  };
-  window.handleZodiacImgError = function(imgEl, signKey) {
-    if (!imgEl)
-      return;
-    const key = window.getZodiacSignKey(signKey || imgEl.getAttribute("data-sign") || imgEl.alt || "aries");
-    if (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
-      imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
-      imgEl.onerror = null;
-      return;
-    }
-    const count = parseInt(imgEl.dataset.retryCount || "0", 10);
-    imgEl.dataset.retryCount = String(count + 1);
-    if (count === 0) {
-      imgEl.src = `/images/zodiac/${key}.svg`;
-    } else if (count === 1) {
-      imgEl.src = `/images/zodiac/${key}.png`;
-    } else {
-      imgEl.onerror = null;
-    }
-  };
-})();
+ window.getZodiacSvgUrl = function(signStr) {
+  const key = window.getZodiacSignKey(signStr);
+  // Prefer files from the images folder
+  return `/images/zodiac/${key}.svg`;
+};
+
+window.handleZodiacImgError = function(imgEl, signKey) {
+  if (!imgEl) return;
+
+  const key = window.getZodiacSignKey(
+    signKey || imgEl.getAttribute("data-sign") || imgEl.alt || "aries"
+  );
+
+  const count = parseInt(imgEl.dataset.retryCount || "0", 10);
+  imgEl.dataset.retryCount = String(count + 1);
+
+  if (count === 0) {
+    // First try failed → try PNG
+    imgEl.src = `/images/zodiac/${key}.png`;
+  } else if (count === 1 && window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
+    // Still failed → use embedded as last fallback
+    imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
+    imgEl.onerror = null;
+  } else {
+    imgEl.onerror = null;
+  }
+};
 
 </script>
 <style>
