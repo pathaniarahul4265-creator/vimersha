@@ -6842,8 +6842,85 @@ p,
 }
 </style>
 
+
+<style>
+/* Vertical Dot Navigation */
+.dot-nav-container {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .dot-nav-container {
+    display: none; /* Hide on smaller screens */
+  }
+}
+.dot-nav-line {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: rgba(216, 160, 76, 0.25);
+  z-index: 0;
+}
+.dot-nav-item {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(12, 18, 30, 0.9);
+  border: 1.5px solid rgba(216, 160, 76, 0.4);
+  margin: 10px 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+.dot-nav-item:hover, .dot-nav-item.active {
+  background: #d8a04c;
+  border-color: #d8a04c;
+  transform: scale(1.3);
+  box-shadow: 0 0 10px rgba(216, 160, 76, 0.5);
+}
+.dot-nav-tooltip {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: rgba(12, 18, 30, 0.95);
+  color: #fce7b0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(216, 160, 76, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+.dot-nav-item:hover .dot-nav-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+</style>
 </head>
 <body>
+
+<!-- Dot Navigation -->
+<div class="dot-nav-container" id="dotNavContainer">
+  <div class="dot-nav-line"></div>
+</div>
+
 <canvas id="stardustCanvas" class="stardust-canvas"></canvas>
 <div class="cosmic-bg"></div>
 <div class="cosmic-aurora aurora-one"></div>
@@ -7720,6 +7797,7 @@ p,
         <p>Real-time interactive astrological consultation for 10 minutes.</p>
       </div>
 
+        </div>
     <div class="payment-form-wrap" style="margin-top:20px;">
       <div class="dakshina-preset-row" id="dakshinaPresets" style="display:none;">
         <button type="button" class="dakshina-chip" data-val="51">₹51</button>
@@ -19402,3 +19480,97 @@ window.updateFreeMoonTransitDisplay = function(signKey) {
 
 </script>
 <!-- Export preparation timestamp: Wed Aug 19 08:30:35 PM UTC 2026 -->
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sections = [
+    { id: 'introCard', label: 'Welcome' },
+    { id: 'currentSkyCard', label: 'Daily Rashifal' },
+    { id: 'setupCard', label: 'Cast Chart' },
+    { id: 'reportCard', label: 'Your Reading' },
+    { id: 'chatCard', label: 'Ask the Chart' }
+  ];
+
+  const container = document.getElementById("dotNavContainer");
+  if (!container) return;
+
+  const dots = [];
+
+  sections.forEach((sec, idx) => {
+    const dot = document.createElement("div");
+    dot.className = "dot-nav-item";
+    dot.dataset.target = sec.id;
+    
+    const tooltip = document.createElement("div");
+    tooltip.className = "dot-nav-tooltip";
+    tooltip.textContent = sec.label;
+    dot.appendChild(tooltip);
+
+    dot.addEventListener("click", () => {
+      let targetId = sec.id;
+      if (sec.id === 'setupCard') {
+        const kundliCard = document.getElementById('kundliSetupCard');
+        if (kundliCard && kundliCard.classList.contains('active')) {
+          targetId = 'kundliSetupCard';
+        }
+      }
+
+      const el = document.getElementById(targetId);
+      if (el && window.getComputedStyle(el).display !== 'none') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (sec.id === 'reportCard') {
+        // If report card is hidden, scroll to form instead
+        const setup = document.getElementById('setupCard');
+        if (setup) setup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+
+    container.appendChild(dot);
+    dots.push({ dot, id: sec.id });
+  });
+
+  const observerOptions = {
+    root: null,
+    rootMargin: '-20% 0px -60% 0px',
+    threshold: 0
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        dots.forEach(d => {
+          if (d.id === entry.target.id || (d.id === 'setupCard' && entry.target.id === 'kundliSetupCard')) {
+            d.dot.classList.add('active');
+          } else {
+            d.dot.classList.remove('active');
+          }
+        });
+      }
+    });
+  }, observerOptions);
+
+  sections.forEach(sec => {
+    const el = document.getElementById(sec.id);
+    if (el) observer.observe(el);
+  });
+  
+  const kundliCard = document.getElementById('kundliSetupCard');
+  if (kundliCard) observer.observe(kundliCard);
+
+  setInterval(() => {
+    dots.forEach(d => {
+      let targetId = d.id;
+      if (d.id === 'setupCard') {
+        const kCard = document.getElementById('kundliSetupCard');
+        if (kCard && kCard.classList.contains('active')) targetId = 'kundliSetupCard';
+      }
+      const el = document.getElementById(targetId);
+      if (el && window.getComputedStyle(el).display !== 'none') {
+        d.dot.style.display = 'block';
+      } else {
+        d.dot.style.display = 'none';
+      }
+    });
+  }, 1000);
+});
+</script>
