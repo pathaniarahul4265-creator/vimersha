@@ -12107,6 +12107,19 @@ function unlockChat() {
   const hint = document.getElementById("chatHint");
   if (hint)
     hint.remove();
+
+  // Instantly remove dark lock overlay and award 5 minutes of free consultation
+  const lock = document.getElementById("chatLockOverlay");
+  if (lock) lock.style.display = "none";
+  if (chatTimerSeconds <= 0) {
+    chatTimerSeconds = 5 * 60; // 5 minutes of live chat automatically!
+  }
+  if (window.updateChatTimerDisplay) window.updateChatTimerDisplay();
+  const inputEl = document.getElementById('chatInput');
+  if (inputEl) inputEl.disabled = false;
+  const sendEl = document.getElementById('chatSend');
+  if (sendEl) sendEl.disabled = false;
+
   updateChatCount();
 }
 function cleanAstroText(text) {
@@ -19869,15 +19882,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (lockOverlay) lockOverlay.style.display = "none";
         alert("VIP Access: 30 minutes of consultation granted.");
       } else {
-        const chatBanner = document.getElementById("chatPricingBanner");
-        if (chatBanner) {
-           const lockOverlay = document.getElementById("chatLockOverlay");
-           if (lockOverlay) lockOverlay.style.display = "none";
-           chatBanner.classList.add("highlight-pulse");
-           setTimeout(() => chatBanner.classList.remove("highlight-pulse"), 3000);
-        } else {
-           // if(window.openModal) window.openModal("paymentModal");
-        }
+        window.addChatTime(5);
+        const lockOverlay = document.getElementById("chatLockOverlay");
+        if (lockOverlay) lockOverlay.style.display = "none";
+        alert("Standard Trial Access Unlocked: 5 minutes of live consultation granted!");
       }
     });
   }
