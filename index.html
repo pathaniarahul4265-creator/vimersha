@@ -7405,6 +7405,9 @@ p,
     <span><strong id="dailyTrustCounterNumber">1,428 charts</strong> calculated today · Trusted by over 18,400+ seekers since 2026</span>
   </div>
   <button id="genBtn">Reveal the chart · ₹59</button>
+  <div style="text-align:center;margin-top:10px;">
+    <a href="#" onclick="event.preventDefault(); window.openPaymentModal('reveal')" style="color:var(--gold-soft);font-size:13px;text-decoration:underline;">Have a Promo/VIP Code? Click here</a>
+  </div>
   <div class="consent-row">
     <label class="consent-label"><input type="checkbox" id="f_consent"> I agree to the <a href="#" class="legal-link" data-modal="termsModal">Terms &amp; Conditions</a> and <a href="#" class="legal-link" data-modal="privacyModal">Privacy Policy</a></label>
   </div>
@@ -7491,6 +7494,9 @@ p,
     <div class="premium-gate-icon">✦</div>
     <div><strong>Detailed compatibility is ready.</strong><span>Unlock Mangal analysis, relationship patterns, timing, Yogas, Doshas and the complete compatibility synthesis.</span></div>
     <button id="unlockMatchBtn" type="button">Unlock detailed match · ₹99</button>
+    <div style="text-align:center;margin-top:10px;">
+      <a href="#" onclick="event.preventDefault(); window.openPaymentModal('match')" style="color:var(--gold-soft);font-size:13px;text-decoration:underline;">Have a Promo/VIP Code? Click here</a>
+    </div>
   </div>
   <div class="consent-row">
     <label class="consent-label"><input type="checkbox" id="k_consent"> I agree to the <a href="#" class="legal-link" data-modal="termsModal">Terms &amp; Conditions</a> and <a href="#" class="legal-link" data-modal="privacyModal">Privacy Policy</a></label>
@@ -7875,6 +7881,14 @@ p,
         <div><label>Your Name</label><input id="payNameInput" placeholder="Enter your full name"></div>
         <div><label>Email Address</label><input id="payEmailInput" type="email" placeholder="Enter your email"></div>
       </div>
+      <div style="margin-bottom:14px;background:rgba(216,160,76,0.06);padding:12px;border-radius:12px;border:1px dashed rgba(216,160,76,0.3);">
+        <label style="color:var(--gold-soft);margin-bottom:6px;display:block;">Promo / VIP Code</label>
+        <div style="display:flex;gap:8px;">
+          <input id="payPromoInput" placeholder="Enter code here" style="flex:1;background:rgba(0,0,0,0.2);border-color:rgba(216,160,76,0.2);">
+          <button type="button" id="applyPromoBtn" class="small secondary" style="padding:0 16px;white-space:nowrap;border-color:rgba(216,160,76,0.4);color:var(--gold-soft);">Apply</button>
+        </div>
+        <div id="promoStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
       
       <button type="button" id="payProceedBtn" class="primary-pay-btn">
         Proceed to Secure Payment (₹59)
@@ -7939,6 +7953,7 @@ p,
       <button class="admin-tab" data-admin-tab="feedback">Feedback</button>
       <button class="admin-tab" data-admin-tab="payments">Payments</button>
       <button class="admin-tab" data-admin-tab="vip">VIP Codes</button>
+      <button class="admin-tab" data-admin-tab="promo">Promo Codes</button>
       <button class="admin-tab" data-admin-tab="audit">Audit Logs 🔒</button>
       <button class="admin-tab" data-admin-tab="settings">Pricing & Features</button>
     </div>
@@ -7947,6 +7962,14 @@ p,
     <div id="adminFeedback" class="admin-view"></div>
     <div id="adminPayments" class="admin-view"></div>
     <div id="adminVip" class="admin-view"></div>
+    <div id="adminPromo" class="admin-view">
+      <h3>Promo Code Generator</h3>
+      <div class="admin-form">
+        <input id="promoPrefix" placeholder="Prefix (e.g. JYOTISH)" class="admin-input" style="padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.05); color: var(--ivory);">
+        <button id="generatePromoBtn" class="admin-btn" style="padding: 8px 16px; background: var(--gold-soft); border: none; border-radius: 6px; color: var(--cosmic);">Generate</button>
+      </div>
+      <p id="promoResult" style="margin-top: 15px; font-weight: bold; color: var(--gold-soft); font-size: 1.1em;"></p>
+    </div>
     <div id="adminAudit" class="admin-view"></div>
     <div id="adminSettings" class="admin-view"></div>
   </div>
@@ -14187,7 +14210,8 @@ document.getElementById("chatSend").onclick = () => __async(this, null, function
 
   const isVipQuestion = window.isVipActive ? window.isVipActive() : Boolean(window.vipAccess || document.body.classList.contains("vip-active") || (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || window.isVipUser);
 
-  if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {
+  const hasTimer = typeof chatTimerSeconds !== "undefined" && chatTimerSeconds > 0;
+  if (!isVipQuestion && !hasTimer && !(window.SERVER_CONFIG?.features?.chat === false)) {
     if (chatTimerSeconds <= 0) {
       alert("Please select a time package to start or continue the consultation.");
       return;
@@ -14334,6 +14358,9 @@ window.closeModal = function(id) {
   if (m) {
     m.classList.remove("open");
     m.setAttribute("aria-hidden", "true");
+    if (m.id === "paymentModal" || id === "paymentModal") {
+      window.dispatchEvent(new Event("payment-modal-closed"));
+    }
   }
 };
 window.openFeedbackModal = function() {
@@ -14427,6 +14454,41 @@ window.closeCompanyModal = function() {
       }
     });
   });
+  window.activePromoCode = null;
+  $("applyPromoBtn")?.addEventListener("click", async () => {
+    const code = $("payPromoInput")?.value.trim();
+    const st = $("promoStatus");
+    if (!code) return;
+    st.style.display = "block";
+    st.textContent = "Checking code...";
+    st.style.color = "var(--muted)";
+    try {
+      const res = await fetch("/api/verify-promo", {
+        method: "POST",
+        body: JSON.stringify({ code, plan: selectedPlan }),
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (!data.valid) {
+        st.textContent = data.error || "Invalid or expired code.";
+        st.style.color = "#ff6b6b";
+        window.activePromoCode = null;
+        return;
+      }
+      window.activePromoCode = data;
+      st.textContent = data.message || "Promo applied!";
+      st.style.color = "#4cbb80";
+      
+      const newAmount = Math.max(1, Math.round(selectedAmount * (1 - (data.discount_percentage / 100))));
+      selectedAmount = newAmount; // updates the local variable
+      const payBtn = $("payProceedBtn");
+      if (payBtn) payBtn.textContent = `Proceed to Secure Payment (₹${selectedAmount})`;
+    } catch (e) {
+      st.textContent = "Error verifying code.";
+      st.style.color = "#ff6b6b";
+    }
+  });
+
   (_f = $("payProceedBtn")) == null ? void 0 : _f.addEventListener("click", () => __async(this, null, function* () {
     var _a3, _b3;
     const st = $("paymentModalStatus");
@@ -14654,6 +14716,11 @@ window.closeCompanyModal = function() {
     adminToken = "";
     close("adminModal");
   }));
+  document.getElementById("generatePromoBtn")?.addEventListener("click", () => {
+    const prefix = document.getElementById("promoPrefix").value || "PROMO";
+    const code = prefix.toUpperCase() + "-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+    document.getElementById("promoResult").textContent = "Generated Code: " + code;
+  });
   (_k = $("adminRefreshBtn")) == null ? void 0 : _k.addEventListener("click", loadAdmin);
   function loadAdmin() {
     return __async(this, null, function* () {
@@ -14663,10 +14730,12 @@ window.closeCompanyModal = function() {
           adminFetch("/api/admin/reports"),
           adminFetch("/api/admin/feedback"),
           adminFetch("/api/admin/vip"),
+          adminFetch("/api/admin/promos").catch(() => ({ promos: [] })),
           adminFetch("/api/admin/settings"),
           adminFetch("/api/admin/payments").catch(() => ({ payments: [] })),
           adminFetch("/api/admin/audit-logs").catch(() => ({ logs: [] })),
-          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] }))
+          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] })),
+          adminFetch("/api/admin/promos").catch(() => ({ promos: [] }))
         ]);
         const reports = r.reports || [];
         const feedback = f.feedback || [];
@@ -15057,7 +15126,7 @@ window.closeCompanyModal = function() {
         const id = b.dataset.reportDelete;
         if (!confirm("Are you sure you want to delete this report?")) return;
         try {
-          await window.adminFetch("/api/admin/reports/" + id, { method: "DELETE" });
+          await adminFetch("/api/admin/reports/" + id, { method: "DELETE" });
           window.loadAdmin();
         } catch (e) {
           alert("Could not delete report.");
@@ -15067,7 +15136,7 @@ window.closeCompanyModal = function() {
       if (clearBtn) clearBtn.onclick = async () => {
          if (!confirm("Are you sure you want to wipe ALL reports? This is irreversible.")) return;
          try {
-           await window.adminFetch("/api/admin/reports", { method: "DELETE" });
+           await adminFetch("/api/admin/reports", { method: "DELETE" });
            window.loadAdmin();
          } catch(e) { alert("Could not clear reports."); }
       };
@@ -15232,6 +15301,64 @@ ${item.message}`);
     };
     attachEvents();
   }
+  function renderPromos(rows) {
+    const container = $("adminPromo");
+    const renderTable = (items) => {
+      return `
+      <div class="admin-setting-card" style="margin-bottom:14px;background:rgba(216,160,76,0.03);">
+        <h3 style="margin-top:0;">Generate New Promo Code</h3>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+          <div><label>Custom Code (Optional)</label><input id="newPromoCode" placeholder="e.g. DIWALI50" style="width:160px;"></div>
+          <div><label>Discount %</label><input id="newPromoDiscount" type="number" min="0" max="100" value="50" style="width:100px;"></div>
+          <div><label>Free Chat Mins</label><input id="newPromoChat" type="number" min="0" value="0" style="width:120px;"></div>
+          <button id="generatePromoBtn" type="button" class="small" style="height:36px;">Create Code</button>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Promo Code</th><th>Discount</th><th>Free Chat Mins</th><th>Active</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            ${items.length ? items.map((r) => `
+              <tr>
+                <td><b>${esc(r.code)}</b></td>
+                <td><span class="admin-badge">${r.discount_percentage}% OFF</span></td>
+                <td>${r.free_chat_minutes > 0 ? `<span class="admin-badge paid">${r.free_chat_minutes} Mins</span>` : '-'}</td>
+                <td>${r.active ? '<span class="admin-status-pill ok">Yes</span>' : '<span class="admin-status-pill err">No</span>'}</td>
+                <td><button class="small secondary delete-promo-btn" data-id="${r.id}" style="color:#ff6b6b;border-color:rgba(255,100,100,0.3);">🗑</button></td>
+              </tr>
+            `).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No promo codes found</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+    };
+    container.innerHTML = renderTable(rows);
+    
+    $("generatePromoBtn")?.addEventListener("click", async () => {
+       const code = $("newPromoCode").value.trim();
+       const discount_percentage = parseInt($("newPromoDiscount").value) || 0;
+       const free_chat_minutes = parseInt($("newPromoChat").value) || 0;
+       try {
+         await adminFetch("/api/admin/promos", {
+           method: "POST",
+           body: JSON.stringify({ code, discount_percentage, free_chat_minutes })
+         });
+         loadAdmin();
+       } catch (e) { alert(e.message); }
+    });
+    
+    document.querySelectorAll(".delete-promo-btn").forEach(b => {
+      b.onclick = async () => {
+        if(!confirm("Delete this promo code?")) return;
+        try {
+           await adminFetch("/api/admin/promos/" + b.dataset.id, { method: "DELETE" });
+           loadAdmin();
+        } catch(e) { alert(e.message); }
+      };
+    });
+  }
+
   function renderSettings(s) {
     const disc = s.offer_enabled === "1";
     $("adminSettings").innerHTML = `
@@ -16111,7 +16238,7 @@ var __async = (__this, __arguments, generator) => {
 
   function pay(plan, customAmount, customPrefill) {
     return __async(this, null, function* () {
-      return true; // Bypassed for testing both VIP and normal
+      // Remove bypass for real payments
       if (window.isVipActive() && plan !== "dakshina")
         return true;
       if (!enabled(plan) && plan !== "dakshina") {
@@ -16126,8 +16253,10 @@ var __async = (__this, __arguments, generator) => {
       const p = cfg.plans[plan] || { title: plan === "questions_pack" ? "5 Questions Value Pack" : "Voluntary Sacred Dakshina", amountINR: customAmount || (plan === "questions_pack" ? 100 : 251) };
       try {
         const payload = { plan };
-        if (customAmount)
-          payload.amount = Math.round(customAmount * 100);
+        if (customAmount) payload.amount = Math.round(customAmount * 100);
+        if (window.activePromoCode && window.activePromoCode.code) {
+          payload.promoCode = window.activePromoCode.code;
+        }
         const r = yield fetch(cfg.createOrderEndpoint || "/api/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -16165,6 +16294,9 @@ var __async = (__this, __arguments, generator) => {
               window.lastPaymentRef = "pay_demo_verified";
               window.lastSessionToken = sessionToken;
               window.dispatchEvent(new CustomEvent("premium-unlocked", { detail: { plan } }));
+              if (window.activePromoCode && window.activePromoCode.free_chat_minutes) {
+                 window.addChatTime(window.activePromoCode.free_chat_minutes);
+              }
               return true;
             }
           } catch (e) {
@@ -16234,6 +16366,9 @@ var __async = (__this, __arguments, generator) => {
                 window.lastPaymentRef = resp.razorpay_payment_id;
                 window.lastSessionToken = sessionToken;
                 window.dispatchEvent(new CustomEvent("premium-unlocked", { detail: { plan } }));
+                if (window.activePromoCode && window.activePromoCode.free_chat_minutes) {
+                   window.addChatTime(window.activePromoCode.free_chat_minutes);
+                }
                 finish(true);
               } catch (err) {
                 alert(err.message || "Payment signature verification failed.");
@@ -16256,7 +16391,35 @@ var __async = (__this, __arguments, generator) => {
       }
     });
   }
-  window.requestPaidAccess = pay;
+  window.requestPaidAccess = function(plan, customAmount, customPrefill) {
+    if (window.isVipActive() && plan !== "dakshina") return Promise.resolve(true);
+    if (plan === "reveal" && entitlements.reveal) return Promise.resolve(true);
+    if (plan === "match" && entitlements.match) return Promise.resolve(true);
+    
+    if (customPrefill) {
+      return pay(plan, customAmount, customPrefill);
+    }
+    return new Promise((resolve) => {
+      window.openPaymentModal(plan);
+      
+      const successHandler = (e) => {
+        if (e.detail && e.detail.plan === plan) {
+          window.removeEventListener("premium-unlocked", successHandler);
+          window.removeEventListener("payment-modal-closed", closeHandler);
+          resolve(true);
+        }
+      };
+      
+      const closeHandler = () => {
+        window.removeEventListener("premium-unlocked", successHandler);
+        window.removeEventListener("payment-modal-closed", closeHandler);
+        resolve(false);
+      };
+
+      window.addEventListener("premium-unlocked", successHandler);
+      window.addEventListener("payment-modal-closed", closeHandler);
+    });
+  };
 
   window.resetPaymentSession = () => {
     entitlements.reveal = false;
@@ -18849,40 +19012,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.textContent = `Proceed to Secure Payment (\u20B9${val})`;
     });
   });
-  (_a = document.getElementById("payProceedBtn")) == null ? void 0 : _a.addEventListener("click", () => __async(this, null, function* () {
-    const status = document.getElementById("paymentModalStatus");
-    if (status) {
-      status.style.display = "block";
-      status.className = "coord-status";
-      status.textContent = "Processing payment request\u2026";
-    }
-    try {
-      const plan = window.activePaymentPlan || "reveal";
-      const success = yield window.requestPaidAccess(plan);
-      if (success) {
-        if (status) {
-          status.className = "coord-status success";
-          status.textContent = "\u2728 Payment Verified & Unlocked!";
-        }
-        setTimeout(() => {
-          window.closeModal("paymentModal");
-          if (status)
-            status.style.display = "none";
-        }, 1200);
-      } else {
-        if (status) {
-          status.className = "coord-status error";
-          status.textContent = "Payment was not completed.";
-        }
-      }
-    } catch (err) {
-      if (status) {
-        status.className = "coord-status error";
-        status.textContent = err.message || "Payment failed.";
-      }
-    }
-  }));
-  (_b = document.getElementById("premiumUnlockBtn")) == null ? void 0 : _b.addEventListener("click", () => {
     window.openPaymentModal("reveal");
   });
   
@@ -18909,7 +19038,6 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (plan === "chat_time_20") window.addChatTime(20);
     else if (plan === "chat_time_30") window.addChatTime(30);
   });
-});
 window.setVedicTheme = function(themeName) {
   const allowed = ["cosmic", "dawn", "temple", "lunar", "saffron", "day"];
   if (!allowed.includes(themeName))

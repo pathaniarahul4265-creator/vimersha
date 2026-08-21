@@ -139,6 +139,7 @@ const inMemoryReports = loadJsonFile('reports.json', []);
 const inMemoryFeedback = loadJsonFile('feedback.json', []);
 const inMemoryPayments = loadJsonFile('payments.json', []);
 const inMemoryVipCodes = loadJsonFile('vip_codes.json', []);
+const inMemoryPromoCodes = loadJsonFile('promo_codes.json', []);
 const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
   chat_time_3: '19',
@@ -418,6 +419,58 @@ export default async function handler(req,res){
       }
     }
 
+    
+    if(req.method==='GET'&&path==='/admin/promos'){
+      let dbCodes = [];
+      try { dbCodes = await db.select('promo_codes','select=*&order=created_at.desc&limit=500'); } catch {}
+      const merged = [...inMemoryPromoCodes, ...(Array.isArray(dbCodes) ? dbCodes : [])];
+      return json(res, 200, { promos: merged });
+    }
+    
+    if(req.method==='POST'&&path==='/admin/promos'){
+      const b = await readBody(req);
+      const plain = (b.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      if (!plain) return json(res, 400, { error: 'Invalid promo code format.' });
+      
+      const item = {
+        id: 'promo_' + Date.now(),
+        code: plain,
+        discount_percentage: Math.min(100, Math.max(0, Number(b.discount_percentage) || 0)),
+        free_chat_minutes: Math.max(0, Number(b.free_chat_minutes) || 0),
+        active: true,
+        created_at: new Date().toISOString()
+      };
+      inMemoryPromoCodes.unshift(item);
+      saveJsonFile('promo_codes.json', inMemoryPromoCodes);
+      try { await db.insert('promo_codes', item); } catch {}
+      return json(res, 200, { ok: true, promo: item });
+    }
+    
+    const pdel = path.match(/^\/admin\/promos\/([^/]+)$/);
+    if(req.method==='DELETE'&&pdel){
+       const id = pdel[1];
+       const idx = inMemoryPromoCodes.findIndex(x => x.id === id);
+       if (idx >= 0) { inMemoryPromoCodes.splice(idx, 1); saveJsonFile('promo_codes.json', inMemoryPromoCodes); }
+       try { await db.delete('promo_codes', `id=eq.${encodeURIComponent(id)}`); } catch {}
+       return json(res, 200, { ok: true });
+    }
+
+    if (req.method==='POST'&&path==='/verify-promo') {
+       const b = await readBody(req);
+       const codeStr = (b.code || '').toUpperCase().trim();
+       let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+       if (!found) {
+         try { 
+           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
+           if (data && data[0]) found = data[0];
+         } catch {}
+       }
+       if (found) {
+         return json(res, 200, { valid: true, code: found.code, discount_percentage: found.discount_percentage, free_chat_minutes: found.free_chat_minutes, message: "Promo code applied successfully!" });
+       }
+       return json(res, 400, { valid: false, error: 'Invalid or expired promo code.' });
+    }
+
     if(req.method==='POST'&&path==='/create-order'){
       try {
         const b = await readBody(req);
@@ -431,13 +484,40 @@ export default async function handler(req,res){
           const s = await getSettings();
           if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
           const cfg = pricing(s);
-          amount = Math.max(100, Math.round((cfg.prices[plan] || (plan === 'questions_pack' ? 100 : 59)) * 100));
+          let baseAmt = (cfg.prices[plan] || (plan === 'questions_pack' ? 100 : 59)) * 100;
+          if (b.promoCode) {
+            const codeStr = b.promoCode.toUpperCase().trim();
+            let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+            if (!found) {
+              try { 
+                const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
+                if (data && data[0]) found = data[0];
+              } catch {}
+            }
+            if (found && found.discount_percentage > 0) {
+               baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
+            }
+          }
+          amount = Math.max(100, Math.round(baseAmt));
         }
 
         if (isNaN(amount) || amount < 100) {
           return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
         }
 
+
+        // If 100% free due to promo code or base price
+        if (amount <= 100 && b.promoCode) {
+           const sessionToken = crypto.randomBytes(32).toString('hex');
+           return json(res, 200, {
+             id: 'free_order_' + Date.now(),
+             amount: 0,
+             currency: 'INR',
+             sessionToken,
+             isDemo: true // We can use the demo flow to auto-verify it on frontend
+           });
+        }
+        
         const key_id = getRazorpayKeyId();
         const key_secret = getRazorpayKeySecret();
         const isLive = Boolean(key_id && key_secret);
@@ -498,8 +578,8 @@ export default async function handler(req,res){
         if (rows && rows[0]) row = rows[0];
       } catch {}
 
-      // If running in demo mode or without live gateway keys, auto-verify seamlessly
-      if (String(razorpay_order_id).startsWith('order_demo_') || !activeSecret || (row && row.is_demo)) {
+      // If running in demo mode, free promo order, or without live gateway keys, auto-verify seamlessly
+      if (String(razorpay_order_id).startsWith('free_order_') || String(razorpay_order_id).startsWith('order_demo_') || !activeSecret || (row && row.is_demo)) {
         if (row) {
           row.status = 'paid';
           row.payment_id = razorpay_payment_id || `pay_demo_${Date.now()}`;
@@ -597,6 +677,18 @@ export default async function handler(req,res){
       const upperCode = rawCode.toUpperCase();
       const hUpper = hashCode(upperCode);
       const hRaw = hashCode(rawCode);
+
+      // Check for Promo codes that grant 100% discount
+      let foundPromo = inMemoryPromoCodes.find(x => x.code === upperCode && x.active && x.discount_percentage === 100);
+      if (!foundPromo) {
+         try {
+           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&discount_percentage=eq.100&limit=1`);
+           if (data && data[0]) foundPromo = data[0];
+         } catch {}
+      }
+      if (foundPromo) {
+         return json(res, 200, { valid: true, access: 'all' });
+      }
 
       try {
         const data = await db.rpc('consume_vip_code', { p_hash: hUpper });
