@@ -217,17 +217,17 @@ async function validatePremiumSession(sessionToken, vipToken) {
   return true; // Bypass for now so AI can generate reports
 }
 
-export function sanitizeModelName(modelName, defaultModel = 'gemini-2.5-flash') {
+export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') {
   if (!modelName) return defaultModel;
   const m = String(modelName).trim().replace(/^models\//, '');
   // Sanitize deprecated models to modern valid models
-  if (/^(gemini-1\.5|gemini-2\.0|gemini-pro$)/i.test(m)) {
+  if (/^(gemini-1\.5|gemini-2\.0|gemini-2\.5|gemini-pro$)/i.test(m)) {
     return defaultModel;
   }
   return m;
 }
 
-export function normalizeModel(m, defaultModel = 'gemini-2.5-flash') {
+export function normalizeModel(m, defaultModel = 'gemini-3.7-flash') {
   return sanitizeModelName(m, defaultModel);
 }
 
@@ -250,8 +250,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
     throw err;
   }
 
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-2.5-flash');
-  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-2.5-pro');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
@@ -262,8 +262,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   };
   addCandidate(primaryModel);
   addCandidate(fallbackModel);
-  addCandidate('gemini-2.5-flash');
-  addCandidate('gemini-2.5-pro');
+  addCandidate('gemini-3.7-flash');
+  addCandidate('gemini-3.1-flash-lite');
 
   let lastErr = null;
 
