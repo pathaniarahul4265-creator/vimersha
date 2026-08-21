@@ -14712,7 +14712,7 @@ window.closeCompanyModal = function() {
     return __async(this, null, function* () {
       var _a3;
       try {
-        const [r, f, v, s, p, a, gq] = yield Promise.all([
+        const [r, f, v, pr, s, p, a, gq] = yield Promise.all([
           adminFetch("/api/admin/reports"),
           adminFetch("/api/admin/feedback"),
           adminFetch("/api/admin/vip"),
@@ -14720,12 +14720,12 @@ window.closeCompanyModal = function() {
           adminFetch("/api/admin/settings"),
           adminFetch("/api/admin/payments").catch(() => ({ payments: [] })),
           adminFetch("/api/admin/audit-logs").catch(() => ({ logs: [] })),
-          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] })),
-          adminFetch("/api/admin/promos").catch(() => ({ promos: [] }))
+          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] }))
         ]);
         const reports = r.reports || [];
         const feedback = f.feedback || [];
         const vips = v.codes || [];
+        const promos = pr.promos || [];
         const settings = s.settings || {};
         const payments = p.payments || [];
         const logs = a.logs || [];
@@ -14735,6 +14735,7 @@ window.closeCompanyModal = function() {
         renderFeedback(feedback);
         renderPayments(payments);
         renderVip(vips);
+        renderPromos(promos);
         renderAuditLogs(logs);
         renderSettings(settings);
       } catch (e) {
