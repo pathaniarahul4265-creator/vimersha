@@ -9730,9 +9730,29 @@ function unlockChat() {
   updateChatCount();
 }
 function cleanAstroText(text) {
-  if (!text)
-    return "";
-  return String(text).replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/```[a-z]*\n[\s\S]*?```/g, "").replace(/^[ \t]*[\*\-_#]{3,}[ \t]*$/gm, "").replace(/^#{1,6}\s*(.*?)\s*#{1,6}$/gm, "### $1").replace(/^([ \t]*[•\-\*+]\s*)\*+([^*\n]+)\*+/gm, "$1**$2**").replace(/[\+\|](?:---+[\+\|])+/g, "").replace(/\bundefined\b/g, "").replace(/\bnull\b/g, "").trim();
+  if (!text) return "";
+  let s = String(text)
+    .replace(/\r/g, "")
+    .replace(/```[a-z]*\n[\s\S]*?```/gi, "")
+    .replace(/\bundefined\b/gi, "")
+    .replace(/\bnull\b/gi, "");
+  s = s.split("\n").map(line => {
+    let x = String(line).trim();
+    if (!x) return "";
+    if (/^[#*\-_+=~`\s]{1,20}$/.test(x)) return "";
+    x = x.replace(/^(?:[#*]+)\s*(?:[#*]+)\s*/g, "");
+    x = x.replace(/\s*(?:[#*]+)\s*$/g, "");
+    const hm = x.match(/^#{1,6}\s*(.+)$/);
+    if (hm) return "### " + hm[1].replace(/^[#*]+\s*/, "").trim();
+    x = x.replace(/#\*\*?/g, "**").replace(/\*\*?#/g, "**");
+    return x;
+  }).join("\n");
+  return s
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/^[ \t]*[\*\-_#]{3,}[ \t]*$/gm, "")
+    .replace(/[\+\|](?:---+[\+\|])+/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 function getCardThemeClass(label) {
   const l = String(label || "").toLowerCase();
@@ -11752,7 +11772,13 @@ document.getElementById("chatSend").onclick = () => __async(this, null, function
     alert("You have used all 5 questions for this reading. End the reading to start a new consultation.");
     return;
   }
-  
+
+  const isVipQuestion = Boolean(window.vipAccess || document.body.classList.contains("vip-active"));
+  if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {
+    const questionPaid = yield window.requestPaidAccess("question");
+    if (!questionPaid) return;
+  }
+
   chatQuestionsUsed++;
   updateChatCount();
   if (input) input.value = "";
@@ -11823,7 +11849,7 @@ Structure your answer with:
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
     appendChat("model", text, currentQIndex, topicInfo);
     chatHistory.push({ role: "model", text });
-    if (window.consumeQuestionCredit) window.consumeQuestionCredit();
+    if (!isVipQuestion && window.consumeQuestionCredit) window.consumeQuestionCredit();
   } catch (err) {
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
     console.warn("Chat service synthesis fallback active:", err.message);
@@ -11866,7 +11892,7 @@ Based on your verified natal chart with **${asc}** Ascendant, **${moon}** Moon i
 
     appendChat("model", fallbackAnswer, currentQIndex, topicInfo);
     chatHistory.push({ role: "model", text: fallbackAnswer });
-    if (window.consumeQuestionCredit) window.consumeQuestionCredit();
+    if (!isVipQuestion && window.consumeQuestionCredit) window.consumeQuestionCredit();
   } finally {
     if (sendBtn) sendBtn.disabled = chatQuestionsUsed >= MAX_CHAT_QUESTIONS;
     renderReadingNavigator();
@@ -13609,7 +13635,7 @@ var __async = (__this, __arguments, generator) => {
   }
   function pay(plan, customAmount, customPrefill) {
     return __async(this, null, function* () {
-      if (vipAccess && plan !== "dakshina")
+      if ((vipAccess || window.vipAccess || document.body.classList.contains("vip-active")) && plan !== "dakshina")
         return true;
       if (!enabled(plan) && plan !== "dakshina") {
         alert("This feature is temporarily unavailable.");
@@ -13777,6 +13803,7 @@ var __async = (__this, __arguments, generator) => {
     document.body.classList.add("vip-active");
     try {
       localStorage.setItem("jyotish_vip_unlocked", "1");
+      if (window.lastVipCode) localStorage.setItem("jyotish_vip_code", window.lastVipCode);
     } catch (e) {
     }
     if (typeof updateVipUi === "function")
@@ -14884,6 +14911,7 @@ var __async = (__this, __arguments, generator) => {
 window.addEventListener("load", () => {
   try {
     if (localStorage.getItem("jyotish_vip_unlocked") === "1") {
+      window.lastVipCode = localStorage.getItem("jyotish_vip_code") || "";
       if (typeof window.enableVipAccess === "function")
         window.enableVipAccess();
     }
