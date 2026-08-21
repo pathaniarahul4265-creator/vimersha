@@ -4,16 +4,16 @@
     "label": "Primary (Key 1)",
     "masked": "AQ.Ab8...JShg",
     "day": "2026-08-21",
-    "requestsToday": 6,
+    "requestsToday": 12,
     "recentTimestamps": [
-      1787318240262,
-      1787318242007
+      1787322215173,
+      1787322260174
     ],
-    "estimatedTokensToday": 2694,
-    "totalSuccess": 20,
-    "totalFailures": 24,
-    "exhaustedUntil": 1787318252006,
-    "exhaustionReason": "Gateway / Server timeout (503)",
-    "lastUsed": "2026-08-21T13:17:22.007Z"
+    "estimatedTokensToday": 6869,
+    "totalSuccess": 23,
+    "totalFailures": 27,
+    "exhaustedUntil": 1787322204094,
+    "exhaustionReason": "",
+    "lastUsed": "2026-08-21T14:24:20.174Z"
   }
 }
