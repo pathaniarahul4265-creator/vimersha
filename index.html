@@ -14631,23 +14631,73 @@ window.closeCompanyModal = function() {
   }));
   (_k = $("adminRefreshBtn")) == null ? void 0 : _k.addEventListener("click", loadAdmin);
   
-  $("applyPromoBtn")?.addEventListener("click", () => {
+  $("applyPromoBtn")?.addEventListener("click", () => __async(this, null, function* () {
     const code = $("promoInput").value.trim();
-    if (code === "MySecretAdminPassword") {
+    if (!code) return;
+
+    let isAdminPassword = false;
+    try {
+      const base = window.location.origin;
+      const r = yield fetch(base + "/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: code }),
+        cache: "no-store"
+      });
+      if (r.ok) {
+        const j = yield r.json();
+        if (j.token) {
+          adminToken = j.token;
+          window.adminToken = j.token;
+          isAdminPassword = true;
+        }
+      }
+    } catch (e) {
+      console.warn("Silent admin verification failed/offline, fallback to offline rules:", e);
+    }
+
+    if (isAdminPassword) {
+        window.enableVipAccess();
         window.openAdminPortal();
         $("promoInput").value = "";
     } else {
-        const promoCodes = JSON.parse(localStorage.getItem("jyotish_promo_codes") || "[]");
-        // Accept stored promos, PROMO100, or any code starting with VIP (per user request)
-        if (promoCodes.includes(code) || code === "PROMO100" || code.toUpperCase().startsWith("VIP")) {
-             window.enableVipAccess();
-             alert("Code applied successfully!");
-             $("promoInput").value = "";
-        } else {
-             alert("Invalid code");
+        // Dynamic server-side promo code verification
+        let apiVerified = false;
+        try {
+          const base = window.location.origin;
+          const pr = yield fetch(base + "/api/verify-promo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code })
+          });
+          if (pr.ok) {
+            const data = yield pr.json();
+            if (data && data.valid) {
+              window.activePromoCode = data;
+              window.enableVipAccess();
+              alert(`Promo code "${data.code}" applied successfully! Discount: ${data.discount_percentage}% OFF`);
+              $("promoInput").value = "";
+              apiVerified = true;
+            }
+          }
+        } catch (err) {
+          console.warn("Dynamic promo verification failed, falling back to local check:", err);
+        }
+
+        if (!apiVerified) {
+          const promoCodes = JSON.parse(localStorage.getItem("jyotish_promo_codes") || "[]");
+          // Accept stored promos, PROMO100, or any code starting with VIP (per user request)
+          if (promoCodes.includes(code) || code === "PROMO100" || code.toUpperCase().startsWith("VIP")) {
+               window.enableVipAccess();
+               alert("Code applied successfully!");
+               $("promoInput").value = "";
+          } else {
+               alert("Invalid code");
+          }
         }
     }
-  });
+  }));
 
   $("generatePromoBtn")?.addEventListener("click", () => {
     const prefix = $("promoPrefix").value || "PROMO";
