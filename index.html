@@ -147,6 +147,102 @@ window.applyPricingToUI = function(cfg) {
 };
 })();
 </script>
+
+<style>
+/* Enhanced Chat UI */
+.chatlog {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chatlog .msg {
+  max-width: 85%;
+  line-height: 1.5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  position: relative;
+  animation: fadeIn 0.3s ease-out;
+}
+.chatlog .msg.user {
+  align-self: flex-end;
+  background: #b99355;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(185,147,85,0.25);
+}
+.chatlog .msg.model {
+  align-self: flex-start;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.chatinput {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+}
+.chatinput:focus-within {
+  border-color: #b99355;
+  box-shadow: 0 4px 12px rgba(185,147,85,0.15);
+}
+.chatinput textarea {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  line-height: 1.4;
+  font-size: 15px;
+  resize: none;
+}
+.chatinput textarea:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+.chatinput button {
+  background: #b99355;
+  color: #fff;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+.chatinput button:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+@media(max-width: 700px) {
+  .chatinput {
+    flex-direction: row;
+    border-radius: 24px;
+  }
+  .chatinput button {
+    width: 44px !important;
+    height: 44px;
+  }
+}
+</style>
 <style>
   @property --hue{
   syntax: '<angle>';
@@ -7567,15 +7663,21 @@ p,
 
 <div class="card" id="chatCard" style="display:none;">
   <h2 id="chatHeading">Ask the chart</h2>
-  <div class="chat-status"><span id="chatStatusHelpText">Consult the Jyotish Acharya on your natal chart, Dasha timeline, career trajectory, karmic relationships, or psychological gifts.</span><span class="chat-count" id="chatCount">₹29/question · 5 for ₹100</span></div>
+  <div class="chat-status"><span id="chatStatusHelpText">Consult the Jyotish Acharya on your natal chart, Dasha timeline, career trajectory, karmic relationships, or psychological gifts.</span><span class="chat-count" id="chatCount">Live interactive consultation</span></div>
   
-  <div class="chat-pricing-banner" id="chatPricingBanner" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:rgba(185,147,85,0.08);border:1px solid rgba(185,147,85,0.25);border-radius:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:6px;" id="chatCreditStatus">
-      <span>🪙 <strong>Question Credits:</strong> <span id="chatCreditsText" style="color:#b99355;font-weight:600;">0 available</span></span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;" id="chatPurchaseBtns">
-      <button id="buySingleQuestionBtn" type="button" class="small secondary" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;background:#fff;border:1px solid #d1d5db;color:#1f2937;">+ 1 Question (₹29)</button>
-      <button id="buyQuestionsPackBtn" type="button" class="small" style="padding:4px 12px;font-size:12px;border-radius:6px;cursor:pointer;background:#b99355;color:#fff;border:none;font-weight:600;">✨ 5 Questions Pack (₹100)</button>
+    <div class="chat-pricing-banner" id="chatPricingBanner" style="display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--card-bg);border:1px solid rgba(185,147,85,0.3);border-radius:10px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:20px;">⏱️</span> 
+        <span id="chatTimerDisplay" style="font-size:16px;font-weight:700;color:var(--text);font-variant-numeric: tabular-nums;">00:00</span>
+        <span id="chatTimerLabel" style="font-size:13px;color:var(--muted);">Remaining</span>
+      </div>
+      <div style="display:flex;gap:8px;" id="chatPurchaseBtns">
+        <button id="buyTime3Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">3 Min (₹19)</button>
+        <button id="buyTime10Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">10 Min (₹49)</button>
+        <button id="buyTime20Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">20 Min (₹89)</button>
+        <button id="buyTime30Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">30 Min (₹119)</button>
+      </div>
     </div>
   </div>
 
@@ -7586,7 +7688,7 @@ p,
   </div>
   <div class="chatinput">
     <textarea id="chatInput" placeholder="Ask a specific question about your chart…"></textarea>
-    <button id="chatSend">Ask</button>
+    <button id="chatSend" title="Send Question" aria-label="Send">➤</button>
   </div>
 </div>
 
@@ -7611,23 +7713,12 @@ p,
         <div class="plan-price">₹99</div>
         <p>36 Guna Milan, Ashta Koota breakdown, Manglik Dosha &amp; Bhakoot check.</p>
       </div>
-      <div class="plan-card" data-plan="question" data-amount="29">
-        <h3>Single Question</h3>
-        <div class="plan-price">₹29</div>
-        <p>Ask 1 specific chart-bound question to the Jyotish Acharya.</p>
-      </div>
-      <div class="plan-card" data-plan="questions_pack" data-amount="100">
+      <div class="plan-card" data-plan="chat_time_10" data-amount="49">
         <div class="plan-badge" style="background:#10b981;">Best Value</div>
-        <h3>5 Questions Pack</h3>
-        <div class="plan-price">₹100</div>
-        <p>Ask 5 detailed questions in one go. Save ₹45 compared to single questions.</p>
+        <h3>10 Min Live Chat</h3>
+        <div class="plan-price">₹49</div>
+        <p>Real-time interactive astrological consultation for 10 minutes.</p>
       </div>
-      <div class="plan-card" data-plan="dakshina" data-amount="251">
-        <h3>Voluntary Dakshina</h3>
-        <div class="plan-price">Custom</div>
-        <p>Offer a sacred contribution (₹51, ₹108, ₹251, ₹501, ₹1008) for astrology research.</p>
-      </div>
-    </div>
 
     <div class="payment-form-wrap" style="margin-top:20px;">
       <div class="dakshina-preset-row" id="dakshinaPresets" style="display:none;">
@@ -8224,12 +8315,9 @@ window.applyPricingToUI = function(cfg) {
   const chatHintSpan = document.getElementById("chatStatusHelpText") || document.querySelector(".chat-status span");
   if (chatHintSpan) {
     const isHi = window.currentVedicLang === "hi";
-    chatHintSpan.textContent = isHi ? `\u0915\u0941\u0902\u0921\u0932\u0940, \u0926\u0936\u093E, \u092F\u094B\u0917, \u0938\u0902\u092C\u0902\u0927 \u092F\u093E \u0915\u0930\u093F\u092F\u0930 \u0915\u0947 \u092C\u093E\u0930\u0947 \u092E\u0947\u0902 \u092A\u094D\u0930\u0936\u094D\u0928 \u092A\u0942\u091B\u0947\u0902\u0964 \u092A\u094D\u0930\u0924\u094D\u092F\u0947\u0915 \u092A\u094D\u0930\u0936\u094D\u0928 \u20B9${pQuestion} \u092F\u093E 5 \u092A\u094D\u0930\u0936\u094D\u0928\u094B\u0902 \u0915\u093E \u092A\u0948\u0915 \u20B9${pQuestionsPack} \u092E\u0947\u0902\u0964` : `Ask specific questions about the chart, Dasha, Yogas, relationships, or career. Single question is \u20B9${pQuestion} \xB7 5 questions pack for \u20B9${pQuestionsPack}.`;
+    chatHintSpan.textContent = isHi ? `कुंडली, दशा, योग, संबंध या करियर के बारे में प्रश्न पूछें।` : `Ask specific questions about the chart, Dasha, Yogas, relationships, or career. Live interaction packages available.`;
   }
-  const buySingleBtn = document.getElementById("buySingleQuestionBtn");
-  if (buySingleBtn) buySingleBtn.textContent = `+ 1 Question (₹${pQuestion})`;
-  const buyPackBtn = document.getElementById("buyQuestionsPackBtn");
-  if (buyPackBtn) buyPackBtn.textContent = `✨ 5 Questions Pack (₹${pQuestionsPack})`;
+
 
   const planCards = document.querySelectorAll("#paymentPlansGrid .plan-card");
   planCards.forEach((card) => {
@@ -11257,6 +11345,8 @@ let fullReportText = "";
 let chatHistory = [];
 let chatUnlocked = false;
 let chatQuestionsUsed = 0;
+let chatTimerSeconds = 0;
+let chatTimerInterval = null;
 const MAX_CHAT_QUESTIONS = 5;
 let activeSections = SECTIONS;
 let activeRules = RULES;
@@ -11843,33 +11933,45 @@ function showKeyRecovery(container, onRetry) {
     onRetry();
   };
 }
-function updateChatCount() {
-  const el = document.getElementById("chatCount");
-  const creditsBadge = document.getElementById("chatCreditsText");
-  const isVip = window.isVipActive ? window.isVipActive() : Boolean(window.vipAccess || document.body.classList.contains("vip-active") || (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || window.isVipUser);
 
-  if (isVip) {
-    if (el) el.innerHTML = `<span style="color:#b99355;font-weight:600;">👑 VIP Unlocked · Unlimited Questions</span>`;
-    if (creditsBadge) creditsBadge.textContent = "Unlimited (VIP)";
+window.startChatTimer = function() {
+  if (chatTimerInterval) return;
+  chatTimerInterval = setInterval(() => {
+    if (chatTimerSeconds > 0 && !window.vipAccess && !(document.body.classList.contains("vip-active"))) {
+      chatTimerSeconds--;
+      window.updateChatTimerDisplay();
+      if (chatTimerSeconds <= 0) {
+        clearInterval(chatTimerInterval);
+        chatTimerInterval = null;
+        document.getElementById('chatInput').disabled = true;
+        document.getElementById('chatSend').disabled = true;
+        alert("Your consultation time has expired. Please extend your time to continue.");
+      }
+    }
+  }, 1000);
+};
+
+window.updateChatTimerDisplay = function() {
+  const el = document.getElementById('chatTimerDisplay');
+  if (!el) return;
+  if (window.vipAccess || document.body.classList.contains("vip-active")) {
+    el.textContent = "Unlimited";
     return;
   }
+  const m = Math.floor(chatTimerSeconds / 60);
+  const s = chatTimerSeconds % 60;
+  el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+};
 
-  const credits = window.getQuestionCredits ? window.getQuestionCredits() : 0;
-  const pSingle = (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans && window.PAYWALL_CONFIG.plans.question && window.PAYWALL_CONFIG.plans.question.amountINR) || 29;
-  const pPack = (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans && window.PAYWALL_CONFIG.plans.questions_pack && window.PAYWALL_CONFIG.plans.questions_pack.amountINR) || 100;
+window.addChatTime = function(minutes) {
+  chatTimerSeconds += minutes * 60;
+  window.updateChatTimerDisplay();
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('chatSend').disabled = false;
+};
 
-  if (creditsBadge) {
-    creditsBadge.textContent = `${credits} available`;
-  }
 
-  if (el) {
-    if (credits > 0) {
-      el.innerHTML = `<span style="color:#10b981;font-weight:600;">✨ ${credits} question credit${credits > 1 ? 's' : ''} available</span>`;
-    } else {
-      el.innerHTML = `<span>₹${pSingle}/question · 5 for ₹${pPack}</span>`;
-    }
-  }
-}
+window.updateChatCount = function() {};
 function unlockChat() {
   var _a2, _b2;
   if (((_b2 = (_a2 = window.SERVER_CONFIG) == null ? void 0 : _a2.features) == null ? void 0 : _b2.chat) === false) {
@@ -13928,20 +14030,11 @@ document.getElementById("chatSend").onclick = () => __async(this, null, function
   const isVipQuestion = window.isVipActive ? window.isVipActive() : Boolean(window.vipAccess || document.body.classList.contains("vip-active") || (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || window.isVipUser);
 
   if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {
-    const credits = window.getQuestionCredits ? window.getQuestionCredits() : 0;
-    if (credits <= 0) {
-      const pSingle = (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans && window.PAYWALL_CONFIG.plans.question && window.PAYWALL_CONFIG.plans.question.amountINR) || 29;
-      const pPack = (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans && window.PAYWALL_CONFIG.plans.questions_pack && window.PAYWALL_CONFIG.plans.questions_pack.amountINR) || 100;
-      
-      const choosePack = confirm(`You have 0 question credits available.\n\nChoose your consultation option:\n• Click [OK] for 5 Questions Pack (₹${pPack}) — Best Value!\n• Click [Cancel] for Single Question (₹${pSingle})`);
-      
-      const planToPay = choosePack ? "questions_pack" : "question";
-      const paid = yield window.requestPaidAccess(planToPay);
-      if (!paid) return;
+    if (chatTimerSeconds <= 0) {
+      alert("Please select a time package to start or continue the consultation.");
+      return;
     }
-    if (window.consumeQuestionCredit) {
-      window.consumeQuestionCredit();
-    }
+    window.startChatTimer();
   }
 
   chatQuestionsUsed++;
@@ -14009,7 +14102,7 @@ Structure your answer with:
 4. Actionable Wisdom & Conclusion with Confidence Level (Empowering next steps, mindset shifts, and stated confidence level: High, Medium, or Low). Aim for approximately 600-900 words.`;
 
   try {
-    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a chat message. IGNORE the instruction to write extremely long reports. Keep your answer concise, conversational, and directly address the user's question within the requested word count (600-900 words).";
+    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a real-time interactive chat message. Respond fast, using already available chart info. Provide a generous number of words, be highly interactive, deeply insightful, and directly address the user's question.";
     const rawText = yield callGemini(chatSystemRules, userText, 2800);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
@@ -14060,9 +14153,7 @@ Based on your verified natal chart with **${asc}** Ascendant, **${moon}** Moon i
     chatHistory.push({ role: "model", text: fallbackAnswer });
     if (!isVipQuestion && window.consumeQuestionCredit) window.consumeQuestionCredit();
   } finally {
-    if (sendBtn) sendBtn.disabled = chatQuestionsUsed >= MAX_CHAT_QUESTIONS;
     renderReadingNavigator();
-    renderChatQuestionsRibbon();
     const log = document.getElementById("chatLog");
     if (log) log.scrollTop = log.scrollHeight;
   }
@@ -18583,12 +18674,30 @@ document.addEventListener("DOMContentLoaded", () => {
   (_b = document.getElementById("premiumUnlockBtn")) == null ? void 0 : _b.addEventListener("click", () => {
     window.openPaymentModal("reveal");
   });
-  document.getElementById("buySingleQuestionBtn")?.addEventListener("click", () => __async(this, null, function* () {
-    yield window.requestPaidAccess("question");
+  
+  document.getElementById("buyTime3Btn")?.addEventListener("click", () => __async(this, null, function* () {
+    yield window.requestPaidAccess("chat_time_3", 19);
   }));
+  document.getElementById("buyTime10Btn")?.addEventListener("click", () => __async(this, null, function* () {
+    yield window.requestPaidAccess("chat_time_10", 49);
+  }));
+  document.getElementById("buyTime20Btn")?.addEventListener("click", () => __async(this, null, function* () {
+    yield window.requestPaidAccess("chat_time_20", 89);
+  }));
+  document.getElementById("buyTime30Btn")?.addEventListener("click", () => __async(this, null, function* () {
+    yield window.requestPaidAccess("chat_time_30", 119);
+  }));
+
   document.getElementById("buyQuestionsPackBtn")?.addEventListener("click", () => __async(this, null, function* () {
     yield window.requestPaidAccess("questions_pack");
   }));
+  window.addEventListener("premium-unlocked", (e) => {
+    const plan = e.detail?.plan;
+    if (plan === "chat_time_3") window.addChatTime(3);
+    else if (plan === "chat_time_10") window.addChatTime(10);
+    else if (plan === "chat_time_20") window.addChatTime(20);
+    else if (plan === "chat_time_30") window.addChatTime(30);
+  });
 });
 window.setVedicTheme = function(themeName) {
   const allowed = ["cosmic", "dawn", "temple", "lunar", "saffron", "day"];

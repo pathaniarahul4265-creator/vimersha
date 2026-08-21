@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "code_hash": "hash",
+    "display_code": "TEST",
+    "max_uses": 1
+  },
+  {
+    "id": "test_123",
+    "code_hash": "hash",
+    "display_code": "TEST",
+    "active": true,
+    "uses": 0,
+    "max_uses": 1,
+    "created_at": "now"
+  }
+]

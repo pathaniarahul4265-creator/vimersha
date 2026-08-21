@@ -61,16 +61,19 @@ export const db = {
   },
 
   async insert(table, record) {
-    const list = loadJsonFile(`${table}.json`, []);
-    list.unshift(record);
-    saveJsonFile(`${table}.json`, list);
+    if (!['vip_codes', 'payments', 'feedback', 'webhook_events'].includes(table)) {
+      const list = loadJsonFile(`${table}.json`, []);
+      list.unshift(record);
+      saveJsonFile(`${table}.json`, list);
+    }
 
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return record;
+    
     try {
       const endpoint = `${url}/rest/v1/${table}`;
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'apikey': key,
@@ -80,17 +83,22 @@ export const db = {
         },
         body: JSON.stringify(record)
       });
-    } catch (e) {}
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Supabase insert error ${res.status}: ${errText}`);
+      }
+    } catch (e) {
+      throw e;
+    }
     return record;
   },
-
   async update(table, patch, filter) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
     try {
       const endpoint = `${url}/rest/v1/${table}?${filter}`;
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: {
           'apikey': key,
@@ -99,22 +107,32 @@ export const db = {
         },
         body: JSON.stringify(patch)
       });
-    } catch (e) {}
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Supabase update error ${res.status}: ${errText}`);
+      }
+    } catch (e) {
+      throw e;
+    }
   },
-
   async delete(table, filter) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
     try {
       const endpoint = `${url}/rest/v1/${table}?${filter}`;
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
       });
-    } catch (e) {}
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Supabase delete error ${res.status}: ${errText}`);
+      }
+    } catch (e) {
+      throw e;
+    }
   },
-
   async rpc(funcName, params) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -130,9 +148,14 @@ export const db = {
         },
         body: JSON.stringify(params)
       });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-    return null;
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Supabase RPC error ${res.status}: ${errText}`);
+      }
+      return await res.json();
+    } catch (e) {
+      throw e;
+    }
   }
 };
 
@@ -149,7 +172,11 @@ export function pricing(s = {}) {
     reveal: Number(s.reveal_price) || 59,
     match: Number(s.match_price) || 99,
     question: Number(s.question_price) || 29,
-    questions_pack: Number(s.questions_pack_price) || 100
+    questions_pack: Number(s.questions_pack_price) || 100,
+    chat_time_3: 19,
+    chat_time_10: 49,
+    chat_time_20: 89,
+    chat_time_30: 119
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
@@ -159,7 +186,11 @@ export function pricing(s = {}) {
       reveal: discount(basePrices.reveal),
       match: discount(basePrices.match),
       question: discount(basePrices.question),
-      questions_pack: discount(basePrices.questions_pack)
+      questions_pack: discount(basePrices.questions_pack),
+      chat_time_3: discount(basePrices.chat_time_3),
+      chat_time_10: discount(basePrices.chat_time_10),
+      chat_time_20: discount(basePrices.chat_time_20),
+      chat_time_30: discount(basePrices.chat_time_30)
     },
     basePrices,
     offer: {

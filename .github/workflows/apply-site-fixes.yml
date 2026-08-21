@@ -34,11 +34,7 @@ jobs:
           if old_load not in s: raise SystemExit('VIP restore block not found')
           s = s.replace(old_load, new_load, 1)
 
-          marker = '''  if (chatQuestionsUsed >= MAX_CHAT_QUESTIONS) {\n    alert("You have used all 5 questions for this reading. End the reading to start a new consultation.");\n    return;\n  }\n  \n  chatQuestionsUsed++;'''
-          replacement = '''  if (chatQuestionsUsed >= MAX_CHAT_QUESTIONS) {\n    alert("You have used all 5 questions for this reading. End the reading to start a new consultation.");\n    return;\n  }\n\n  const isVipQuestion = Boolean(window.vipAccess || document.body.classList.contains("vip-active"));\n  if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {\n    const questionPaid = yield window.requestPaidAccess("question");\n    if (!questionPaid) return;\n  }\n\n  chatQuestionsUsed++;'''
-          if marker not in s: raise SystemExit('chat send marker not found')
-          s = s.replace(marker, replacement, 1)
-          s = s.replace('if (window.consumeQuestionCredit) window.consumeQuestionCredit();', 'if (!isVipQuestion && window.consumeQuestionCredit) window.consumeQuestionCredit();', 2)
+
           idx.write_text(s, encoding='utf-8')
 
           g = Path('api/_lib/gemini.js')

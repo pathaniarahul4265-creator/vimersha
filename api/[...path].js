@@ -422,7 +422,7 @@ export default async function handler(req,res){
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         if (!amount) {
-          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'chat_enabled'], questions_pack: ['questions_pack_price', 'chat_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
+          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'chat_enabled'], questions_pack: ['questions_pack_price', 'chat_enabled'], chat_time_3: ['chat_time_3', 'chat_enabled'], chat_time_10: ['chat_time_10', 'chat_enabled'], chat_time_20: ['chat_time_20', 'chat_enabled'], chat_time_30: ['chat_time_30', 'chat_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
           const s = await getSettings();
           if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
