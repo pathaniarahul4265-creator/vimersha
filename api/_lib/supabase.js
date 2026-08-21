@@ -173,10 +173,10 @@ export function pricing(s = {}) {
     match: Number(s.match_price) || 99,
     question: Number(s.question_price) || 29,
     questions_pack: Number(s.questions_pack_price) || 100,
-    chat_time_3: 19,
-    chat_time_10: 49,
-    chat_time_20: 89,
-    chat_time_30: 119
+    chat_time_3: Number(s.chat_time_3) || 19,
+    chat_time_10: Number(s.chat_time_10) || 49,
+    chat_time_20: Number(s.chat_time_20) || 89,
+    chat_time_30: Number(s.chat_time_30) || 119
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;

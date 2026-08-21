@@ -141,6 +141,10 @@ const inMemoryPayments = loadJsonFile('payments.json', []);
 const inMemoryVipCodes = loadJsonFile('vip_codes.json', []);
 const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
+  chat_time_3: '19',
+  chat_time_10: '49',
+  chat_time_20: '89',
+  chat_time_30: '119',
   match_price: '99',
   question_price: '29',
   questions_pack_price: '100',
@@ -1096,19 +1100,19 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{reveal_price:String(settings.reveal_price),match_price:String(settings.match_price),question_price:String(settings.question_price),questions_pack_price:String(settings.questions_pack_price||'100'),reveal_enabled:settings.reveal_enabled?'1':'0',match_enabled:settings.match_enabled?'1':'0',chat_enabled:settings.chat_enabled?'1':'0',offer_enabled:settings.offer_enabled?'1':'0',offer_percent:String(settings.offer_percent),offer_label:settings.offer_label}});
+          return json(res,200,{settings:{reveal_price:String(settings.reveal_price),match_price:String(settings.match_price),question_price:String(settings.question_price),questions_pack_price:String(settings.questions_pack_price||'100'),reveal_enabled:settings.reveal_enabled?'1':'0',match_enabled:settings.match_enabled?'1':'0',chat_enabled:settings.chat_enabled?'1':'0',offer_enabled:settings.offer_enabled?'1':'0',offer_percent:String(settings.offer_percent),offer_label:settings.offer_label,chat_time_3:String(settings.chat_time_3||'19'),chat_time_10:String(settings.chat_time_10||'49'),chat_time_20:String(settings.chat_time_20||'89'),chat_time_30:String(settings.chat_time_30||'119')}});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
+        for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label','chat_time_3','chat_time_10','chat_time_20','chat_time_30']) if(k in b) inMemorySettings[k] = String(b[k]);
         for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = b[k] === '1' ? '1' : '0';
         saveJsonFile('settings.json', inMemorySettings);
         try {
           const patch={};
-          for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label'])if(k in b)patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
+          for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label','chat_time_3','chat_time_10','chat_time_20','chat_time_30'])if(k in b)patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
           for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled'])if(k in b)patch[k]=b[k]==='1';
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');

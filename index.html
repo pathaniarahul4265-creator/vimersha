@@ -8406,6 +8406,29 @@ window.applyPricingToUI = function(cfg) {
     if (window.PAYWALL_CONFIG.plans.questions_pack)
       window.PAYWALL_CONFIG.plans.questions_pack.amountINR = pQuestionsPack;
   }
+  
+  const pChat3 = Number(c.prices?.chat_time_3 ?? 19);
+  const pChat10 = Number(c.prices?.chat_time_10 ?? 49);
+  const pChat20 = Number(c.prices?.chat_time_20 ?? 89);
+  const pChat30 = Number(c.prices?.chat_time_30 ?? 119);
+
+  if (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans) {
+    window.PAYWALL_CONFIG.plans.chat_time_3 = { amountINR: pChat3, title: "3 Minutes Consultation", description: "Quick follow-up or specific timing clarification." };
+    window.PAYWALL_CONFIG.plans.chat_time_10 = { amountINR: pChat10, title: "10 Minutes Consultation", description: "Standard interactive discussion regarding current Dasha." };
+    window.PAYWALL_CONFIG.plans.chat_time_20 = { amountINR: pChat20, title: "20 Minutes Consultation", description: "Deep dive into relationships and career trajectory." };
+    window.PAYWALL_CONFIG.plans.chat_time_30 = { amountINR: pChat30, title: "30 Minutes Consultation", description: "Complete holistic synthesis of the natal chart." };
+  }
+
+  const buy3 = document.getElementById("buyTime3Btn");
+  const buy10 = document.getElementById("buyTime10Btn");
+  const buy20 = document.getElementById("buyTime20Btn");
+  const buy30 = document.getElementById("buyTime30Btn");
+  
+  if (buy3) buy3.textContent = `3 Min (₹${pChat3})`;
+  if (buy10) buy10.textContent = `10 Min (₹${pChat10})`;
+  if (buy20) buy20.textContent = `20 Min (₹${pChat20})`;
+  if (buy30) buy30.textContent = `30 Min (₹${pChat30})`;
+
   const genBtn = document.getElementById("genBtn");
   if (genBtn && !window.isVipUser) {
     const isCastAgain = genBtn.textContent.includes("again") || genBtn.textContent.includes("\u092A\u0941\u0928\u0903");
@@ -14978,7 +15001,8 @@ window.closeCompanyModal = function() {
       var _a3;
       return `
       <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;">
-        <input type="text" id="reportSearch" placeholder="\u{1F50D} Search reports by name, email or mode\u2026" value="${esc(((_a3 = $("reportSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;">
+        <input type="text" id="reportSearch" placeholder="\u{1F50D} Search reports by name, email or mode\u2026" value="${esc(((_a3 = $("reportSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;flex:1;">
+        <button type="button" id="clearAllReportsAdmin" class="small secondary" style="background:rgba(235,87,87,0.12);color:#ff9b9b;border-color:rgba(235,87,87,0.3);height:36px;">Clear All Reports</button>
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
@@ -14993,7 +15017,13 @@ window.closeCompanyModal = function() {
                 <td>${esc(r.email || "\u2014")}</td>
                 <td>${esc(new Date(r.created_at).toLocaleString())}</td>
                 <td><span class="admin-badge paid">Verified</span></td>
-                <td><button class="small" data-report-id="${r.id}">Open</button></td>
+                <td>
+  <div style="display:flex;gap:6px;">
+    <button class="small" data-report-id="${r.id}">Open</button>
+    <button class="small secondary" data-report-download="${r.id}" style="background:rgba(216,160,76,0.1);color:#d8a04c;border-color:rgba(216,160,76,0.3);" title="Download as Text">⬇</button>
+    <button class="small secondary" data-report-delete="${r.id}" style="background:rgba(255,100,100,0.1);color:#ff6b6b;border-color:rgba(255,100,100,0.3);" title="Delete Report">🗑</button>
+  </div>
+</td>
               </tr>
             `).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No reports found matching criteria</td></tr>'}
           </tbody>
@@ -15012,6 +15042,35 @@ window.closeCompanyModal = function() {
         $("reportReaderBody").textContent = r.report;
         open("reportReaderModal");
       });
+      document.querySelectorAll("[data-report-download]").forEach(b => b.onclick = () => {
+        const r = rows.find(x => x.id == b.dataset.reportDownload);
+        if (!r) return;
+        const blob = new Blob([r.report], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Report_${r.name.replace(/\s+/g, '_')}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      document.querySelectorAll("[data-report-delete]").forEach(b => b.onclick = async () => {
+        const id = b.dataset.reportDelete;
+        if (!confirm("Are you sure you want to delete this report?")) return;
+        try {
+          await window.adminFetch("/api/admin/reports/" + id, { method: "DELETE" });
+          window.loadAdmin();
+        } catch (e) {
+          alert("Could not delete report.");
+        }
+      });
+      const clearBtn = $("clearAllReportsAdmin");
+      if (clearBtn) clearBtn.onclick = async () => {
+         if (!confirm("Are you sure you want to wipe ALL reports? This is irreversible.")) return;
+         try {
+           await window.adminFetch("/api/admin/reports", { method: "DELETE" });
+           window.loadAdmin();
+         } catch(e) { alert("Could not clear reports."); }
+      };
       const search = $("reportSearch");
       if (search) {
         search.oninput = (e) => {
@@ -15177,11 +15236,20 @@ ${item.message}`);
     const disc = s.offer_enabled === "1";
     $("adminSettings").innerHTML = `
       <div class="admin-setting-card">
-        <h3>Pricing Configuration (Rupees \u20B9)</h3>
+        <h3>General Pricing Configuration (Rupees ₹)</h3>
         <div class="admin-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
-          <label>Reveal chart \xB7 \u20B9<input id="setReveal" type="number" min="1" value="${esc(s.reveal_price)}"></label>
-          <label>Kundli match \xB7 \u20B9<input id="setMatch" type="number" min="1" value="${esc(s.match_price)}"></label>
-          <label>Ask Question \xB7 \u20B9<input id="setQuestion" type="number" min="1" value="${esc(s.question_price)}"></label>
+          <label>Reveal chart · ₹<input id="setReveal" type="number" min="1" value="${esc(s.reveal_price)}"></label>
+          <label>Kundli match · ₹<input id="setMatch" type="number" min="1" value="${esc(s.match_price)}"></label>
+          <label>Single Question · ₹<input id="setQuestion" type="number" min="1" value="${esc(s.question_price)}"></label>
+        </div>
+      </div>
+      <div class="admin-setting-card">
+        <h3>Live Chat Time Pricing (Rupees ₹)</h3>
+        <div class="admin-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+          <label>3 Mins · ₹<input id="setChat3" type="number" min="1" value="${esc(s.chat_time_3 || '19')}"></label>
+          <label>10 Mins · ₹<input id="setChat10" type="number" min="1" value="${esc(s.chat_time_10 || '49')}"></label>
+          <label>20 Mins · ₹<input id="setChat20" type="number" min="1" value="${esc(s.chat_time_20 || '89')}"></label>
+          <label>30 Mins · ₹<input id="setChat30" type="number" min="1" value="${esc(s.chat_time_30 || '119')}"></label>
         </div>
       </div>
       <div class="admin-setting-card">
@@ -15223,7 +15291,11 @@ ${item.message}`);
           offer_label: $("setOfferLabel").value,
           reveal_enabled: $("setRevealEnabled").checked ? "1" : "0",
           match_enabled: $("setMatchEnabled").checked ? "1" : "0",
-          chat_enabled: $("setChatEnabled").checked ? "1" : "0"
+          chat_enabled: $("setChatEnabled").checked ? "1" : "0",
+          chat_time_3: $("setChat3") ? $("setChat3").value : "19",
+          chat_time_10: $("setChat10") ? $("setChat10").value : "49",
+          chat_time_20: $("setChat20") ? $("setChat20").value : "89",
+          chat_time_30: $("setChat30") ? $("setChat30").value : "119"
         };
         yield adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify(payload) });
         window.SERVER_CONFIG = null;
