@@ -7,7 +7,8 @@
   "scripts": {
     "build": "echo \"No build step\"",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "lint": "node --check server.js api/[...path].js api/_lib/gemini.js api/_lib/supabase.js"
   },
   "keywords": [
     "vedic-astrology",
@@ -28,5 +29,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }

@@ -43,14 +43,14 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 app.use(express.static(process.cwd()));
 
 // Direct handler for zodiac images - serve high quality PNG medallions
-app.get(['/images/zodiac/:sign.:ext', '/images/zodiac_gold/:sign.:ext', '/public/images/zodiac/:sign.:ext', '/public/images/zodiac_gold/:sign.:ext'], (req, res, next) => {
+app.get(['/images/zodiac/:sign.:ext', '/images/zodiac_gold/:sign.:ext', '/public/images/zodiac/:sign.:ext', '/public/images/zodiac_gold/:sign.:ext', '/images/zodiac/:sign', '/public/images/zodiac/:sign'], (req, res, next) => {
   const sign = req.params.sign.toLowerCase().replace(/[^a-z]/g, '');
   const candidates = [
-    path.join(process.cwd(), 'public', 'images', 'zodiac', `${sign}.svg`),
     path.join(process.cwd(), 'public', 'images', 'zodiac', `${sign}.png`),
-    path.join(process.cwd(), 'images', 'zodiac', `${sign}.svg`),
+    path.join(process.cwd(), 'public', 'images', 'zodiac_gold', `${sign}.png`),
     path.join(process.cwd(), 'images', 'zodiac', `${sign}.png`),
-    path.join(process.cwd(), 'public', 'images', 'zodiac_gold', `${sign}.png`)
+    path.join(process.cwd(), 'public', 'images', 'zodiac', `${sign}.svg`),
+    path.join(process.cwd(), 'images', 'zodiac', `${sign}.svg`)
   ];
 
   for (const candidate of candidates) {

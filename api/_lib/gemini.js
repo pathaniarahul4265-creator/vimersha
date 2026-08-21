@@ -330,7 +330,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
         }
 
         recordKeySuccess(chosenKey, keyIdx, text.length);
-        return text;
+        return cleanGeneratedAstrologyText(text);
       } catch (err) {
         const status = Number(err.status || (err.error && err.error.code)) || 500;
         const errMsg = (err.error && err.error.message) || err.message || 'AI request failed';
@@ -360,7 +360,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   try {
     const fallbackReading = generateDeterministicAstrologySection(userText, systemText);
     if (fallbackReading) {
-      return fallbackReading;
+      return cleanGeneratedAstrologyText(fallbackReading);
     }
   } catch (e) {
     console.warn('[Fallback Generator Notice]', e);
@@ -373,6 +373,38 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   const timeoutErr = new Error('AI request could not be completed. Please try again in a few moments.');
   timeoutErr.status = 503;
   throw timeoutErr;
+}
+
+export function cleanGeneratedAstrologyText(text) {
+  if (!text) return '';
+  let s = String(text)
+    .replace(/\r/g, '')
+    .replace(/```[a-z]*\n[\s\S]*?```/gi, '')
+    .replace(/\bundefined\b/gi, '')
+    .replace(/\bnull\b/gi, '');
+  
+  s = s.split('\n').map(line => {
+    let x = String(line).trim();
+    if (!x) return '';
+    if (/^[#*\-_+=~`\s]{1,20}$/.test(x)) return '';
+    
+    // Normalize headings cleanly to standard ### Heading
+    const hm = x.match(/^#{1,6}\s*(.+)$/);
+    if (hm) {
+      const cleanTitle = hm[1].replace(/^[#*]+\s*/, '').replace(/\s*[#*]+$/, '').replace(/#/g, '').trim();
+      return '### ' + cleanTitle;
+    }
+    
+    // Clean any stray inline # characters that are not part of a valid heading
+    x = x.replace(/#\*\*?/g, '**').replace(/\*\*?#/g, '**').replace(/###+/g, '').replace(/##+/g, '');
+    return x;
+  }).join('\n');
+
+  return s
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/^[ \t]*[\*\-_#]{3,}[ \t]*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function generateDeterministicAstrologySection(userText = '', systemText = '') {
@@ -409,7 +441,7 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
       return `### शास्त्रीय ज्योतिषीय परामर्श: "${userQuestion}"
 
 ### 1. मुख्य सारांश एवं व्यावहारिक प्रभाव (Executive Summary)
-आपकी जन्म कुंडली में लग्न (**${asc}**) एवं चंद्र राशि (**${moon}**, नक्षत्र: **${nak}**) के आधार पर आपके इस प्रश्न का स्पष्ट और सकारात्मक समाधान प्राप्त होता है। यह कालखंड आपके लिए आंतरिक परिपक्वता, व्यावहारिक सूझबूझ और रणनीतिक निर्णयों का है।
+आपकी जन्म कुंडली में लग्न (**${asc}**) एवं चंद्र राशि (**${moon}**, नक्षत्र: **${nak}**) के आधार पर आपके इस प्रश्न का स्पष्ट, प्रामाणिक और सकारात्मक समाधान प्राप्त होता है। यह कालखंड आपके लिए आंतरिक परिपक्वता, व्यावहारिक सूझबूझ और रणनीतिक निर्णयों का है।
 
 ### 2. मनोवैज्ञानिक विवेचना एवं वास्तविक जीवन प्रभाव (Psychological & Practical Reality)
 - **दैनिक जीवन में अनुभव**: आपके लग्नेश एवं केंद्र भावों की स्थिति दर्शाती है कि जब आप बाह्य दबाव के स्थान पर अपने आत्म-विश्वास और स्पष्ट लक्ष्यों के साथ कार्य करते हैं, तो अनुकूल परिणाम स्वतः निर्मित होते हैं।
@@ -427,7 +459,7 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     return `### Astrological Consultation: "${userQuestion}"
 
 ### 1. Executive Summary & Core Impact
-Based on your natal chart with **${asc}** Ascendant and **${moon}** Moon (${nak} Nakshatra), operating under the **${dasha}**, your inquiry reveals a strong, constructive planetary momentum. The astrological indications point to focused personal maturation and favorable real-world progress.
+Based on your natal chart with **${asc}** Ascendant and **${moon}** Moon (${nak} Nakshatra), operating under the **${dasha}**, your inquiry reveals a strong, constructive planetary momentum. The astrological indications point to focused personal maturation, deep self-trust, and tangible real-world progress.
 
 ### 2. Psychological Insight & Lived Reality
 - **Daily Experience & Mindset**: Your Lagna disposition and planetary dignities indicate that clarity and internal conviction are your greatest assets. When you operate from core values rather than external uncertainty, decisions align smoothly.
@@ -458,22 +490,24 @@ Based on your natal chart with **${asc}** Ascendant and **${moon}** Moon (${nak}
 - **संबंधित भाव एवं कारक ग्रह**: इस अध्याय से संबंधित मुख्य भाव के स्वामी केंद्र अथवा त्रिकोण में अपनी स्थिति के अनुसार शुभ फल देने में समर्थ हैं। शुभ ग्रहों का सहयोग आत्मबल में वृद्धि करता है।
 
 ### 2. विंशोत्तरी दशा चक्र एवं समय प्रभाव
-वर्तमान विंशोत्तरी दशा चक्र के अंतर्गत महादशा एवं अंतर्दशा स्वामी ग्रह आपके कर्म एवं पुरुषार्थ को सक्रिय कर रहे हैं। गोचर में गुरु एवं शनि की अनुकूल स्थिति समय के साथ उन्नतिकारक अवसर प्रशस्त करती है।
+- **दशा सक्रियता**: वर्तमान विंशोत्तरी दशा चक्र के अंतर्गत महादशा एवं अंतर्दशा स्वामी ग्रह आपके कर्म एवं पुरुषार्थ को सक्रिय कर रहे हैं।
+- **गोचर संरेखण**: गोचर में गुरु एवं शनि की अनुकूल स्थिति समय के साथ उन्नतिकारक अवसर प्रशस्त करती है।
 
 ### 3. निष्कर्ष एवं शास्त्रीय मार्गदर्शन
-शास्त्र सम्मत सिद्धांतों के अनुसार ग्रह स्थिति आपके भीतर सकारात्मक ऊर्जा एवं विवेक का संचार करती है। कर्म प्रधान दृष्टिकोण एवं आत्म-अनुशासन के माध्यम से जीवन के इस पक्ष में उत्तरोत्तर सफलता प्राप्त होगी।`;
+- **कल्याणकारी मार्ग**: शास्त्र सम्मत सिद्धांतों के अनुसार ग्रह स्थिति आपके भीतर सकारात्मक ऊर्जा एवं विवेक का संचार करती है। कर्म प्रधान दृष्टिकोण एवं आत्म-अनुशासन के माध्यम से जीवन के इस पक्ष में उत्तरोत्तर सफलता प्राप्त होगी।`;
   }
 
   return `### Classical Astrological Synthesis & Planetary Dispositions
-This chapter examines the core astrological influences governing "${sectionTitle}" based on the precise sidereal planetary positions and house alignments calculated for this native's birth chart under standard Parashari principles.
+This chapter examines the core astrological influences governing "${sectionTitle}" based on the precise sidereal planetary positions, house lordships, and Vimshottari timing calculated for this native's birth chart under classical Parashari principles.
 
 ### 1. House Lordships & Planetary Dispositions
 - **Ascendant & Foundation Strengths**: The placement and dignity of the Lagna lord establish the native's constitutional stamina and resilience. Favorable aspects from natural benefics (Jupiter, Venus, or Mercury) fortify this foundation.
 - **Key Bhavas & Karaka Indicators**: The primary house presiding over ${sectionTitle} and its governing dispositor operate in close harmony with angular (Kendra) and trine (Trikona) lords, providing stability and sustained development over the life course.
 
 ### 2. Vimshottari Dasha Activation & Timing
-Operating through the active Mahadasha and sub-periods (Antardashas), the chart activates specific karmic opportunities. The transits of major slow-moving planets (Brihaspati and Shani) relative to the Janma Rashi further stimulate focal growth periods and constructive evolution.
+- **Active Cycle Dynamics**: Operating through the active Mahadasha and sub-periods (Antardashas), the chart activates specific karmic opportunities and maturity milestones.
+- **Planetary Transits**: The transits of major slow-moving planets (Brihaspati and Shani) relative to the Janma Rashi further stimulate focal growth periods and constructive evolution.
 
 ### 3. Synthesis & Practical Guidance
-The planetary configuration emphasizes conscious effort, grounded discernment, and alignment with natural strengths. Approaching life with clarity and self-discipline aligns the native harmoniously with the auspicious potential indicated in the natal chart.`;
+- **Conscious Alignment**: The planetary configuration emphasizes conscious effort, grounded discernment, and alignment with natural strengths. Approaching life with clarity and self-discipline aligns the native harmoniously with the auspicious potential indicated in the natal chart.`;
 }

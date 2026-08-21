@@ -36,6 +36,7 @@ const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
   match_price: '99',
   question_price: '29',
+  questions_pack_price: '100',
   reveal_enabled: '1',
   match_enabled: '1',
   chat_enabled: '1',
@@ -147,7 +148,8 @@ export function pricing(s = {}) {
   const basePrices = {
     reveal: Number(s.reveal_price) || 59,
     match: Number(s.match_price) || 99,
-    question: Number(s.question_price) || 29
+    question: Number(s.question_price) || 29,
+    questions_pack: Number(s.questions_pack_price) || 100
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
@@ -156,7 +158,8 @@ export function pricing(s = {}) {
     prices: {
       reveal: discount(basePrices.reveal),
       match: discount(basePrices.match),
-      question: discount(basePrices.question)
+      question: discount(basePrices.question),
+      questions_pack: discount(basePrices.questions_pack)
     },
     basePrices,
     offer: {

@@ -143,6 +143,7 @@ const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
   match_price: '99',
   question_price: '29',
+  questions_pack_price: '100',
   reveal_enabled: '1',
   match_enabled: '1',
   chat_enabled: '1',
@@ -421,12 +422,12 @@ export default async function handler(req,res){
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         if (!amount) {
-          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'chat_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
+          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'chat_enabled'], questions_pack: ['questions_pack_price', 'chat_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
           const s = await getSettings();
           if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
           const cfg = pricing(s);
-          amount = Math.max(100, Math.round((cfg.prices[plan] || 59) * 100));
+          amount = Math.max(100, Math.round((cfg.prices[plan] || (plan === 'questions_pack' ? 100 : 59)) * 100));
         }
 
         if (isNaN(amount) || amount < 100) {
@@ -1070,19 +1071,19 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{reveal_price:String(settings.reveal_price),match_price:String(settings.match_price),question_price:String(settings.question_price),reveal_enabled:settings.reveal_enabled?'1':'0',match_enabled:settings.match_enabled?'1':'0',chat_enabled:settings.chat_enabled?'1':'0',offer_enabled:settings.offer_enabled?'1':'0',offer_percent:String(settings.offer_percent),offer_label:settings.offer_label}});
+          return json(res,200,{settings:{reveal_price:String(settings.reveal_price),match_price:String(settings.match_price),question_price:String(settings.question_price),questions_pack_price:String(settings.questions_pack_price||'100'),reveal_enabled:settings.reveal_enabled?'1':'0',match_enabled:settings.match_enabled?'1':'0',chat_enabled:settings.chat_enabled?'1':'0',offer_enabled:settings.offer_enabled?'1':'0',offer_percent:String(settings.offer_percent),offer_label:settings.offer_label}});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
+        for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
         for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = b[k] === '1' ? '1' : '0';
         saveJsonFile('settings.json', inMemorySettings);
         try {
           const patch={};
-          for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label'])if(k in b)patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
+          for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label'])if(k in b)patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
           for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled'])if(k in b)patch[k]=b[k]==='1';
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
