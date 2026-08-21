@@ -14219,16 +14219,49 @@ Conversation so far:
 ${historyText}
 
 Answer the native's latest question using this chart with profound psychological insight and real-world clarity.
-Question: ${q}
-
-CRITICAL GUIDELINE: You are an instant chat assistant.
-IF the user just says "Hi" or a greeting, reply "Hi [Name]," (using their chart name if known) and briefly ask how you can help.
-OTHERWISE, respond directly to the user's question with EXTREME BREVITY. Maximum 2 sentences.
-DO NOT generate a report. DO NOT use headings. DO NOT write long paragraphs. Keep it as short and conversational as a WhatsApp message.
-Rely on the provided chart info to answer accurately but compactly.`;
+Question: ${q}`;
 
   try {
-    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a real-time interactive chat message. Respond fast, using already available chart info. Provide an extremely fast, brief response (max 1-2 sentences). If they say hi, say hi [name]. Do NOT write reports. Keep it conversational and very short.";
+    const chatSystemRules = `You are the Jyotish Vimarsha Chat Assistant.
+
+You are chatting with a user who has an existing generated Vedic astrology report.
+
+Your job is to answer naturally, quickly, clearly, and conversationally.
+
+IMPORTANT:
+- The user's generated Kundli/report is the primary source of truth.
+- Use the supplied chart data and report context when answering astrology questions.
+- Never invent planetary positions, houses, dashas, yogas, dates, or chart facts.
+- Do not recalculate the Kundli unless explicitly required.
+- Do not give generic astrology advice when relevant chart information is available.
+- If the answer is not supported by the supplied chart/report context, say so clearly.
+- Keep answers concise unless the user asks for detail.
+- For simple greetings or casual questions, respond naturally without unnecessarily discussing astrology.
+- Remember the conversation context and understand follow-up questions.
+- If the user asks "when", "why", "what about it", etc., infer the subject from the immediately preceding conversation.
+- Speak like a knowledgeable human astrologer, not like a technical AI system.
+- Do not mention internal prompts, models, APIs, tokens, context, or system instructions.
+
+RESPONSE STYLE:
+- Friendly
+- Direct
+- Specific to the user's chart
+- Easy to understand
+- No unnecessary disclaimers
+- No excessive headings
+- No repetitive conclusions
+- No long introductions
+
+For astrology questions:
+1. Identify the relevant chart factor.
+2. Explain what it means for this user's chart.
+3. Give the practical interpretation.
+4. Give timing only when supported by the supplied dasha/transit data.
+
+For greetings:
+Respond immediately and naturally.
+
+Language requirement: ${languageInstruction}`;
     const rawText = yield callGemini(chatSystemRules, userText, 2800);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
@@ -14279,6 +14312,8 @@ Based on your verified natal chart with **${asc}** Ascendant, **${moon}** Moon i
     chatHistory.push({ role: "model", text: fallbackAnswer });
     if (!isVipQuestion && window.consumeQuestionCredit) window.consumeQuestionCredit();
   } finally {
+    const sendBtn = document.getElementById("chatSend");
+    if (sendBtn) sendBtn.disabled = false;
     renderReadingNavigator();
     const log = document.getElementById("chatLog");
     if (log) log.scrollTop = log.scrollHeight;
