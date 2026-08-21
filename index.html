@@ -6913,6 +6913,63 @@ p,
   transform: translateY(-50%) translateX(0);
 }
 </style>
+
+<style>
+#chatLog {
+  overflow-x: hidden !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+.chatlog .msg {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-x: hidden !important;
+  white-space: pre-wrap !important;
+}
+</style>
+
+<style>
+.chatlog {
+  padding: 10px;
+  background: rgba(12,18,30,0.5);
+  border: 1px solid rgba(216,160,76,0.15);
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+.chatlog .msg {
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-size: 15px;
+}
+.chatlog .msg.user {
+  background: rgba(216,160,76,0.12);
+  border: 1px solid rgba(216,160,76,0.3);
+  color: #fce8bd;
+  border-bottom-right-radius: 2px;
+}
+.chatlog .msg.model {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #f1f5f9;
+  border-bottom-left-radius: 2px;
+}
+.chatinput textarea {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(216,160,76,0.3);
+  color: #fff;
+  border-radius: 10px;
+}
+.chatinput textarea:focus {
+  border-color: rgba(216,160,76,0.7);
+  box-shadow: 0 0 0 2px rgba(216,160,76,0.2);
+}
+#chatLockOverlay {
+  background: rgba(8, 12, 20, 0.95) !important;
+  border: 1px solid rgba(216, 160, 76, 0.4) !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -7345,7 +7402,7 @@ p,
   </div>
   <div class="trust-counter-badge" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;font-size:12.5px;color:#fce7b0;opacity:0.95;background:rgba(216,160,76,0.08);padding:8px 14px;border-radius:12px;border:1px solid rgba(216,160,76,0.22);">
     <span style="color:#ffd700;">★ ★ ★ ★ ★</span>
-    <span><strong id="dailyTrustCounterNumber">1,428 charts</strong> calculated today · Trusted by over 18,400+ seekers since 2023</span>
+    <span><strong id="dailyTrustCounterNumber">1,428 charts</strong> calculated today · Trusted by over 18,400+ seekers since 2026</span>
   </div>
   <button id="genBtn">Reveal the chart · ₹59</button>
   <div class="consent-row">
@@ -7526,7 +7583,7 @@ p,
       <div id="generationProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg, #d8a04c, #f5d061);transition:width 0.4s ease;border-radius:4px;"></div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:#a0aec0;">
-      <span id="generationTimeEstimatedText">Estimated Time: ~15s total</span>
+      <span id="generationTimeEstimatedText">Estimated Time: ~5s total</span>
       <span>Sacred Vedic Ephemeris Engine v2.1</span>
     </div>
   </div>
@@ -7738,7 +7795,14 @@ p,
   </div>
 </div>
 
-<div class="card" id="chatCard" style="display:none;">
+<div class="card" id="chatCard" style="display:none;position:relative;">
+
+  <div id="chatLockOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(12,18,30,0.85);backdrop-filter:blur(4px);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;padding:24px;text-align:center;">
+    <h3 style="margin-bottom:8px;font-family:'Cinzel',serif;color:#fce7b0;font-size:22px;">Unlock Interactive Consultation</h3>
+    <p style="margin-bottom:20px;color:var(--muted);font-size:14.5px;">Your chart is ready! Unlock the real-time AI Acharya to ask specific questions about your life, relationships, and timing.</p>
+    <button id="unlockChatOptionsBtn" class="primary" style="font-size:16px;padding:12px 24px;">Unlock Ask Question</button>
+  </div>
+
   <h2 id="chatHeading">Ask the chart</h2>
   <div class="chat-status"><span id="chatStatusHelpText">Consult the Jyotish Acharya on your natal chart, Dasha timeline, career trajectory, karmic relationships, or psychological gifts.</span><span class="chat-count" id="chatCount">Live interactive consultation</span></div>
   
@@ -7954,6 +8018,7 @@ p,
     <button type="button" class="footer-link private-access" id="accessBtn" onclick="openAccessModal()" aria-label="Administration portal"><span>⌁</span> Administration</button>
   </div>
   <div class="brand" style="margin-top:12px;">A service by <b class="company-link" id="companyBriefBtn" onclick="openCompanyModal()" title="Click to view company profile &amp; features" style="color:#fce8bd;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Pathania Enterprise Private Limited</b></div>
+<div style="text-align:center;font-size:12px;color:#94a3b8;padding:15px 10px 5px;">&copy; 2026 Jyotish Vimarsha. All rights reserved.</div>
 </footer>
 </div>
 
@@ -8057,38 +8122,19 @@ p,
   <div class="modal-box">
     <button class="modal-close" data-close-modal="termsModal" aria-label="Close">&times;</button>
     <h2>Terms &amp; Conditions</h2>
-    <p>These Terms &amp; Conditions ("Terms") govern your use of Jyotish Vimarsha ("the Service"), provided by Pathania Enterprise Private Limited ("we", "us", "our"). By using this Service, you agree to these Terms in full.</p>
-
-    <h4>1. Nature of the Service</h4>
-    <p>Jyotish Vimarsha generates a Vedic astrology chart reading, and optionally a two-person Kundli compatibility (Guna Milan) analysis, using classical Parashari mathematical algorithms and sacred Jyotish synthesis based on the birth details you provide. Readings are produced for reflection, self-understanding, and philosophical inquiry.</p>
-
-    <h4>2. Not Professional Advice</h4>
-    <p>Nothing generated by this Service constitutes medical, legal, financial, psychological, or any other form of professional advice, and no compatibility score or reading is a determination of whether two people should marry. Planetary positions used by the application are calculated through the connected sidereal ephemeris service; interpretive timing remains indicative rather than deterministic. You should independently verify any decision you make and consult a qualified professional where appropriate.</p>
-
-    <h4>3. No Remedies Offered</h4>
-    <p>This Service intentionally does not recommend gemstones, mantras, poojas, rituals, fasting, or any other remedial practice. It is limited to interpretation and analysis.</p>
-
-    <h4>4. Accuracy of Information</h4>
-    <p>The quality of your reading depends on the accuracy of the birth date, time, and place you provide. We are not responsible for readings generated from incorrect or incomplete birth data.</p>
-
-    <h4>5. Ephemeris &amp; Location Services</h4>
-    <p>The Service uses high-precision computational ephemeris and geocoding services to generate readings and to look up coordinates for a given place of birth. Your inputs are transmitted to these services to perform these functions, subject to their own terms and policies.</p>
-
-    <h4>6. Limitation of Liability</h4>
-    <p>To the maximum extent permitted by law, Pathania Enterprise Private Limited shall not be liable for any direct, indirect, incidental, or consequential loss or damage arising from your use of, or reliance on, this Service.</p>
-
-    <h4>7. Age Requirement</h4>
-    <p>You must be at least 18 years old, or have the consent of a parent or guardian, to use this Service. For Kundli matching, this applies to whoever is entering the birth details, not necessarily to the individuals described.</p>
-
-    <h4>8. Changes to the Service or Terms</h4>
-    <p>We may modify, suspend, or discontinue the Service, or update these Terms, at any time. Continued use of the Service after changes constitutes acceptance of the updated Terms.</p>
-
-    <h4>9. Governing Law</h4>
-    <p>These Terms are governed by the laws of India, and any disputes shall be subject to the exclusive jurisdiction of the courts of Ahmedabad, Gujarat.</p>
-
-    <h4>10. Contact</h4>
-    <p>For questions about these Terms, contact Pathania Enterprise Private Limited.</p>
-
+    <p>Welcome to Jyotish Vimarsha ("the Service"), operated by Pathania Enterprise Private Limited. By accessing or using this Service, you agree to comply with and be bound by the following Terms and Conditions.</p>
+    <h4>1. Service Nature & Scope</h4>
+    <p>The Service provides astrological calculations, Kundli matching, and related insights based on Vedic astrology principles. The insights provided by this Service, including AI-generated consultations and astrological interpretations, are for spiritual, entertainment, and educational purposes only.</p>
+    <h4>2. No Professional Advice</h4>
+    <p>The astrological information, readings, and consultations do not constitute and should not be construed as professional financial, medical, psychological, legal, or business advice. You should always seek the advice of qualified professionals regarding such matters.</p>
+    <h4>3. User Responsibilities</h4>
+    <p>You agree to provide accurate birth details for accurate chart casting. You are solely responsible for any decisions or actions you take based on the readings or chat consultations. The Service accepts no liability for outcomes resulting from reliance on the information provided.</p>
+    <h4>4. Premium Services & Payments</h4>
+    <p>Certain features (e.g., detailed chart reveals, extended Kundli matching, interactive consultations) require payment. All payments are processed securely via our payment partners (e.g., Razorpay). Prices are listed in Indian Rupees (₹) and are subject to change. Refunds are generally not provided for digital goods once delivered, except as required by law or at our sole discretion.</p>
+    <h4>5. Limitation of Liability</h4>
+    <p>To the fullest extent permitted by applicable law, we disclaim all warranties, express or implied. We shall not be liable for any direct, indirect, incidental, or consequential damages arising out of your use of or inability to use the Service.</p>
+    <h4>6. Changes to Terms</h4>
+    <p>We reserve the right to update these terms at any time. Continued use of the Service constitutes acceptance of the new terms.</p>
     <div class="modal-updated">Last updated: August 2026</div>
   </div>
 </div>
@@ -8097,39 +8143,22 @@ p,
   <div class="modal-box">
     <button class="modal-close" data-close-modal="privacyModal" aria-label="Close">&times;</button>
     <h2>Privacy Policy</h2>
-    <p>This Privacy Policy explains how Pathania Enterprise Private Limited ("we", "us", "our") handles information when you use Jyotish Vimarsha ("the Service").</p>
-
-    <h4>1. Information We Process</h4>
+    <p>This Privacy Policy explains how Pathania Enterprise Private Limited ("we", "us", "our") handles information when you use Jyotish Vimarsha ("the Service"). We are committed to protecting your personal data and your right to privacy.</p>
+    <h4>1. Information We Collect & Process</h4>
     <ul>
-      <li>Birth details you enter: full name, gender, date of birth, time of birth, and place of birth — for one person for an individual reading, or for two people for Kundli matching.</li>
-      <li>Coordinates: matched in real time from the place of birth you type, via a geocoding search, or entered manually by you.</li>
-      <li>Any questions you type into the "Ask the chart" conversation.</li>
+      <li><strong>Birth Data:</strong> Full name, gender, date of birth, time of birth, and place of birth (for individual readings and Kundli matching).</li>
+      <li><strong>Geospatial Data:</strong> Coordinates resolved from the place of birth provided.</li>
+      <li><strong>Interaction Data:</strong> Questions, feedback, and interactive queries submitted to the "Ask the chart" consultation feature.</li>
+      <li><strong>Transaction Data:</strong> Payment statuses and transaction references (we do not store full credit card numbers).</li>
     </ul>
-
     <h4>2. How Your Information Is Used</h4>
-    <p>Your birth details and questions are processed to generate your chart reading, Kundli match, or follow-up answers, and to resolve real-world coordinates as you search for a place of birth. This data is used solely to produce your results in real time.</p>
-
-    <h4>3. Storage</h4>
-    <p>Readings may be securely stored on the Service's administration database for operational, support, payment, and service-improvement purposes. Feedback submissions are also stored for administrative follow-up. Access is restricted to authorized administration users.</p>
-
-    <h4>4. Geocoding Processors</h4>
-    <p>Your data is processed by the OpenStreetMap Nominatim geocoding service used to resolve coordinates from a place name under their privacy terms.</p>
-
-    <h4>5. Sensitive Nature of Birth Data</h4>
-    <p>Birth date, time, and place can be sensitive personal identifiers. When using Kundli matching, please only enter a second person's birth details with their knowledge and consent, and avoid including any additional sensitive personal information in your free-text questions.</p>
-
-    <h4>6. Your Choices</h4>
-    <p>You may use approximate or manually-entered coordinates instead of the automatic location search, choose not to provide full names, and reload or close the page to clear the in-memory reading</p>
-
-    <h4>7. Children's Privacy</h4>
-    <p>This Service is not directed at children under 18 and we do not knowingly collect birth data about children without parental consent.</p>
-
-    <h4>8. Changes to This Policy</h4>
-    <p>We may update this Privacy Policy from time to time. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
-
-    <h4>9. Contact</h4>
-    <p>For privacy questions, contact Pathania Enterprise Private Limited.</p>
-
+    <p>We use your data solely to deliver the Service: casting your astrological charts, generating personalized reports, providing real-time AI consultations, processing payments securely, and improving our algorithms. We do not sell your personal data to third parties.</p>
+    <h4>3. Data Storage & Security</h4>
+    <p>Your astrological readings, chat histories, and feedback may be securely stored in our cloud databases for operational continuity, customer support, and administrative auditing. Access is strictly limited to authorized personnel. We implement industry-standard security measures to protect your information.</p>
+    <h4>4. Third-Party Services</h4>
+    <p>The Service utilizes trusted third-party providers (such as Gemini AI for astrological synthesis, OpenStreetMap Nominatim for geocoding, and Razorpay for payments). These services process data according to their own privacy and security protocols.</p>
+    <h4>5. Your Rights</h4>
+    <p>You may request the deletion of your personal data or reports at any time by contacting our support team or using the feedback feature.</p>
     <div class="modal-updated">Last updated: August 2026</div>
   </div>
 </div>
@@ -8429,6 +8458,7 @@ window.applyPricingToUI = function(cfg) {
     }
   });
   if (typeof updateChatCount === "function") updateChatCount();
+  if (window.updateChatTimerDisplay) window.updateChatTimerDisplay();
   if (typeof window.selectPaymentPlan === "function") {
     window.selectPaymentPlan(window.activePaymentPlan || "reveal");
   }
@@ -11542,6 +11572,27 @@ function getZodiacSignKey(signStr) {
     return "pisces";
   return "aries";
 }
+
+function getPlanetSvgUrl(planetName) {
+  const pData = {
+    Sun: { icon: "☉", color: "#fca5a5" },
+    Moon: { icon: "☽", color: "#f8fafc" },
+    Mars: { icon: "♂", color: "#ef4444" },
+    Mercury: { icon: "☿", color: "#4ade80" },
+    Jupiter: { icon: "♃", color: "#fcd34d" },
+    Venus: { icon: "♀", color: "#e2e8f0" },
+    Saturn: { icon: "♄", color: "#3b82f6" },
+    Rahu: { icon: "☊", color: "#a1a1aa" },
+    Ketu: { icon: "☋", color: "#9ca3af" }
+  };
+  const d = pData[planetName] || { icon: planetName.charAt(0), color: "#fce8bd" };
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+    <circle cx="50" cy="50" r="46" fill="#121822" stroke="${d.color}" stroke-width="4" stroke-opacity="0.5"/>
+    <text x="50" y="55" font-size="52" fill="${d.color}" font-family="serif" text-anchor="middle" dominant-baseline="central">${d.icon}</text>
+  </svg>`;
+  return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+}
+
 function getZodiacSvgUrl(signStr) {
   const key = getZodiacSignKey(signStr);
   return `/images/zodiac/${key}.png`;
@@ -11730,11 +11781,11 @@ function renderCurrentSky(chart, stamp) {
   if (!sorted.length)
     throw new Error("No planetary positions returned.");
   grid.innerHTML = sorted.map((p) => {
-    const svgUrl = getZodiacSvgUrl(p.sign);
+    const svgUrl = getPlanetSvgUrl(p.name);
     const signKey = getZodiacSignKey(p.sign);
     return `<div class="sky-planet" onclick="openSpecificZodiacModal('${signKey}'); selectRashifalSign('${signKey}');" style="cursor:pointer;" title="Click for ${p.sign} horoscope & details">
       <div style="display:flex;align-items:center;gap:11px;">
-        <img src="${svgUrl}" class="sky-planet-zodiac-img" onerror="handleZodiacImgError(this, '${signKey}')" alt="${p.sign}" width="36" height="36" />
+        <img src="${svgUrl}" class="sky-planet-zodiac-img" alt="${p.sign}" width="36" height="36" />
         <div style="min-width:0;flex:1;">
           <b>${p.name}</b>
           <span>${formatRashiNameWithHindi(p.sign)} \xB7 ${formatDegree(p.degree)}</span>
@@ -12023,6 +12074,7 @@ window.startChatTimer = function() {
         chatTimerInterval = null;
         document.getElementById('chatInput').disabled = true;
         document.getElementById('chatSend').disabled = true;
+        const lock = document.getElementById("chatLockOverlay"); if(lock) lock.style.display="flex";
         alert("Your consultation time has expired. Please extend your time to continue.");
       }
     }
@@ -12045,6 +12097,7 @@ window.addChatTime = function(minutes) {
   chatTimerSeconds += minutes * 60;
   window.updateChatTimerDisplay();
   document.getElementById('chatInput').disabled = false;
+  const lock = document.getElementById("chatLockOverlay"); if(lock) lock.style.display="none";
   document.getElementById('chatSend').disabled = false;
 };
 
@@ -12763,22 +12816,26 @@ function renderPlacementTable() {
   }
   card.style.display = "block";
   const tbody = document.getElementById("placementTableBody");
+  const planetIcons = {
+    Sun: "☉", Moon: "☽", Mars: "♂", Mercury: "☿", Jupiter: "♃", Venus: "♀", Saturn: "♄", Rahu: "☊", Ketu: "☋"
+  };
   const planetLabels = {
-    Sun: isHi ? "\u0938\u0942\u0930\u094D\u092F (Sun)" : "Sun",
-    Moon: isHi ? "\u091A\u0928\u094D\u0926\u094D\u0930 (Moon)" : "Moon",
-    Mars: isHi ? "\u092E\u0902\u0917\u0932 (Mars)" : "Mars",
-    Mercury: isHi ? "\u092C\u0941\u0927 (Mercury)" : "Mercury",
-    Jupiter: isHi ? "\u092C\u0943\u0939\u0938\u094D\u092A\u0924\u093F (Jupiter)" : "Jupiter",
-    Venus: isHi ? "\u0936\u0941\u0915\u094D\u0930 (Venus)" : "Venus",
-    Saturn: isHi ? "\u0936\u0928\u093F (Saturn)" : "Saturn",
-    Rahu: isHi ? "\u0930\u093E\u0939\u0941 (Rahu)" : "Rahu",
-    Ketu: isHi ? "\u0915\u0947\u0924\u0941 (Ketu)" : "Ketu"
+    Sun: isHi ? "सूर्य (Sun)" : "Sun",
+    Moon: isHi ? "चन्द्र (Moon)" : "Moon",
+    Mars: isHi ? "मंगल (Mars)" : "Mars",
+    Mercury: isHi ? "बुध (Mercury)" : "Mercury",
+    Jupiter: isHi ? "बृहस्पति (Jupiter)" : "Jupiter",
+    Venus: isHi ? "शुक्र (Venus)" : "Venus",
+    Saturn: isHi ? "शनि (Saturn)" : "Saturn",
+    Rahu: isHi ? "राहु (Rahu)" : "Rahu",
+    Ketu: isHi ? "केतु (Ketu)" : "Ketu"
   };
   tbody.innerHTML = rows.map(([p, sign]) => {
     var _a2, _b2;
     const svgUrl = getZodiacSvgUrl(sign);
     const signKey = getZodiacSignKey(sign);
-    const pLabel = planetLabels[p] || p;
+    const pIcon = planetIcons[p] || "";
+    const pLabel = (pIcon ? `<span style="color:#d9bf7e;margin-right:6px;font-size:16px;">${pIcon}</span>` : "") + (planetLabels[p] || p);
     const motionLabel = ((_a2 = data.retrograde) == null ? void 0 : _a2[p]) ? isHi ? "\u0935\u0915\u094D\u0930\u0940 (Retrograde)" : "Retrograde" : isHi ? "\u092E\u093E\u0930\u094D\u0917\u0940 (Direct)" : "Direct";
     return `<tr>
       <td><b>${pLabel}</b></td>
@@ -14172,15 +14229,14 @@ ${historyText}
 Answer the native's latest question using this chart with profound psychological insight and real-world clarity.
 Question: ${q}
 
-CRITICAL GUIDELINE: Prioritize real-world human impact, lived experience, emotional dynamics, and actionable wisdom over dry astrological listings or repetitive dasha dates. Translate every astrological placement and timing cycle into what it practically means for their everyday life, inner mindset, relationship patterns, or career choices.
-Structure your answer with:
-1. Executive Summary & Core Impact (Clear, reassuring, and direct response to their question)
-2. Psychological & Practical Interpretation (Deep analysis of what this actually feels like in daily life, inner motivations, relationship/career dynamics, and subconscious patterns)
-3. Astrological Grounding & Timing Cycles (Anchoring the insights in relevant houses, planets, dignities, and how the current Mahadasha/Antardasha cycle creates a felt season of growth and opportunity)
-4. Actionable Wisdom & Conclusion with Confidence Level (Empowering next steps, mindset shifts, and stated confidence level: High, Medium, or Low). Aim for approximately 600-900 words.`;
+CRITICAL GUIDELINE: You are an instant chat assistant.
+IF the user just says "Hi" or a greeting, reply "Hi [Name]," (using their chart name if known) and briefly ask how you can help.
+OTHERWISE, respond directly to the user's question with EXTREME BREVITY. Maximum 2 sentences.
+DO NOT generate a report. DO NOT use headings. DO NOT write long paragraphs. Keep it as short and conversational as a WhatsApp message.
+Rely on the provided chart info to answer accurately but compactly.`;
 
   try {
-    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a real-time interactive chat message. Respond fast, using already available chart info. Provide a generous number of words, be highly interactive, deeply insightful, and directly address the user's question.";
+    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a real-time interactive chat message. Respond fast, using already available chart info. Provide an extremely fast, brief response (max 1-2 sentences). If they say hi, say hi [name]. Do NOT write reports. Keep it conversational and very short.";
     const rawText = yield callGemini(chatSystemRules, userText, 2800);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
@@ -14625,27 +14681,32 @@ window.closeCompanyModal = function() {
     const renderTable = (items) => {
       var _a3;
       return `
-      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <input type="text" id="auditSearch" placeholder="\u{1F50D} Search logs by action, IP or details\u2026" value="${esc(((_a3 = $("auditSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;">
-        <button id="clearAuditBtn" class="small secondary" style="border-color:rgba(224,108,108,0.5);color:#fca8a8;">Clear History</button>
+      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
+        <input type="text" id="reportSearch" placeholder="🔍 Search reports by name, email or mode…" value="${esc(((_a3 = $("reportSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;flex:1;">
+        <button id="clearAllReportsBtn" class="small secondary" style="background:rgba(216,160,76,0.1);color:#d8a04c;border:1px solid rgba(216,160,76,0.3);">Clear All</button>
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
-            <tr><th>Timestamp</th><th>IP Address</th><th>Action</th><th>Details</th><th>Status</th></tr>
+            <tr><th>Name</th><th>Mode</th><th>Email</th><th>Created</th><th>Status</th><th>Action</th></tr>
           </thead>
           <tbody>
-            ${items.length ? items.map((r) => {
-        const badgeClass = r.status === "SUCCESS" ? "ok" : r.status === "BLOCKED" ? "err" : "warn";
-        return `
+            ${items.length ? items.map((r) => `
               <tr>
-                <td style="white-space:nowrap;font-size:12px;color:#a3b6be;">${esc(new Date(r.timestamp).toLocaleString())}</td>
-                <td><code style="color:#7fc5c0;font-size:12px;">${esc(r.ip)}</code></td>
-                <td><b style="color:#f2d792;font-size:12px;">${esc(r.action)}</b></td>
-                <td style="max-width:320px;white-space:normal;line-height:1.4;font-size:12.5px;">${esc(r.details)}</td>
-                <td><span class="admin-status-pill ${badgeClass}">${esc(r.status)}</span></td>
-              </tr>`;
-      }).join("") : '<tr><td colspan="5" style="text-align:center;color:#a3b6be;padding:20px;">No security audit events recorded yet.</td></tr>'}
+                <td><b>${esc(r.name)}</b></td>
+                <td><span class="admin-badge">${esc(r.mode)}</span></td>
+                <td>${esc(r.email || "—")}</td>
+                <td>${esc(new Date(r.created_at).toLocaleString())}</td>
+                <td><span class="admin-badge paid">Verified</span></td>
+                <td>
+                   <div style="display:flex;gap:6px;">
+                     <button class="small" data-report-id="${r.id}">Open</button>
+                     <button class="small secondary" data-report-download="${r.id}" style="background:rgba(216,160,76,0.1);color:#d8a04c;border-color:rgba(216,160,76,0.3);">⬇</button>
+                     <button class="small secondary" data-report-delete="${r.id}" style="background:rgba(255,100,100,0.1);color:#ff6b6b;border-color:rgba(255,100,100,0.3);">🗑</button>
+                   </div>
+                </td>
+              </tr>
+            `).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No reports found matching criteria</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -19574,3 +19635,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1000);
 });
 </script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("unlockChatOptionsBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const isVip = window.vipAccess || document.body.classList.contains("vip-active");
+      if (isVip) {
+        window.addChatTime(30);
+        const lockOverlay = document.getElementById("chatLockOverlay");
+        if (lockOverlay) lockOverlay.style.display = "none";
+        alert("VIP Access: 30 minutes of consultation granted.");
+      } else {
+        const chatBanner = document.getElementById("chatPricingBanner");
+        if (chatBanner) {
+           const lockOverlay = document.getElementById("chatLockOverlay");
+           if (lockOverlay) lockOverlay.style.display = "none";
+           chatBanner.classList.add("highlight-pulse");
+           setTimeout(() => chatBanner.classList.remove("highlight-pulse"), 3000);
+        } else {
+           if(window.openModal) window.openModal("paymentModal");
+        }
+      }
+    });
+  }
+});
+</script>
+<style>
+.highlight-pulse {
+  animation: hPulse 1.5s ease-in-out infinite;
+}
+@keyframes hPulse {
+  0% { box-shadow: 0 0 0 0 rgba(216,160,76,0.5); border-color: rgba(216,160,76,0.8); }
+  70% { box-shadow: 0 0 0 10px rgba(216,160,76,0); border-color: rgba(216,160,76,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(216,160,76,0); border-color: rgba(216,160,76,0.3); }
+}
+</style>

@@ -818,6 +818,36 @@ export default async function handler(req,res){
           return json(res,200,{reports:inMemoryReports});
         }
       }
+      
+      const rdm = path.match(/^\/admin\/reports\/([^/]+)$/);
+      if (req.method === 'DELETE' && rdm) {
+        const targetId = decodeURIComponent(rdm[1]);
+        const idx = inMemoryReports.findIndex(x => x.id === targetId || x.id == targetId);
+        if (idx >= 0) {
+          inMemoryReports.splice(idx, 1);
+          saveJsonFile('reports.json', inMemoryReports);
+        }
+        try {
+          await db.delete('reports', `id=eq.${encodeURIComponent(targetId)}`);
+        } catch (err) {
+          console.warn('[Supabase Report Delete]', err.message);
+        }
+        logAudit(clientIp, 'REPORT_DELETE', `Deleted report ${targetId}`, 'SUCCESS');
+        return json(res, 200, { ok: true, deleted: targetId });
+      }
+      if (req.method === 'DELETE' && path === '/admin/reports') {
+        const count = inMemoryReports.length;
+        inMemoryReports.length = 0;
+        saveJsonFile('reports.json', inMemoryReports);
+        try {
+          await db.delete('reports', 'id=neq.placeholder_none');
+        } catch (err) {
+          console.warn('[Supabase Clear Reports]', err.message);
+        }
+        logAudit(clientIp, 'REPORT_CLEAR', `Cleared all ${count} reports`, 'SUCCESS');
+        return json(res, 200, { ok: true, count });
+      }
+
       if(req.method==='GET'&&path==='/admin/feedback'){
         try {
           const data=await db.select('feedback','select=*&order=created_at.desc&limit=500');
