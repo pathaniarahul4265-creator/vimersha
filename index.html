@@ -100,9 +100,8 @@
     }
     return "aries";
   };
- window.getZodiacSvgUrl = function(signStr) {
+window.getZodiacSvgUrl = function(signStr) {
   const key = window.getZodiacSignKey(signStr);
-  // Prefer files from the images folder
   return `/images/zodiac/${key}.svg`;
 };
 
@@ -117,10 +116,8 @@ window.handleZodiacImgError = function(imgEl, signKey) {
   imgEl.dataset.retryCount = String(count + 1);
 
   if (count === 0) {
-    // First try failed → try PNG
     imgEl.src = `/images/zodiac/${key}.png`;
   } else if (count === 1 && window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
-    // Still failed → use embedded as last fallback
     imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
     imgEl.onerror = null;
   } else {
