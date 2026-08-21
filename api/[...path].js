@@ -615,11 +615,6 @@ export default async function handler(req,res){
         return json(res, 200, { valid: true, access: 'all' });
       }
 
-      // Universal backup VIP codes for instant testing
-      const defaultVIPs = ['TESTVIP2026', 'JYOTISH2026', 'VIP2026', 'VIP100', 'ADMINVIP', 'GUESTVIP'];
-      if (defaultVIPs.includes(upperCode)) {
-        return json(res, 200, { valid: true, access: 'all' });
-      }
 
       return json(res, 403, { valid: false, error: 'Invalid or inactive VIP code.' });
     }

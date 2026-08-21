@@ -11778,7 +11778,7 @@ function rawCall(systemText, userText, maxTokens) {
   return __async(this, null, function* () {
     let res, data;
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timeoutId = controller ? setTimeout(() => controller.abort(), 16000) : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 120000) : null;
     try {
       res = yield fetch("/api/ai", {
         method: "POST",
@@ -14009,7 +14009,8 @@ Structure your answer with:
 4. Actionable Wisdom & Conclusion with Confidence Level (Empowering next steps, mindset shifts, and stated confidence level: High, Medium, or Low). Aim for approximately 600-900 words.`;
 
   try {
-    const rawText = yield callGemini(activeRules, userText, 2800);
+    const chatSystemRules = activeRules + "\n\nCRITICAL OVERRIDE FOR THIS REQUEST: You are responding to a chat message. IGNORE the instruction to write extremely long reports. Keep your answer concise, conversational, and directly address the user's question within the requested word count (600-900 words).";
+    const rawText = yield callGemini(chatSystemRules, userText, 2800);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
     appendChat("model", text, currentQIndex, topicInfo);

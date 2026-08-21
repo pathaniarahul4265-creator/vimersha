@@ -208,8 +208,6 @@ async function validatePremiumSession(sessionToken, vipToken) {
     const vips = loadJsonFile('vip_codes.json', []);
     const v = vips.find(x => (x.display_code === vipToken || x.display_code === normalized || x.code_hash === h) && x.active !== false);
     if (v) return true;
-    const defaultVIPs = ['TESTVIP2026', 'JYOTISH2026', 'VIP2026', 'VIP100', 'ADMINVIP', 'GUESTVIP'];
-    if (defaultVIPs.includes(normalized)) return true;
   }
   if (sessionToken) {
     const pays = loadJsonFile('payments.json', []);
@@ -309,7 +307,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
         });
 
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI generation timed out after 45 seconds')), 45000)
+          setTimeout(() => reject(new Error('AI generation timed out after 90 seconds')), 90000)
         );
 
         const response = await Promise.race([callPromise, timeoutPromise]);
