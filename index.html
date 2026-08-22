@@ -7641,17 +7641,17 @@ p,
     </div>
   </div>
 
-  <!-- Interactive Reading Chapters & Consultation Questions Navigator -->
+  <!-- Interactive Reading Chapters Navigator -->
   <div class="reading-navigator-card" id="readingNavigatorCard">
     <div class="reading-nav-head">
       <div class="reading-nav-title-group">
         <div class="reading-nav-badge">☸</div>
         <div>
-          <h3 class="reading-nav-title" id="readingNavTitle">Interactive Reading Index &amp; Consultation Navigator</h3>
-          <p class="reading-nav-sub" id="readingNavSub">Jump directly to any comprehensive report chapter or review asked consultation questions with connected chart evidence.</p>
+          <h3 class="reading-nav-title" id="readingNavTitle">Interactive Reading Index</h3>
+          <p class="reading-nav-sub" id="readingNavSub">Jump directly to any comprehensive report chapter.</p>
         </div>
       </div>
-      <div class="reading-nav-tabs">
+      <div class="reading-nav-tabs" style="display:none !important;">
         <button type="button" class="reading-nav-tab active" id="navTabChapters" onclick="switchReadingNavTab('chapters')">
           <span>📜</span> <b id="navTabChaptersText">Report Chapters</b> <small id="navChapterCount">(13 Chapters)</small>
         </button>
@@ -7668,17 +7668,7 @@ p,
       </div>
     </div>
 
-    <!-- Panel 2: Questions Asked Index -->
-    <div class="reading-nav-panel" id="navPanelQuestions">
-      <div class="nav-questions-list" id="navQuestionsList">
-        <div class="nav-questions-empty" id="navQuestionsEmpty">
-          <span class="empty-sparkle">✦</span>
-          <b id="emptyQuestionsTitle">No Consultation Questions Asked Yet</b>
-          <p id="emptyQuestionsDesc">When you ask questions in the "Ask the Chart" panel below, they will be indexed here with direct links to both their in-depth answers and the supporting astrological report evidence.</p>
-          <button type="button" class="jump-to-ask-btn" onclick="document.getElementById('chatCard').scrollIntoView({behavior:'smooth'}); const cin=document.getElementById('chatInput'); if(cin) cin.focus();">Go to Ask the Chart ↗</button>
-        </div>
-      </div>
-    </div>
+    <!-- Panel 2 Removed -->
   </div>
 
   <div class="visual-card at-a-glance" id="atAGlanceCard" style="display:none;">
@@ -7804,41 +7794,32 @@ p,
   </div>
 </div>
 
-<div class="card" id="chatCard" style="display:none;position:relative;">
-
-  <div id="chatLockOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(12,18,30,0.85);backdrop-filter:blur(4px);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;padding:24px;text-align:center;">
-    <h3 style="margin-bottom:8px;font-family:'Cinzel',serif;color:#fce7b0;font-size:22px;">Unlock Interactive Consultation</h3>
-    <p style="margin-bottom:20px;color:var(--muted);font-size:14.5px;">Your chart is ready! Unlock the real-time AI Acharya to ask specific questions about your life, relationships, and timing.</p>
-    <button id="unlockChatOptionsBtn" class="primary" style="font-size:16px;padding:12px 24px;">Unlock Ask Question</button>
+<!-- Prashna & Chart Insights Console -->
+<div class="card" id="chatCard" style="display:none;position:relative;margin-top:24px;">
+  <h2 id="chatHeading" style="font-family:'Cinzel', serif; color:#fce7b0; margin-bottom:4px; font-size:24px;">Prashna &amp; Chart Insights Console</h2>
+  <div class="chat-status" style="margin-bottom:16px;">
+    <span id="chatStatusHelpText" style="font-size:14px; color:var(--muted); line-height:1.5;">Consult on your natal chart, active Dasha timelines, career trajectory, planetary strengths, and psychological gifts. Pure classical interpretation without remedies or rituals.</span>
+    <span class="chat-count" id="chatCount" style="float:right; font-size:12px; font-weight:600; color:#d8a04c; text-transform:uppercase; letter-spacing:0.05em; margin-top:3px;">Ask Unlimited Questions</span>
   </div>
 
-  <h2 id="chatHeading">Ask the chart</h2>
-  <div class="chat-status"><span id="chatStatusHelpText">Consult the Jyotish Acharya on your natal chart, Dasha timeline, career trajectory, karmic relationships, or psychological gifts.</span><span class="chat-count" id="chatCount">Live interactive consultation</span></div>
-  
-    <div class="chat-pricing-banner" id="chatPricingBanner" style="display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--card-bg);border:1px solid rgba(185,147,85,0.3);border-radius:10px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:20px;">⏱️</span> 
-        <span id="chatTimerDisplay" style="font-size:16px;font-weight:700;color:var(--text);font-variant-numeric: tabular-nums;">00:00</span>
-        <span id="chatTimerLabel" style="font-size:13px;color:var(--muted);">Remaining</span>
-      </div>
-      <div style="display:flex;gap:8px;" id="chatPurchaseBtns">
-        <button id="buyTime3Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">3 Min (₹19)</button>
-        <button id="buyTime10Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">10 Min (₹49)</button>
-        <button id="buyTime20Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">20 Min (₹89)</button>
-        <button id="buyTime30Btn" type="button" class="small secondary" style="padding:6px 12px;border-radius:6px;cursor:pointer;">30 Min (₹119)</button>
-      </div>
+  <!-- Cosmic Quick Queries Ribbon -->
+  <div class="chat-questions-ribbon-custom" id="customQuestionsRibbon" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+    <button type="button" class="small secondary cursor-pointer" onclick="window.selectQuickPrompt(this)" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);font-weight:500;cursor:pointer;transition:all 0.2s;">🌟 What are the primary strengths &amp; yogas in my chart?</button>
+    <button type="button" class="small secondary cursor-pointer" onclick="window.selectQuickPrompt(this)" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);font-weight:500;cursor:pointer;transition:all 0.2s;">💼 What does my 10th house &amp; Dasha reveal about my career?</button>
+    <button type="button" class="small secondary cursor-pointer" onclick="window.selectQuickPrompt(this)" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);font-weight:500;cursor:pointer;transition:all 0.2s;">🪐 How does my active Mahadasha influence my current phase?</button>
+    <button type="button" class="small secondary cursor-pointer" onclick="window.selectQuickPrompt(this)" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text);font-weight:500;cursor:pointer;transition:all 0.2s;">🤝 What are my relationship dynamics and 7th house indicators?</button>
+  </div>
+
+  <div class="chatlog" id="chatLog" style="min-height:180px;max-height:500px;overflow-y:auto;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+    <div class="empty-hint" id="chatHint" style="color:var(--muted);text-align:center;padding:36px 16px;font-size:14.5px;">
+      <span style="font-size:32px;display:block;margin-bottom:12px;">🌌</span>
+      Your planetary chart is active and verified. Ask any specific question regarding your career, relationship dynamics, Dasha timing, or planetary placements.
     </div>
   </div>
 
-  <div class="chat-questions-ribbon" id="chatQuestionsRibbon" style="display:none;"></div>
-  
-  <div class="chatlog" id="chatLog">
-    <div class="empty-hint" id="chatHint">The chart is ready for consultation — ask any question about your life path, timing, relationships, or inner psychology.</div>
-  </div>
-  <div class="chatinput">
-    <textarea id="chatInput" placeholder="Ask a specific question about your chart…"></textarea>
-    <button id="chatSend" title="Send Question" aria-label="Send">➤</button>
+  <div class="chatinput" style="display:flex;gap:8px;">
+    <textarea id="chatInput" placeholder="Ask a specific question about your chart…" style="flex-grow:1;min-height:54px;max-height:120px;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);font-family:inherit;font-size:14.5px;resize:vertical;"></textarea>
+    <button id="chatSend" title="Send Question" aria-label="Send" style="width:54px;height:54px;border-radius:8px;background:#b99355;color:#fff;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;">➤</button>
   </div>
 </div>
 
@@ -11443,9 +11424,9 @@ The final section should bring everything together. Create a psychological and a
 let birthContext = "";
 let fullReportText = "";
 let chatHistory = [];
-let chatUnlocked = false;
+let chatUnlocked = true;
 let chatQuestionsUsed = 0;
-let chatTimerSeconds = 0;
+let chatTimerSeconds = 999999;
 let chatTimerInterval = null;
 const MAX_CHAT_QUESTIONS = 5;
 let activeSections = SECTIONS;
@@ -12056,41 +12037,20 @@ function showKeyRecovery(container, onRetry) {
 }
 
 window.startChatTimer = function() {
-  if (chatTimerInterval) return;
-  chatTimerInterval = setInterval(() => {
-    if (chatTimerSeconds > 0 && !window.vipAccess && !(document.body.classList.contains("vip-active"))) {
-      chatTimerSeconds--;
-      window.updateChatTimerDisplay();
-      if (chatTimerSeconds <= 0) {
-        clearInterval(chatTimerInterval);
-        chatTimerInterval = null;
-        document.getElementById('chatInput').disabled = true;
-        document.getElementById('chatSend').disabled = true;
-        const lock = document.getElementById("chatLockOverlay"); if(lock) lock.style.display="flex";
-        alert("Your consultation time has expired. Please extend your time to continue.");
-      }
-    }
-  }, 1000);
+  // Free, uninterrupted cosmic consultation active
 };
 
 window.updateChatTimerDisplay = function() {
   const el = document.getElementById('chatTimerDisplay');
   if (!el) return;
-  if (window.vipAccess || document.body.classList.contains("vip-active")) {
-    el.textContent = "Unlimited";
-    return;
-  }
-  const m = Math.floor(chatTimerSeconds / 60);
-  const s = chatTimerSeconds % 60;
-  el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  el.textContent = "Unlimited";
 };
 
 window.addChatTime = function(minutes) {
-  chatTimerSeconds += minutes * 60;
-  window.updateChatTimerDisplay();
-  document.getElementById('chatInput').disabled = false;
-  const lock = document.getElementById("chatLockOverlay"); if(lock) lock.style.display="none";
-  document.getElementById('chatSend').disabled = false;
+  const input = document.getElementById('chatInput');
+  if (input) input.disabled = false;
+  const send = document.getElementById('chatSend');
+  if (send) send.disabled = false;
 };
 
 
@@ -14152,30 +14112,17 @@ window.selectQuickPrompt = function(btn) {
   }
 };
 
-document.getElementById("chatSend").onclick = () => __async(this, null, function* () {
+const sendButtonEl = document.getElementById("chatSend");
+if (sendButtonEl) {
+  sendButtonEl.onclick = () => __async(this, null, function* () {
   var _a2, _b2, _c2;
   const input = document.getElementById("chatInput");
   const q = (input ? input.value : "").trim();
   if (!q)
     return;
-  if (!chatUnlocked) {
-    if (birthContext || window.verifiedChart || window.lastVerifiedChart || (document.getElementById("name") && document.getElementById("name").value.trim())) {
-      unlockChat();
-    } else {
-      alert("Please reveal your chart reading first before asking questions.");
-      return;
-    }
-  }
 
-  const isVipQuestion = window.isVipActive ? window.isVipActive() : Boolean(window.vipAccess || document.body.classList.contains("vip-active") || (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || window.isVipUser);
-
-  if (!isVipQuestion && !(window.SERVER_CONFIG?.features?.chat === false)) {
-    if (chatTimerSeconds <= 0) {
-      alert("Please select a time package to start or continue the consultation.");
-      return;
-    }
-    window.startChatTimer();
-  }
+  chatUnlocked = true;
+  const isVipQuestion = true;
 
   chatQuestionsUsed++;
   updateChatCount();
@@ -14254,6 +14201,7 @@ IMPORTANT:
 - If the user asks "when", "why", "what about it", etc., infer the subject from the immediately preceding conversation.
 - Speak like a knowledgeable human astrologer, not like a technical AI system.
 - Do not mention internal prompts, models, APIs, tokens, context, or system instructions.
+- NEVER prescribe gemstones, mantras, poojas, rituals, fasting, or remedies. Offer classical interpretation, psychological clarity, and conscious understanding only.
 
 RESPONSE STYLE:
 - Friendly
@@ -14332,12 +14280,18 @@ Based on your verified natal chart with **${asc}** Ascendant, **${moon}** Moon i
     if (log) log.scrollTop = log.scrollHeight;
   }
 });
-document.getElementById("chatInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    document.getElementById("chatSend").click();
-  }
-});
+}
+
+const chatInputElement = document.getElementById("chatInput");
+if (chatInputElement) {
+  chatInputElement.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const sBtn = document.getElementById("chatSend");
+      if (sBtn) sBtn.click();
+    }
+  });
+}
 
 window.openModal = function(id) {
   const m = typeof id === "string" ? document.getElementById(id) : id;
@@ -19782,7 +19736,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: 'currentSkyCard', label: 'Daily Rashifal' },
     { id: 'setupCard', label: 'Cast Chart' },
     { id: 'reportCard', label: 'Your Reading' },
-    { id: 'chatCard', label: 'Ask the Chart' }
+    { id: 'chatCard', label: 'Prashna & Inquiries' }
   ];
 
   const container = document.getElementById("dotNavContainer");
