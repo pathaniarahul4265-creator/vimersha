@@ -14691,6 +14691,12 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     var _a3;
     return (_a3 = window.openPaymentModal) == null ? void 0 : _a3.call(window, "reveal");
   });
+  const premUnlockBtn = $("premiumUnlockBtn");
+  if (premUnlockBtn) {
+    premUnlockBtn.addEventListener("click", () => {
+      if (window.openPaymentModal) window.openPaymentModal("reveal");
+    });
+  }
   let selectedPlan = "reveal";
   let selectedAmount = 59;
   document.querySelectorAll("#paymentPlansGrid .plan-card").forEach((card) => {
@@ -14749,7 +14755,7 @@ window.toggleMobileSection = function(targetId, triggerEl) {
           st.textContent = "Payment successful! Unlocking and generating report…";
         }
         setTimeout(() => {
-          close("paymentModal");
+          window.closeModal("paymentModal");
           if (typeof window.triggerReportGenerationAfterPayment === "function") {
             window.triggerReportGenerationAfterPayment(planToPay);
           }
@@ -16970,7 +16976,7 @@ var __async = (__this, __arguments, generator) => {
   };
 
   window.triggerReportGenerationAfterPayment = function(plan) {
-    if (plan === "match" || currentMode === "kundli") {
+    if (plan === "match") {
       window.matchDetailedUnlocked = true;
       entitlements.match = true;
       const gate = document.getElementById("matchPremiumGate");
@@ -16978,13 +16984,13 @@ var __async = (__this, __arguments, generator) => {
       if (typeof window.unlockDetailedKundliReport === "function") {
         window.unlockDetailedKundliReport();
       }
-    } else {
+    } else if (plan === "reveal" || plan === "premium") {
       entitlements.reveal = true;
       const gate = document.getElementById("premiumGate");
       if (gate) gate.style.display = "none";
       if (!window.isGeneratingReport) {
         const genBtn = document.getElementById("genBtn");
-        if (genBtn) {
+        if (genBtn && !genBtn.disabled) {
           genBtn.click();
         }
       } else {
