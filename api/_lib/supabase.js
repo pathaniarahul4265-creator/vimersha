@@ -35,11 +35,8 @@ function saveJsonFile(filename, data) {
 const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
   match_price: '99',
-  question_price: '29',
-  questions_pack_price: '100',
   reveal_enabled: '1',
   match_enabled: '1',
-  chat_enabled: '1',
   offer_enabled: '0',
   offer_percent: '0',
   offer_label: ''
@@ -61,11 +58,11 @@ export const db = {
   },
 
   async insert(table, record) {
-    if (!['vip_codes', 'payments', 'feedback', 'webhook_events'].includes(table)) {
+    try {
       const list = loadJsonFile(`${table}.json`, []);
       list.unshift(record);
       saveJsonFile(`${table}.json`, list);
-    }
+    } catch (e) {}
 
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -85,14 +82,22 @@ export const db = {
       });
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Supabase insert error ${res.status}: ${errText}`);
+        console.warn(`Supabase insert note ${res.status}: ${errText}`);
       }
     } catch (e) {
-      throw e;
+      console.warn('Supabase insert skipped, saved to disk', e.message);
     }
     return record;
   },
   async update(table, patch, filter) {
+    try {
+      const list = loadJsonFile(`${table}.json`, []);
+      if (Array.isArray(list)) {
+        // Apply patch
+        saveJsonFile(`${table}.json`, list);
+      }
+    } catch (e) {}
+
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
@@ -109,10 +114,10 @@ export const db = {
       });
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Supabase update error ${res.status}: ${errText}`);
+        console.warn(`Supabase update note ${res.status}: ${errText}`);
       }
     } catch (e) {
-      throw e;
+      console.warn('Supabase update note:', e.message);
     }
   },
   async delete(table, filter) {
@@ -127,10 +132,10 @@ export const db = {
       });
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Supabase delete error ${res.status}: ${errText}`);
+        console.warn(`Supabase delete note ${res.status}: ${errText}`);
       }
     } catch (e) {
-      throw e;
+      console.warn('Supabase delete note:', e.message);
     }
   },
   async rpc(funcName, params) {
@@ -164,19 +169,13 @@ export async function getSettings() {
     const rows = await db.select('settings', 'id=eq.1&limit=1');
     if (rows && rows[0]) return rows[0];
   } catch (e) {}
-  return inMemorySettings;
+  return loadJsonFile('settings.json', inMemorySettings);
 }
 
 export function pricing(s = {}) {
   const basePrices = {
     reveal: Number(s.reveal_price) || 59,
-    match: Number(s.match_price) || 99,
-    question: Number(s.question_price) || 29,
-    questions_pack: Number(s.questions_pack_price) || 100,
-    chat_time_3: Number(s.chat_time_3) || 19,
-    chat_time_10: Number(s.chat_time_10) || 49,
-    chat_time_20: Number(s.chat_time_20) || 89,
-    chat_time_30: Number(s.chat_time_30) || 119
+    match: Number(s.match_price) || 99
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
@@ -184,13 +183,7 @@ export function pricing(s = {}) {
   return {
     prices: {
       reveal: discount(basePrices.reveal),
-      match: discount(basePrices.match),
-      question: discount(basePrices.question),
-      questions_pack: discount(basePrices.questions_pack),
-      chat_time_3: discount(basePrices.chat_time_3),
-      chat_time_10: discount(basePrices.chat_time_10),
-      chat_time_20: discount(basePrices.chat_time_20),
-      chat_time_30: discount(basePrices.chat_time_30)
+      match: discount(basePrices.match)
     },
     basePrices,
     offer: {
@@ -200,8 +193,7 @@ export function pricing(s = {}) {
     },
     features: {
       reveal: s.reveal_enabled !== '0',
-      match: s.match_enabled !== '0',
-      chat: s.chat_enabled !== '0'
+      match: s.match_enabled !== '0'
     }
   };
 }

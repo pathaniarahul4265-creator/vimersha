@@ -88,10 +88,19 @@ function rawBody(req) {
 }
 function hashCode(code){ return crypto.createHash('sha256').update(String(code).trim().toUpperCase()).digest('hex'); }
 function b64(v){ return Buffer.from(v).toString('base64url'); }
+let _ephemeralSessionSecret = null;
+function getSessionSecret() {
+  const rawSecret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD;
+  if (rawSecret) {
+    return String(rawSecret).trim().replace(/^["']|["']$/g, '');
+  }
+  if (!_ephemeralSessionSecret) {
+    _ephemeralSessionSecret = crypto.randomBytes(32).toString('hex');
+  }
+  return _ephemeralSessionSecret;
+}
 function signSession(payload){
-  const rawSecret = process.env.ADMIN_SESSION_SECRET || 'jyotish-vimarsha-secret-key-2026';
-  const cleanSecret = String(rawSecret).trim().replace(/^["']|["']$/g, '');
-  return crypto.createHmac('sha256', cleanSecret || 'jyotish-vimarsha-secret-key-2026').update(payload).digest('base64url');
+  return crypto.createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
 }
 function makeAdminToken(){ const payload=b64(JSON.stringify({exp:Date.now()+4*60*60*1000,iat:Date.now()})); return `${payload}.${signSession(payload)}`; }
 
@@ -142,16 +151,9 @@ const inMemoryVipCodes = loadJsonFile('vip_codes.json', []);
 const inMemoryPromoCodes = loadJsonFile('promo_codes.json', []);
 const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
-  chat_time_3: '19',
-  chat_time_10: '49',
-  chat_time_20: '89',
-  chat_time_30: '119',
   match_price: '99',
-  question_price: '29',
-  questions_pack_price: '100',
   reveal_enabled: '1',
   match_enabled: '1',
-  chat_enabled: '1',
   offer_enabled: '0',
   offer_percent: '0',
   offer_label: ''
@@ -523,12 +525,12 @@ export default async function handler(req,res){
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         if (!amount) {
-          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'chat_enabled'], questions_pack: ['questions_pack_price', 'chat_enabled'], chat_time_3: ['chat_time_3', 'chat_enabled'], chat_time_10: ['chat_time_10', 'chat_enabled'], chat_time_20: ['chat_time_20', 'chat_enabled'], chat_time_30: ['chat_time_30', 'chat_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
+          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
           const s = await getSettings();
           if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
           const cfg = pricing(s);
-          let baseAmt = (cfg.prices[plan] || (plan === 'questions_pack' ? 100 : 59)) * 100;
+          let baseAmt = (cfg.prices[plan] || 59) * 100;
           if (b.promoCode) {
             const codeStr = b.promoCode.toUpperCase().trim();
             let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
@@ -580,7 +582,7 @@ export default async function handler(req,res){
         saveJsonFile('payments.json', inMemoryPayments);
         try { await db.insert('payments', payRecord); } catch {}
 
-        const activeKeyId = key_id || 'rzp_test_preview_demo';
+        const activeKeyId = key_id || '';
         return json(res, 200, {
           order_id: order.order_id || order.id,
           orderId: order.order_id || order.id,
@@ -816,17 +818,17 @@ export default async function handler(req,res){
       const inputTrimmed = inputPass.trim();
       const inputUnquoted = inputTrimmed.replace(/^["']|["']$/g, '');
 
-      const envPassRaw = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET || 'MySecretAdminPassword';
+      const envPassRaw = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET;
+      if (!envPassRaw || !envPassRaw.trim()) {
+        return json(res, 500, { error: 'Admin authentication is not configured on the server. Please configure ADMIN_PASSWORD in environment settings.' });
+      }
       const envPassTrimmed = envPassRaw.trim();
       const envPassUnquoted = envPassTrimmed.replace(/^["']|["']$/g, '');
 
       const allowedPasswords = new Set();
-      if (envPassRaw) allowedPasswords.add(envPassRaw);
-      if (envPassTrimmed) allowedPasswords.add(envPassTrimmed);
-      if (envPassUnquoted) allowedPasswords.add(envPassUnquoted);
-      if (!envPassRaw || allowedPasswords.size === 0) {
-        return json(res, 500, { error: 'Admin authentication is not configured on the server.' });
-      }
+      allowedPasswords.add(envPassRaw);
+      allowedPasswords.add(envPassTrimmed);
+      allowedPasswords.add(envPassUnquoted);
 
       const isMatch = allowedPasswords.has(inputPass) || 
                       allowedPasswords.has(inputTrimmed) || 
@@ -1236,20 +1238,20 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{reveal_price:String(settings.reveal_price),match_price:String(settings.match_price),question_price:String(settings.question_price),questions_pack_price:String(settings.questions_pack_price||'100'),reveal_enabled:settings.reveal_enabled?'1':'0',match_enabled:settings.match_enabled?'1':'0',chat_enabled:settings.chat_enabled?'1':'0',offer_enabled:settings.offer_enabled?'1':'0',offer_percent:String(settings.offer_percent),offer_label:settings.offer_label,chat_time_3:String(settings.chat_time_3||'19'),chat_time_10:String(settings.chat_time_10||'49'),chat_time_20:String(settings.chat_time_20||'89'),chat_time_30:String(settings.chat_time_30||'119')}});
+          return json(res,200,{settings:{reveal_price:String(settings.reveal_price || '59'),match_price:String(settings.match_price || '99'),reveal_enabled:settings.reveal_enabled!==false && settings.reveal_enabled!=='0'?'1':'0',match_enabled:settings.match_enabled!==false && settings.match_enabled!=='0'?'1':'0',offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',offer_percent:String(settings.offer_percent || '0'),offer_label:settings.offer_label || ''}});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label','chat_time_3','chat_time_10','chat_time_20','chat_time_30']) if(k in b) inMemorySettings[k] = String(b[k]);
-        for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = b[k] === '1' ? '1' : '0';
+        for(const k of ['reveal_price','match_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
+        for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = (b[k] === '1' || b[k] === true) ? '1' : '0';
         saveJsonFile('settings.json', inMemorySettings);
         try {
           const patch={};
-          for(const k of ['reveal_price','match_price','question_price','questions_pack_price','offer_percent','offer_label','chat_time_3','chat_time_10','chat_time_20','chat_time_30'])if(k in b)patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','chat_enabled','offer_enabled'])if(k in b)patch[k]=b[k]==='1';
+          for(const k of ['reveal_price','match_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
+          for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
         } catch {}
