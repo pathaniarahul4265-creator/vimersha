@@ -11740,6 +11740,8 @@ function verifyIndividualChart() {
       if (document.getElementById("f_lon")) document.getElementById("f_lon").value = "77.2090";
     }
     verifiedChart = yield fetchEphemerisChart({ date, time, lat, lon, name: document.getElementById("f_name").value || "Native" });
+    window.verifiedChart = verifiedChart;
+    window.lastVerifiedChart = verifiedChart;
     birthContext += `
 
 ${chartContextFromApi(verifiedChart, "VERIFIED NATAL CHART")}`;
@@ -11764,6 +11766,7 @@ function verifyKundliCharts() {
     });
     verifiedCharts.partnerA = yield get("k1", "Male partner", "1994-06-20", "08:15:00", 28.6139, 77.2090);
     verifiedCharts.partnerB = yield get("k2", "Female partner", "1996-09-12", "14:45:00", 19.0760, 72.8777);
+    window.verifiedCharts = verifiedCharts;
     birthContext += `
 
 ${chartContextFromApi(verifiedCharts.partnerA, "VERIFIED MALE PARTNER CHART")}
@@ -13236,49 +13239,65 @@ document.getElementById("genBtn").onclick = () => __async(this, null, function* 
   if (!fLon.value) fLon.value = "77.2090";
   if (fConsent && !fConsent.checked) fConsent.checked = true;
 
-  if (!(yield window.requestPaidAccess("reveal")))
+  if (window.isGeneratingReport) {
+    const pc = document.getElementById("progressCard");
+    if (pc) {
+      pc.style.display = "block";
+      pc.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     return;
-  activeSections = SECTIONS;
-  activeRules = RULES;
-  birthContext = buildBirthContext();
-  fullReportText = "";
-  chatHistory = [];
-  chatQuestionsUsed = 0;
-  chatUnlocked = false;
-  consultationQuestionsLog = [];
-  activeKey = EMBEDDED_KEY;
-  window.chapterMemory = [];
-  window.chapterPartialStates = {};
-  document.getElementById("progressHeading").textContent = "Casting the chart";
-  document.getElementById("reportHeading").textContent = "Your reading";
-  document.getElementById("chatHeading").textContent = "Ask the chart";
-  document.getElementById("progressCard").style.display = "block";
-  document.getElementById("reportCard").style.display = "block";
-  document.getElementById("chatCard").style.display = "none";
-  const dpb = document.getElementById("dailyPanchangBar");
-  if (dpb) dpb.style.display = "none";
-  const drs = document.getElementById("dailyRashifalSection");
-  if (drs) drs.style.display = "none";
-  const stepList = document.getElementById("stepList");
-  stepList.innerHTML = activeSections.map((s) => `<li id="step-${s.id}"><span class="dot"></span>${s.title}</li>`).join("");
-  const reportBody = document.getElementById("reportBody");
-  reportBody.innerHTML = "";
-  const ptc = document.getElementById("placementTableCard");
-  if (ptc)
-    ptc.style.display = "none";
-  const itc = document.getElementById("interpretationTableCard");
-  if (itc)
-    itc.style.display = "none";
-  const chartWrap = document.getElementById("kundliChartWrap");
-  if (chartWrap)
-    chartWrap.dataset.chartMode = "north";
-  renderKundliVisuals();
-  renderReadingNavigator();
-  renderChatQuestionsRibbon();
-  const chatLog = document.getElementById("chatLog");
-  chatLog.innerHTML = '<div class="empty-hint" id="chatHint">The chart is being cast \u2014 you can start asking questions the moment the first section appears above.</div>';
-  document.getElementById("progressCard").scrollIntoView({ behavior: "smooth", block: "start" });
-  yield runFrom(0, reportBody, stepList, document.getElementById("progressError"));
+  }
+
+  const payApproved = yield window.requestPaidAccess("reveal");
+  if (!payApproved)
+    return;
+
+  window.isGeneratingReport = true;
+  try {
+    activeSections = SECTIONS;
+    activeRules = RULES;
+    birthContext = buildBirthContext();
+    fullReportText = "";
+    chatHistory = [];
+    chatQuestionsUsed = 0;
+    chatUnlocked = false;
+    consultationQuestionsLog = [];
+    activeKey = EMBEDDED_KEY;
+    window.chapterMemory = [];
+    window.chapterPartialStates = {};
+    document.getElementById("progressHeading").textContent = "Casting the chart";
+    document.getElementById("reportHeading").textContent = "Your reading";
+    document.getElementById("chatHeading").textContent = "Ask the chart";
+    document.getElementById("progressCard").style.display = "block";
+    document.getElementById("reportCard").style.display = "block";
+    document.getElementById("chatCard").style.display = "none";
+    const dpb = document.getElementById("dailyPanchangBar");
+    if (dpb) dpb.style.display = "none";
+    const drs = document.getElementById("dailyRashifalSection");
+    if (drs) drs.style.display = "none";
+    const stepList = document.getElementById("stepList");
+    stepList.innerHTML = activeSections.map((s) => `<li id="step-${s.id}"><span class="dot"></span>${s.title}</li>`).join("");
+    const reportBody = document.getElementById("reportBody");
+    reportBody.innerHTML = "";
+    const ptc = document.getElementById("placementTableCard");
+    if (ptc)
+      ptc.style.display = "none";
+    const itc = document.getElementById("interpretationTableCard");
+    if (itc)
+      itc.style.display = "none";
+    const chartWrap = document.getElementById("kundliChartWrap");
+    if (chartWrap)
+      chartWrap.dataset.chartMode = "north";
+    renderKundliVisuals();
+    renderReadingNavigator();
+    renderChatQuestionsRibbon();
+    const chatLog = document.getElementById("chatLog");
+    chatLog.innerHTML = '<div class="empty-hint" id="chatHint">The chart is being cast — you can start asking questions the moment the first section appears above.</div>';
+    document.getElementById("progressCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    yield runFrom(0, reportBody, stepList, document.getElementById("progressError"));
+  } finally {
+    window.isGeneratingReport = false;
+  }
 });
 const GUNA_NAKSHATRAS = [
   { name: "Ashwini", hindi: "\u0905\u0936\u094D\u0935\u093F\u0928\u0940", lord: "Ketu", gana: "Deva", yoni: "Horse", nadi: "Adi" },
@@ -13715,12 +13734,13 @@ function renderGunaMilanResultCard(milanResult) {
 }
 window.unlockDetailedKundliReport = function() {
   return __async(this, null, function* () {
-    if (window.matchDetailedUnlocked)
-      return;
-    const payOk = yield window.requestPaidAccess("match", 99);
-    if (!payOk)
-      return;
+    if (!entitlements.match && !window.isVipActive()) {
+      const payOk = yield window.requestPaidAccess("match", 99);
+      if (!payOk)
+        return;
+    }
     window.matchDetailedUnlocked = true;
+    entitlements.match = true;
     const gate = document.getElementById("matchPremiumGate");
     if (gate)
       gate.style.display = "none";
@@ -14527,19 +14547,26 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     const st = $("paymentModalStatus");
     const name = ((_a3 = $("payNameInput")) == null ? void 0 : _a3.value) || "";
     const email = ((_b3 = $("payEmailInput")) == null ? void 0 : _b3.value) || "";
+    const planToPay = window.activePaymentPlan || selectedPlan || "reveal";
+    const amtToPay = window.activePaymentAmount || selectedAmount || 59;
     if (st) {
       st.style.display = "block";
       st.className = "coord-status";
-      st.textContent = "Initiating secure Razorpay checkout\u2026";
+      st.textContent = "Initiating secure Razorpay checkout…";
     }
     try {
-      const ok = yield window.requestPaidAccess(selectedPlan, selectedAmount, { name, email });
+      const ok = yield window.requestPaidAccess(planToPay, amtToPay, { name, email });
       if (ok) {
         if (st) {
           st.className = "coord-status ok";
-          st.textContent = "Payment successful! Access granted.";
+          st.textContent = "Payment successful! Unlocking and generating report…";
         }
-        setTimeout(() => close("paymentModal"), 1200);
+        setTimeout(() => {
+          close("paymentModal");
+          if (typeof window.triggerReportGenerationAfterPayment === "function") {
+            window.triggerReportGenerationAfterPayment(planToPay);
+          }
+        }, 600);
       } else {
         if (st) {
           st.className = "coord-status err";
@@ -14830,34 +14857,58 @@ window.toggleMobileSection = function(targetId, triggerEl) {
   function loadAdmin() {
     return __async(this, null, function* () {
       var _a3;
+      const refreshBtn = $("adminRefreshBtn");
+      if (refreshBtn) refreshBtn.textContent = "Refreshing\u2026";
       try {
-        const [r, f, v, pr, s, p, a, gq] = yield Promise.all([
-          adminFetch("/api/admin/reports"),
-          adminFetch("/api/admin/feedback"),
-          adminFetch("/api/admin/vip"),
-          adminFetch("/api/admin/promos").catch(() => ({ promos: [] })),
-          adminFetch("/api/admin/settings"),
-          adminFetch("/api/admin/payments").catch(() => ({ payments: [] })),
-          adminFetch("/api/admin/audit-logs").catch(() => ({ logs: [] })),
-          adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] }))
-        ]);
-        const reports = r.reports || [];
-        const feedback = f.feedback || [];
-        const vips = v.codes || [];
-        const promos = pr.promos || [];
-        const settings = s.settings || {};
-        const payments = p.payments || [];
-        const logs = a.logs || [];
-        const geminiQuota = gq || {};
-        renderOverview(reports, feedback, vips, settings, payments, geminiQuota);
-        renderReports(reports);
-        renderFeedback(feedback);
-        renderPayments(payments);
-        renderVip(vips);
-        renderPromos(promos);
-        renderAuditLogs(logs);
-        renderSettings(settings);
+        let data = {};
+        try {
+          data = yield adminFetch("/api/admin/overview-all");
+        } catch (errOverview) {
+          console.warn("Fast overview fallback to multi-endpoint", errOverview);
+          const [r, f, v, pr, s, p, a, gq] = yield Promise.all([
+            adminFetch("/api/admin/reports").catch(() => ({ reports: [] })),
+            adminFetch("/api/admin/feedback").catch(() => ({ feedback: [] })),
+            adminFetch("/api/admin/vip").catch(() => ({ codes: [] })),
+            adminFetch("/api/admin/promos").catch(() => ({ promos: [] })),
+            adminFetch("/api/admin/settings").catch(() => ({ settings: {} })),
+            adminFetch("/api/admin/payments").catch(() => ({ payments: [] })),
+            adminFetch("/api/admin/audit-logs").catch(() => ({ logs: [] })),
+            adminFetch("/api/admin/gemini-quota").catch(() => ({ totalConfiguredKeys: 1, keys: [] }))
+          ]);
+          data = {
+            reports: r.reports || [],
+            feedback: f.feedback || [],
+            vips: v.codes || [],
+            promos: pr.promos || [],
+            settings: s.settings || {},
+            payments: p.payments || [],
+            auditLogs: a.logs || [],
+            geminiQuota: gq || {}
+          };
+        }
+
+        const reports = data.reports || [];
+        const feedback = data.feedback || [];
+        const vips = data.vips || data.codes || [];
+        const promos = data.promos || [];
+        const settings = data.settings || {};
+        const payments = data.payments || [];
+        const logs = data.auditLogs || data.logs || [];
+        const geminiQuota = data.geminiQuota || {};
+
+        try { renderOverview(reports, feedback, vips, settings, payments, geminiQuota); } catch (e) { console.error("renderOverview error:", e); }
+        try { renderReports(reports); } catch (e) { console.error("renderReports error:", e); }
+        try { renderFeedback(feedback); } catch (e) { console.error("renderFeedback error:", e); }
+        try { renderPayments(payments); } catch (e) { console.error("renderPayments error:", e); }
+        try { renderVip(vips); } catch (e) { console.error("renderVip error:", e); }
+        try { renderPromos(promos); } catch (e) { console.error("renderPromos error:", e); }
+        try { renderAuditLogs(logs); } catch (e) { console.error("renderAuditLogs error:", e); }
+        try { renderSettings(settings); } catch (e) { console.error("renderSettings error:", e); }
+
+        const errNotice = document.getElementById("adminLoadError");
+        if (errNotice) errNotice.remove();
       } catch (e) {
+        console.error("loadAdmin fatal error:", e);
         const shell = document.querySelector(".admin-shell");
         if (shell) {
           let n = document.getElementById("adminLoadError");
@@ -14867,8 +14918,10 @@ window.toggleMobileSection = function(targetId, triggerEl) {
             n.className = "admin-notice";
             (_a3 = shell.querySelector(".admin-tabs")) == null ? void 0 : _a3.insertAdjacentElement("afterend", n);
           }
-          n.textContent = "Administration could not load: " + e.message;
+          n.textContent = "Administration notice: " + (e.message || "Failed to load admin data");
         }
+      } finally {
+        if (refreshBtn) refreshBtn.textContent = "Refresh";
       }
     });
   }
@@ -14876,35 +14929,29 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     const container = $("adminAudit");
     if (!container)
       return;
+    const safeRows = Array.isArray(rows) ? rows : [];
     const renderTable = (items) => {
       var _a3;
       return `
-      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
-        <input type="text" id="reportSearch" placeholder="🔍 Search reports by name, email or mode…" value="${esc(((_a3 = $("reportSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;flex:1;">
-        <button id="clearAllReportsBtn" class="small secondary" style="background:rgba(216,160,76,0.1);color:#d8a04c;border:1px solid rgba(216,160,76,0.3);">Clear All</button>
+      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="auditSearch" placeholder="\u{1F50D} Search audit logs by action, IP or details\u2026" value="${esc(((_a3 = $("auditSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;flex:1;">
+        ${safeRows.length ? '<button id="clearAuditBtn" type="button" class="small secondary" style="background:rgba(235,87,87,0.12);color:#ff9b9b;border:1px solid rgba(235,87,87,0.3);height:36px;">Clear Audit History (' + safeRows.length + ')</button>' : ''}
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
-            <tr><th>Name</th><th>Mode</th><th>Email</th><th>Created</th><th>Status</th><th>Action</th></tr>
+            <tr><th>Timestamp</th><th>Client IP</th><th>Action</th><th>Details</th><th>Status</th></tr>
           </thead>
           <tbody>
             ${items.length ? items.map((r) => `
               <tr>
-                <td><b>${esc(r.name)}</b></td>
-                <td><span class="admin-badge">${esc(r.mode)}</span></td>
-                <td>${esc(r.email || "—")}</td>
-                <td>${esc(new Date(r.created_at).toLocaleString())}</td>
-                <td><span class="admin-badge paid">Verified</span></td>
-                <td>
-                   <div style="display:flex;gap:6px;">
-                     <button class="small" data-report-id="${r.id}">Open</button>
-                     <button class="small secondary" data-report-download="${r.id}" style="background:rgba(216,160,76,0.1);color:#d8a04c;border-color:rgba(216,160,76,0.3);">⬇</button>
-                     <button class="small secondary" data-report-delete="${r.id}" style="background:rgba(255,100,100,0.1);color:#ff6b6b;border-color:rgba(255,100,100,0.3);">🗑</button>
-                   </div>
-                </td>
+                <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${esc(r.timestamp ? new Date(r.timestamp).toLocaleString() : 'Just now')}</td>
+                <td><code style="color:#7fc5c0;font-size:12px;">${esc(r.ip || '127.0.0.1')}</code></td>
+                <td><b style="color:#f2d792;font-size:12.5px;">${esc(r.action || 'SECURITY_EVENT')}</b></td>
+                <td style="max-width:340px;white-space:normal;line-height:1.4;font-size:12.5px;">${esc(r.details || '\u2014')}</td>
+                <td><span class="admin-status-pill ${r.status === 'SUCCESS' ? 'ok' : 'err'}">${esc(r.status || 'SUCCESS')}</span></td>
               </tr>
-            `).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No reports found matching criteria</td></tr>'}
+            `).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No security audit events recorded</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -14913,8 +14960,15 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     const filterAndDraw = () => {
       var _a3;
       const q = (((_a3 = $("auditSearch")) == null ? void 0 : _a3.value) || "").toLowerCase().trim();
-      const filtered = rows.filter((r) => !q || r.action.toLowerCase().includes(q) || r.ip.toLowerCase().includes(q) || r.details && r.details.toLowerCase().includes(q));
-      container.innerHTML = renderTable(filtered);
+      const filtered = safeRows.filter((r) => {
+        if (!q) return true;
+        const act = String(r.action || '').toLowerCase();
+        const ip = String(r.ip || '').toLowerCase();
+        const det = String(r.details || '').toLowerCase();
+        const st = String(r.status || '').toLowerCase();
+        return act.includes(q) || ip.includes(q) || det.includes(q) || st.includes(q);
+      });
+      container.innerHTML = `<div class="admin-notice">Real-time security audit trails tracking admin logins, VIP code operations, setting updates, and API quota resets.</div>` + renderTable(filtered);
       attachEvents();
     };
     const attachEvents = () => {
@@ -15365,47 +15419,181 @@ ${item.message}`);
   }
   function renderPayments(rows) {
     const container = $("adminPayments");
+    if (!container) return;
+    const safeRows = Array.isArray(rows) ? rows : [];
+    window._adminPaymentRows = safeRows;
+
+    let activeFilter = 'all';
+
+    const verifiedList = safeRows.filter((x) => x.status === 'verified' || x.status === 'paid' || x.status === 'captured');
+    const pendingList = safeRows.filter((x) => x.status === 'created' || x.status === 'pending');
+    const demoList = safeRows.filter((x) => Boolean(x.is_demo || (x.order_id && String(x.order_id).includes('demo')) || (x.payment_id && String(x.payment_id).includes('demo'))));
+    const totalRevINR = verifiedList.reduce((acc, x) => acc + (x.amount ? Math.round(x.amount / 100) : (x.plan === 'reveal' ? 59 : x.plan === 'match' ? 99 : 29)), 0);
+
     const renderTable = (items) => {
       var _a3;
       return `
-      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;">
-        <input type="text" id="paymentSearch" placeholder="\u{1F50D} Search payments by order ID, payment ID or plan\u2026" value="${esc(((_a3 = $("paymentSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:380px;font-size:13px;padding:8px 12px;">
+      <div class="admin-stats" style="margin-bottom:16px;">
+        <div class="admin-stat"><b style="color:#75b68a">\u20B9${totalRevINR.toLocaleString()}</b><span>Total Verified Revenue</span></div>
+        <div class="admin-stat"><b style="color:#a8e6cf">${verifiedList.length}</b><span>Verified Transactions</span></div>
+        <div class="admin-stat"><b style="color:#f2d792">${pendingList.length}</b><span>Pending Checkout Sessions</span></div>
+        <div class="admin-stat"><b style="color:#7fc5c0">${demoList.length}</b><span>Demo / Test Orders</span></div>
       </div>
+
+      <div class="admin-filter-bar" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="paymentSearch" placeholder="\u{1F50D} Search payments by name, email, order ID, payment ID, or plan\u2026" value="${esc(((_a3 = $("paymentSearch")) == null ? void 0 : _a3.value) || "")}" style="max-width:360px;font-size:13px;padding:8px 12px;flex:1;">
+        
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="small ${activeFilter === 'all' ? '' : 'secondary'} filter-pay-chip" data-pay-filter="all">All (${safeRows.length})</button>
+          <button type="button" class="small ${activeFilter === 'verified' ? '' : 'secondary'} filter-pay-chip" data-pay-filter="verified" style="color:#a8e6cf;">Verified (${verifiedList.length})</button>
+          <button type="button" class="small ${activeFilter === 'pending' ? '' : 'secondary'} filter-pay-chip" data-pay-filter="pending" style="color:#f2d792;">Pending (${pendingList.length})</button>
+          <button type="button" class="small ${activeFilter === 'demo' ? '' : 'secondary'} filter-pay-chip" data-pay-filter="demo">Demo (${demoList.length})</button>
+        </div>
+
+        ${safeRows.length ? '<button id="clearPaymentsAdmin" type="button" class="small secondary" style="margin-left:auto;height:36px;background:rgba(235,87,87,0.12);border:1px solid rgba(235,87,87,0.3);color:#ff9b9b;">Clear Payment Logs</button>' : ''}
+      </div>
+
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
-            <tr><th>Order ID</th><th>Payment ID</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+            <tr>
+              <th>Customer</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Order &amp; Payment IDs</th>
+              <th>Status</th>
+              <th>Mode</th>
+              <th>Date &amp; Time</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
           </thead>
           <tbody>
-            ${items.length ? items.map((r) => `
-              <tr>
-                <td><code>${esc(r.order_id || r.id)}</code></td>
-                <td><code>${esc(r.payment_id || "\u2014")}</code></td>
-                <td><span class="admin-badge">${esc(r.plan)}</span></td>
-                <td><b style="color:#f2d792">\u20B9${r.amount ? Math.round(r.amount / 100) : r.plan === "reveal" ? 59 : r.plan === "match" ? 99 : 29}</b></td>
-                <td><span class="admin-status-pill ${r.status === "verified" || r.status === "captured" ? "ok" : r.status === "failed" ? "err" : "pending"}">${esc(r.status)}</span></td>
-                <td>${esc(r.created_at ? new Date(r.created_at).toLocaleString() : new Date().toLocaleString())}</td>
+            ${items.length ? items.map((r) => {
+              const orderId = r.order_id || r.id || '\u2014';
+              const payId = r.payment_id || '\u2014';
+              const isVerified = r.status === 'verified' || r.status === 'paid' || r.status === 'captured';
+              const isFailed = r.status === 'failed';
+              const statusLabel = isVerified ? '\u2713 Verified' : isFailed ? '\u2717 Failed' : '\u23F3 Pending';
+              const statusClass = isVerified ? 'ok' : isFailed ? 'err' : 'pending';
+              const planLabel = r.plan === 'reveal' ? 'Complete Reading (\u20B959)' : r.plan === 'match' ? 'Kundli Match (\u20B999)' : r.plan === 'question' ? '1 Question (\u20B929)' : r.plan === 'questions_pack' ? '5 Questions Pack (\u20B9100)' : r.plan === 'dakshina' ? 'Sacred Dakshina' : (r.plan || 'reveal');
+              const amountINR = r.amount ? Math.round(r.amount / 100) : (r.plan === 'reveal' ? 59 : r.plan === 'match' ? 99 : 29);
+              const customerName = r.name || 'Guest / Native';
+              const customerEmail = r.email || r.phone || 'No email specified';
+              const isDemoOrder = Boolean(r.is_demo || String(orderId).includes('demo') || String(payId).includes('demo'));
+              const createdStr = r.created_at || r.verified_at ? new Date(r.created_at || r.verified_at).toLocaleString() : 'Just now';
+
+              return `
+              <tr id="pay_row_${esc(orderId)}">
+                <td>
+                  <b style="color:#f2d792;font-size:13.5px;display:block;">${esc(customerName)}</b>
+                  <span style="font-size:11.5px;color:var(--muted);">${esc(customerEmail)}</span>
+                </td>
+                <td><span class="admin-badge" style="font-size:11.5px;">${esc(planLabel)}</span></td>
+                <td><b style="color:#75b68a;font-size:14px;">\u20B9${amountINR}</b></td>
+                <td>
+                  <div style="font-size:11.5px;margin-bottom:2px;">
+                    <span style="color:var(--muted)">Ord:</span> <code style="color:#e0e8eb;font-size:11px;">${esc(orderId)}</code>
+                  </div>
+                  ${payId !== '\u2014' ? `
+                  <div style="font-size:11.5px;">
+                    <span style="color:var(--muted)">Pay:</span> <code style="color:#7fc5c0;font-size:11px;">${esc(payId)}</code>
+                  </div>` : ''}
+                </td>
+                <td><span class="admin-status-pill ${statusClass}">${esc(statusLabel)}</span></td>
+                <td><span class="admin-badge" style="font-size:11px;background:rgba(255,255,255,0.05);">${isDemoOrder ? 'Demo Sandbox' : 'Live Razorpay'}</span></td>
+                <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${esc(createdStr)}</td>
+                <td style="text-align:right;white-space:nowrap;">
+                  <button type="button" class="small secondary view-payment-detail-btn" data-order-id="${esc(orderId)}" style="margin-right:4px;" title="View full payment payload">Details</button>
+                  <button type="button" class="small danger delete-payment-btn" data-order-id="${esc(orderId)}" title="Delete payment log">Delete</button>
+                </td>
               </tr>
-            `).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No payment records found</td></tr>'}
+              `;
+            }).join("") : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No transactions found matching your criteria.</td></tr>'}
           </tbody>
         </table>
       </div>
     `;
     };
-    container.innerHTML = `<div class="admin-notice">Logs of Razorpay checkout orders and demo transactions. Verified payments unlock premium content instantly.</div><div id="paymentsTableArea">${renderTable(rows)}</div>`;
+
+    const filterAndDraw = () => {
+      var _a3;
+      const q = (((_a3 = $("paymentSearch")) == null ? void 0 : _a3.value) || "").toLowerCase().trim();
+      const filtered = safeRows.filter((x) => {
+        const isVerified = x.status === 'verified' || x.status === 'paid' || x.status === 'captured';
+        const isPending = x.status === 'created' || x.status === 'pending';
+        const isDemoOrder = Boolean(x.is_demo || (x.order_id && String(x.order_id).includes('demo')) || (x.payment_id && String(x.payment_id).includes('demo')));
+
+        if (activeFilter === 'verified' && !isVerified) return false;
+        if (activeFilter === 'pending' && !isPending) return false;
+        if (activeFilter === 'demo' && !isDemoOrder) return false;
+
+        if (!q) return true;
+        const name = String(x.name || '').toLowerCase();
+        const email = String(x.email || '').toLowerCase();
+        const ord = String(x.order_id || x.id || '').toLowerCase();
+        const pay = String(x.payment_id || '').toLowerCase();
+        const plan = String(x.plan || '').toLowerCase();
+        const status = String(x.status || '').toLowerCase();
+        return name.includes(q) || email.includes(q) || ord.includes(q) || pay.includes(q) || plan.includes(q) || status.includes(q);
+      });
+
+      container.innerHTML = `<div class="admin-notice">Logs of Razorpay checkout orders and demo transactions. Verified payments unlock premium content instantly.</div><div id="paymentsTableArea">${renderTable(filtered)}</div>`;
+      attachEvents();
+    };
+
     const attachEvents = () => {
       const search = $("paymentSearch");
       if (search) {
-        search.oninput = (e) => {
-          const q = e.target.value.toLowerCase().trim();
-          const filtered = rows.filter((x) => (x.order_id || "").toLowerCase().includes(q) || (x.payment_id || "").toLowerCase().includes(q) || (x.plan || "").toLowerCase().includes(q));
-          $("paymentsTableArea").innerHTML = renderTable(filtered);
-          attachEvents();
-          $("paymentSearch").focus();
+        search.oninput = () => {
+          filterAndDraw();
+          $("paymentSearch")?.focus();
         };
       }
+
+      document.querySelectorAll(".filter-pay-chip").forEach((btn) => {
+        btn.onclick = () => {
+          activeFilter = btn.getAttribute("data-pay-filter") || 'all';
+          filterAndDraw();
+        };
+      });
+
+      document.querySelectorAll(".view-payment-detail-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const ordId = btn.getAttribute("data-order-id");
+          const item = safeRows.find((x) => (x.order_id || x.id) === ordId);
+          if (!item) return;
+          alert(`\u2726 SACRED PAYMENT RECORD DETAILS \u2726\n\nCustomer: ${item.name || 'Guest Native'}\nEmail: ${item.email || 'N/A'}\nPhone: ${item.phone || 'N/A'}\nPlan: ${item.plan}\nAmount: \u20B9${item.amount ? Math.round(item.amount / 100) : '59'}\nOrder ID: ${item.order_id || item.id}\nPayment ID: ${item.payment_id || 'Pending / Not Captured'}\nSignature: ${item.signature || 'N/A'}\nStatus: ${item.status}\nMode: ${item.is_demo ? 'Demo Sandbox' : 'Live Razorpay'}\nSession Token: ${item.session_token || 'N/A'}\nCreated: ${item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}\nVerified: ${item.verified_at ? new Date(item.verified_at).toLocaleString() : 'N/A'}`);
+        };
+      });
+
+      document.querySelectorAll(".delete-payment-btn").forEach((btn) => {
+        btn.onclick = () => __async(this, null, function* () {
+          const ordId = btn.getAttribute("data-order-id");
+          if (!confirm(`Delete payment record for Order ID ${ordId}?`)) return;
+          try {
+            yield adminFetch("/api/admin/payments/" + encodeURIComponent(ordId), { method: "DELETE" });
+            yield loadAdmin();
+          } catch (err) {
+            alert("Could not delete payment log: " + err.message);
+          }
+        });
+      });
+
+      const clearBtn = $("clearPaymentsAdmin");
+      if (clearBtn) {
+        clearBtn.onclick = () => __async(this, null, function* () {
+          if (!confirm("Are you sure you want to clear ALL payment logs? This cannot be undone.")) return;
+          try {
+            yield adminFetch("/api/admin/payments", { method: "DELETE" });
+            yield loadAdmin();
+          } catch (err) {
+            alert("Could not clear payments: " + err.message);
+          }
+        });
+      }
     };
-    attachEvents();
+
+    filterAndDraw();
   }
   function renderPromos(rows) {
     const container = $("adminPromo");
@@ -16340,7 +16528,17 @@ var __async = (__this, __arguments, generator) => {
 
       const p = cfg.plans[plan] || { title: plan === "questions_pack" ? "5 Questions Value Pack" : "Voluntary Sacred Dakshina", amountINR: customAmount || (plan === "questions_pack" ? 100 : 251) };
       try {
-        const payload = { plan };
+        var _a_name, _b_name, _c_email;
+        const customerName = (customPrefill == null ? void 0 : customPrefill.name) || ((_a_name = document.getElementById("f_name")) == null ? void 0 : _a_name.value) || ((_b_name = document.getElementById("k1_name")) == null ? void 0 : _b_name.value) || "";
+        const customerEmail = (customPrefill == null ? void 0 : customPrefill.email) || ((_c_email = document.getElementById("f_email")) == null ? void 0 : _c_email.value) || "";
+        const customerPhone = (customPrefill == null ? void 0 : customPrefill.phone) || "";
+
+        const payload = { 
+          plan,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone
+        };
         if (customAmount) payload.amount = Math.round(customAmount * 100);
         if (window.activePromoCode && window.activePromoCode.code) {
           payload.promoCode = window.activePromoCode.code;
@@ -16368,6 +16566,9 @@ var __async = (__this, __arguments, generator) => {
                 razorpay_payment_id: "pay_demo_" + Date.now(),
                 razorpay_signature: "sig_demo_" + Date.now(),
                 plan,
+                name: customerName,
+                email: customerEmail,
+                phone: customerPhone,
                 sessionToken
               })
             });
@@ -16399,7 +16600,6 @@ var __async = (__this, __arguments, generator) => {
           return true;
         }
         return yield new Promise((resolve) => {
-          var _a, _b, _c;
           let settled = false;
           const finish = (ok) => {
             if (!settled) {
@@ -16407,8 +16607,8 @@ var __async = (__this, __arguments, generator) => {
               resolve(ok);
             }
           };
-          const prefillName = (customPrefill == null ? void 0 : customPrefill.name) || ((_a = document.getElementById("f_name")) == null ? void 0 : _a.value) || ((_b = document.getElementById("k1_name")) == null ? void 0 : _b.value) || "";
-          const prefillEmail = (customPrefill == null ? void 0 : customPrefill.email) || ((_c = document.getElementById("f_email")) == null ? void 0 : _c.value) || "";
+          const prefillName = customerName;
+          const prefillEmail = customerEmail;
           const options = {
             key,
             amount,
@@ -16439,6 +16639,9 @@ var __async = (__this, __arguments, generator) => {
                     razorpay_payment_id: resp.razorpay_payment_id,
                     razorpay_signature: resp.razorpay_signature,
                     plan,
+                    name: customerName,
+                    email: customerEmail,
+                    phone: customerPhone,
                     sessionToken
                   })
                 });
@@ -16491,22 +16694,52 @@ var __async = (__this, __arguments, generator) => {
       window.openPaymentModal(plan);
       
       const successHandler = (e) => {
-        if (e.detail && e.detail.plan === plan) {
-          window.removeEventListener("premium-unlocked", successHandler);
-          window.removeEventListener("payment-modal-closed", closeHandler);
-          resolve(true);
-        }
+        window.removeEventListener("premium-unlocked", successHandler);
+        window.removeEventListener("payment-modal-closed", closeHandler);
+        resolve(true);
       };
       
       const closeHandler = () => {
         window.removeEventListener("premium-unlocked", successHandler);
         window.removeEventListener("payment-modal-closed", closeHandler);
-        resolve(false);
+        if ((plan === "reveal" && entitlements.reveal) || (plan === "match" && entitlements.match) || window.isVipActive()) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
       };
 
       window.addEventListener("premium-unlocked", successHandler);
       window.addEventListener("payment-modal-closed", closeHandler);
     });
+  };
+
+  window.triggerReportGenerationAfterPayment = function(plan) {
+    if (plan === "match" || currentMode === "kundli") {
+      window.matchDetailedUnlocked = true;
+      entitlements.match = true;
+      const gate = document.getElementById("matchPremiumGate");
+      if (gate) gate.style.display = "none";
+      if (typeof window.unlockDetailedKundliReport === "function") {
+        window.unlockDetailedKundliReport();
+      }
+    } else {
+      entitlements.reveal = true;
+      const gate = document.getElementById("premiumGate");
+      if (gate) gate.style.display = "none";
+      if (!window.isGeneratingReport) {
+        const genBtn = document.getElementById("genBtn");
+        if (genBtn) {
+          genBtn.click();
+        }
+      } else {
+        const pc = document.getElementById("progressCard");
+        if (pc) {
+          pc.style.display = "block";
+          pc.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+    }
   };
 
   window.resetPaymentSession = () => {

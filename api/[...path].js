@@ -570,13 +570,23 @@ export default async function handler(req,res){
 
         const order = await createOrder(amount, plan, receipt);
         const sessionToken = crypto.randomBytes(32).toString('hex');
+        const customerName = clean(b.name || b.customer_name || '', 100);
+        const customerEmail = clean(b.email || b.customer_email || '', 100);
+        const customerPhone = clean(b.phone || '', 50);
+
         const payRecord = {
+          id: 'pay_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
           session_token: sessionToken,
           order_id: order.order_id || order.id,
+          payment_id: '',
           plan,
           amount: order.amount || amount,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
           status: 'created',
-          is_demo: Boolean(order.isDemo || !isLive)
+          is_demo: Boolean(order.isDemo || !isLive),
+          created_at: new Date().toISOString()
         };
         inMemoryPayments.unshift(payRecord);
         saveJsonFile('payments.json', inMemoryPayments);
@@ -609,6 +619,9 @@ export default async function handler(req,res){
       const plan = b.plan || 'reveal';
       const sessionToken = b.sessionToken;
       const activeSecret = getRazorpayKeySecret();
+      const customerName = clean(b.name || b.customer_name || '', 100);
+      const customerEmail = clean(b.email || b.customer_email || '', 100);
+      const customerPhone = clean(b.phone || '', 50);
 
       if (!razorpay_order_id) {
         return json(res, 400, {
@@ -621,17 +634,52 @@ export default async function handler(req,res){
       let row = inMemoryPayments.find(p => p.order_id === razorpay_order_id || (sessionToken && p.session_token === sessionToken));
       try {
         const rows = await db.select('payments', `select=*&order_id=eq.${encodeURIComponent(razorpay_order_id)}&limit=1`);
-        if (rows && rows[0]) row = rows[0];
+        if (rows && rows[0]) {
+          if (row) Object.assign(row, rows[0]);
+          else row = rows[0];
+        }
       } catch {}
 
       // If running in demo mode, free promo order, or without live gateway keys, auto-verify seamlessly
       if (String(razorpay_order_id).startsWith('free_order_') || String(razorpay_order_id).startsWith('order_demo_') || !activeSecret || (row && row.is_demo)) {
+        const demoPayId = razorpay_payment_id || `pay_demo_${Date.now()}`;
         if (row) {
-          row.status = 'paid';
-          row.payment_id = razorpay_payment_id || `pay_demo_${Date.now()}`;
+          row.status = 'verified';
+          row.payment_id = demoPayId;
+          if (customerName && !row.name) row.name = customerName;
+          if (customerEmail && !row.email) row.email = customerEmail;
+          if (customerPhone && !row.phone) row.phone = customerPhone;
           row.verified_at = new Date().toISOString();
           saveJsonFile('payments.json', inMemoryPayments);
+        } else {
+          row = {
+            id: 'pay_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+            session_token: sessionToken || crypto.randomBytes(16).toString('hex'),
+            order_id: razorpay_order_id,
+            payment_id: demoPayId,
+            plan,
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone,
+            amount: plan === 'reveal' ? 5900 : plan === 'match' ? 9900 : 2900,
+            status: 'verified',
+            is_demo: true,
+            created_at: new Date().toISOString(),
+            verified_at: new Date().toISOString()
+          };
+          inMemoryPayments.unshift(row);
+          saveJsonFile('payments.json', inMemoryPayments);
         }
+        try {
+          await db.update('payments', {
+            payment_id: demoPayId,
+            status: 'verified',
+            name: row.name,
+            email: row.email,
+            verified_at: new Date().toISOString()
+          }, `order_id=eq.${encodeURIComponent(razorpay_order_id)}`);
+        } catch {}
+
         return json(res, 200, {
           success: true,
           verified: true,
@@ -676,17 +724,41 @@ export default async function handler(req,res){
 
       // Valid signature: mark payment as verified
       if (row) {
-        row.status = 'paid';
+        row.status = 'verified';
         row.payment_id = razorpay_payment_id;
         row.signature = razorpay_signature;
+        if (customerName && !row.name) row.name = customerName;
+        if (customerEmail && !row.email) row.email = customerEmail;
+        if (customerPhone && !row.phone) row.phone = customerPhone;
         row.verified_at = new Date().toISOString();
+        saveJsonFile('payments.json', inMemoryPayments);
+      } else {
+        row = {
+          id: 'pay_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+          session_token: sessionToken || crypto.randomBytes(16).toString('hex'),
+          order_id: razorpay_order_id,
+          payment_id: razorpay_payment_id,
+          signature: razorpay_signature,
+          plan,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+          amount: plan === 'reveal' ? 5900 : plan === 'match' ? 9900 : 2900,
+          status: 'verified',
+          is_demo: false,
+          created_at: new Date().toISOString(),
+          verified_at: new Date().toISOString()
+        };
+        inMemoryPayments.unshift(row);
         saveJsonFile('payments.json', inMemoryPayments);
       }
       try {
         await db.update('payments', {
           payment_id: razorpay_payment_id,
           signature: razorpay_signature,
-          status: 'paid',
+          status: 'verified',
+          name: row.name,
+          email: row.email,
           verified_at: new Date().toISOString()
         }, `order_id=eq.${encodeURIComponent(razorpay_order_id)}`);
       } catch {}
@@ -952,6 +1024,88 @@ export default async function handler(req,res){
         return json(res, 200, { ok: true, message: 'All Gemini API key cooldowns and RPM counters reset.' });
       }
 
+      if (req.method === 'GET' && path === '/admin/overview-all') {
+        // Run all queries with fallback to in-memory instantly
+        let dbReports = [], dbFeedback = [], dbVips = [], dbPromos = [], dbPayments = [];
+        try {
+          const [repRes, fbRes, vipRes, proRes, payRes] = await Promise.all([
+            db.select('reports', 'select=*&order=created_at.desc&limit=500').catch(() => []),
+            db.select('feedback', 'select=*&order=created_at.desc&limit=500').catch(() => []),
+            db.select('vip_codes', 'select=*&order=created_at.desc&limit=1000').catch(() => []),
+            db.select('promo_codes', 'select=*&order=created_at.desc&limit=500').catch(() => []),
+            db.select('payments', 'select=*&order=created_at.desc&limit=500').catch(() => [])
+          ]);
+          if (Array.isArray(repRes)) dbReports = repRes;
+          if (Array.isArray(fbRes)) dbFeedback = fbRes;
+          if (Array.isArray(vipRes)) dbVips = vipRes;
+          if (Array.isArray(proRes)) dbPromos = proRes;
+          if (Array.isArray(payRes)) dbPayments = payRes;
+        } catch {}
+
+        // VIP Merging
+        const vipMap = new Map();
+        for (const c of inMemoryVipCodes) {
+          const key = String(c.display_code || c.code || c.id || '').toUpperCase().trim();
+          if (key) vipMap.set(key, { ...c, display_code: c.display_code || c.code || key });
+        }
+        for (const c of dbVips) {
+          const key = String(c.display_code || c.code || c.id || '').toUpperCase().trim();
+          if (key) {
+            const existing = vipMap.get(key) || {};
+            vipMap.set(key, {
+              ...existing,
+              ...c,
+              display_code: c.display_code || existing.display_code || key,
+              assigned_to: c.assigned_to !== undefined ? c.assigned_to : existing.assigned_to,
+              max_uses: c.max_uses || existing.max_uses || 1,
+              uses: c.uses !== undefined ? c.uses : (existing.uses || 0),
+              active: c.active !== undefined ? c.active : (existing.active !== false)
+            });
+          }
+        }
+        const mergedVips = Array.from(vipMap.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        // Payments Merging
+        const payMap = new Map();
+        for (const p of inMemoryPayments) {
+          const key = String(p.order_id || p.id || '').trim();
+          if (key) payMap.set(key, { ...p });
+        }
+        for (const p of dbPayments) {
+          const key = String(p.order_id || p.id || '').trim();
+          if (key) {
+            const existing = payMap.get(key) || {};
+            payMap.set(key, {
+              ...existing,
+              ...p,
+              name: p.name || existing.name || '',
+              email: p.email || existing.email || '',
+              phone: p.phone || existing.phone || '',
+              status: p.status || existing.status || 'created',
+              amount: p.amount || existing.amount,
+              plan: p.plan || existing.plan || 'reveal'
+            });
+          }
+        }
+        const mergedPayments = Array.from(payMap.values()).sort((a, b) => new Date(b.created_at || b.verified_at || 0) - new Date(a.created_at || a.verified_at || 0));
+
+        // Promo merging
+        const mergedPromos = [...inMemoryPromoCodes, ...dbPromos.filter(d => !inMemoryPromoCodes.some(m => m.id === d.id || m.code === d.code))];
+
+        let activeSettings = inMemorySettings;
+        try { activeSettings = await getSettings(); } catch {}
+
+        return json(res, 200, {
+          reports: dbReports.length ? dbReports : inMemoryReports,
+          feedback: dbFeedback.length ? dbFeedback : inMemoryFeedback,
+          vips: mergedVips,
+          promos: mergedPromos,
+          settings: activeSettings,
+          payments: mergedPayments,
+          auditLogs: auditLogs.slice(0, 300)
+        });
+      }
+
       if(req.method==='GET'&&path==='/admin/reports'){
         try {
           const data=await db.select('reports','select=*&order=created_at.desc&limit=500');
@@ -1027,12 +1181,67 @@ export default async function handler(req,res){
         return json(res, 200, { ok: true, count });
       }
       if(req.method==='GET'&&path==='/admin/payments'){
+        let dbPayments = [];
         try {
-          const data=await db.select('payments','select=*&order=created_at.desc&limit=500');
-          return json(res,200,{payments:data || inMemoryPayments});
-        } catch {
-          return json(res,200,{payments:inMemoryPayments});
+          const data = await db.select('payments','select=*&order=created_at.desc&limit=500');
+          if (Array.isArray(data)) dbPayments = data;
+        } catch {}
+
+        const map = new Map();
+        for (const p of inMemoryPayments) {
+          const key = String(p.order_id || p.id || '').trim();
+          if (key) map.set(key, { ...p });
         }
+        for (const p of dbPayments) {
+          const key = String(p.order_id || p.id || '').trim();
+          if (key) {
+            const existing = map.get(key) || {};
+            map.set(key, {
+              ...existing,
+              ...p,
+              name: p.name || existing.name || '',
+              email: p.email || existing.email || '',
+              phone: p.phone || existing.phone || '',
+              status: p.status || existing.status || 'created',
+              amount: p.amount || existing.amount,
+              plan: p.plan || existing.plan || 'reveal'
+            });
+          }
+        }
+        const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at || b.verified_at || 0) - new Date(a.created_at || a.verified_at || 0));
+        return json(res, 200, { payments: merged });
+      }
+
+      const pdm = path.match(/^\/admin\/payments\/([^/]+)$/);
+      if (req.method === 'DELETE' && pdm) {
+        const targetId = decodeURIComponent(pdm[1]).trim();
+        for (let i = inMemoryPayments.length - 1; i >= 0; i--) {
+          const item = inMemoryPayments[i];
+          if (item.id === targetId || item.order_id === targetId || item.payment_id === targetId) {
+            inMemoryPayments.splice(i, 1);
+          }
+        }
+        saveJsonFile('payments.json', inMemoryPayments);
+        try { await db.delete('payments', `id=eq.${encodeURIComponent(targetId)}`); } catch {}
+        try { await db.delete('payments', `order_id=eq.${encodeURIComponent(targetId)}`); } catch {}
+        logAudit(clientIp, 'PAYMENT_DELETE', `Deleted payment record ${targetId}`, 'SUCCESS');
+        return json(res, 200, { ok: true, deleted: targetId });
+      }
+
+      if (req.method === 'DELETE' && path === '/admin/payments') {
+        const count = inMemoryPayments.length;
+        inMemoryPayments.length = 0;
+        saveJsonFile('payments.json', inMemoryPayments);
+        try { await db.delete('payments', 'amount=gt.0'); } catch {}
+        logAudit(clientIp, 'PAYMENT_CLEAR', `Cleared all ${count} payment records`, 'SUCCESS');
+        return json(res, 200, { ok: true, count });
+      }
+
+      if (req.method === 'DELETE' && path === '/admin/audit-logs') {
+        const count = auditLogs.length;
+        auditLogs.length = 0;
+        logAudit(clientIp, 'AUDIT_CLEAR', `Cleared ${count} security audit logs`, 'SUCCESS');
+        return json(res, 200, { ok: true, count });
       }
       if(req.method==='GET'&&path==='/admin/vip'){
         let dbCodes = [];

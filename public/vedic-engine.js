@@ -850,9 +850,18 @@
       },
       ayanamsha: raw.ayanamshaDetails,
       lagna: raw.lagnaDetails,
+      ascendant: raw.lagnaDetails,
+      ascSign: raw.lagnaRashi,
+      ascDegree: raw.lagnaDegree,
+      ascNakshatra: (raw.lagnaDetails && raw.lagnaDetails.nakshatra) || "",
       houses: raw.houses,
       planets: raw.planets,
       planetsMap: raw.planetsMap,
+      dasha: raw.dasha,
+      dashas: raw.dasha,
+      dashaTimeline: { current: { mahadasha: raw.dasha.activeMahadasha, antardasha: raw.dasha.activeAntardasha } },
+      moonSign: raw.planetsMap && raw.planetsMap.Moon ? { rashiName: raw.planetsMap.Moon.sign, degreesFormatted: raw.planetsMap.Moon.degreeFormatted } : { rashiName: raw.moonRashi },
+      nakshatra: raw.planetsMap && raw.planetsMap.Moon ? { name: raw.planetsMap.Moon.nakshatra, pada: raw.planetsMap.Moon.pada } : { name: raw.nakshatra || "Rohini", pada: 1 },
       nakshatras: {
         moon: {
           name: ((_a = raw.planetsMap.Moon) == null ? void 0 : _a.nakshatra) || "",
@@ -867,7 +876,6 @@
           rashi: raw.lagnaRashi
         }
       },
-      dashas: raw.dasha,
       yogas: raw.yogas,
       doshas: raw.doshas,
       karakas: raw.karakas,

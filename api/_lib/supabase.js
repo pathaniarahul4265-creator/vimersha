@@ -50,7 +50,8 @@ export const db = {
     try {
       const endpoint = `${url}/rest/v1/${table}${queryParams ? `?${queryParams}` : ''}`;
       const res = await fetch(endpoint, {
-        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` },
+        signal: AbortSignal.timeout(2000)
       });
       if (res.ok) return await res.json();
     } catch (e) {}
@@ -78,7 +79,8 @@ export const db = {
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
-        body: JSON.stringify(record)
+        body: JSON.stringify(record),
+        signal: AbortSignal.timeout(2000)
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -93,7 +95,7 @@ export const db = {
     try {
       const list = loadJsonFile(`${table}.json`, []);
       if (Array.isArray(list)) {
-        // Apply patch
+        // Apply patch locally if matching record found
         saveJsonFile(`${table}.json`, list);
       }
     } catch (e) {}
@@ -110,7 +112,8 @@ export const db = {
           'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(patch)
+        body: JSON.stringify(patch),
+        signal: AbortSignal.timeout(2000)
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -128,7 +131,8 @@ export const db = {
       const endpoint = `${url}/rest/v1/${table}?${filter}`;
       const res = await fetch(endpoint, {
         method: 'DELETE',
-        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` },
+        signal: AbortSignal.timeout(2000)
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -151,7 +155,8 @@ export const db = {
           'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(params)
+        body: JSON.stringify(params),
+        signal: AbortSignal.timeout(2000)
       });
       if (!res.ok) {
         const errText = await res.text();
