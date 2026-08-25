@@ -182,6 +182,7 @@ async function createOrder(amount, plan, receiptCustom){
       amount: Math.round(amount),
       currency: 'INR',
       receipt: String(receipt).slice(0, 40),
+      payment_capture: 1, // Automatically capture payment immediately upon customer authorization to prevent auto-reversals
       notes: { plan: plan || 'standard' }
     });
     return {
@@ -723,6 +724,18 @@ export default async function handler(req,res){
       }
 
       // Valid signature: mark payment as verified
+      const rzpInstance = getRazorpay();
+      if (rzpInstance && razorpay_payment_id && !razorpay_payment_id.startsWith('pay_demo_')) {
+        try {
+          const payObj = await rzpInstance.payments.fetch(razorpay_payment_id);
+          if (payObj && payObj.status === 'authorized') {
+            await rzpInstance.payments.capture(razorpay_payment_id, payObj.amount, 'INR');
+          }
+        } catch (captureErr) {
+          console.warn('[Razorpay Explicit Capture Attempt]', captureErr.message);
+        }
+      }
+
       if (row) {
         row.status = 'verified';
         row.payment_id = razorpay_payment_id;
