@@ -773,8 +773,8 @@ export default async function handler(req,res){
       const b=await readBody(req);
       const name = clean(b.name || '');
       const email = clean(b.email || '');
-      const message = clean(b.message || '', 5000);
-      const phone = clean(b.phone || '', 60);
+      const message = clean(b.message || b.feedback || b.comments || '', 5000);
+      const phone = clean(b.phone || b.mobile || '', 60);
 
       if(!name || !email || !message){
         return json(res,400,{error:'Please provide your name, email address, and message.'});

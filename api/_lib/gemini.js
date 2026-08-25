@@ -306,8 +306,9 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
           config: configPayload,
         });
 
+        // Enforce a snappy 18-second timeout per attempt to guarantee no UI hangs
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI generation timed out after 90 seconds')), 90000)
+          setTimeout(() => reject(new Error('AI generation response delayed beyond 18s')), 18000)
         );
 
         const response = await Promise.race([callPromise, timeoutPromise]);
