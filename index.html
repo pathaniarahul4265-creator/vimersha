@@ -7916,6 +7916,13 @@ p,
     <div class="intro-eyebrow">Private access</div>
     <h2>Access portal</h2>
     <p>Use a complimentary VIP code to unlock full readings, or sign in to the private administration panel.</p>
+    
+    <div id="vipActiveNotice" style="display:none;background:rgba(216,160,76,0.12);border:1px solid rgba(216,160,76,0.4);border-radius:10px;padding:16px;margin-bottom:18px;text-align:center;">
+      <div style="color:#fce7b0;font-weight:700;font-size:15px;margin-bottom:6px;">👑 VIP Complimentary Access Active</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;" id="vipActiveNoticeDetails">All charts, matching analyses, and Acharya consultations are currently unlocked.</div>
+      <button type="button" id="exitVipBtn" style="padding:7px 18px;font-size:12.5px;border-radius:6px;background:rgba(235,87,87,0.15);border:1px solid rgba(235,87,87,0.4);color:#ff9b9b;cursor:pointer;">Exit VIP Mode &amp; Return to General Pricing</button>
+    </div>
+
     <div class="access-grid">
       <form id="vipForm" class="access-card">
         <h3>VIP access</h3>
@@ -14717,9 +14724,55 @@ window.toggleMobileSection = function(targetId, triggerEl) {
       }
     }
   }));
+  window.resetVipAccess = function() {
+    window.vipAccess = false;
+    window.isVipUser = false;
+    window.lastVipCode = "";
+    document.body.classList.remove("vip-active");
+    try {
+      localStorage.removeItem("jyotish_vip_unlocked");
+      localStorage.removeItem("jyotish_vip_code");
+    } catch (e) {}
+
+    const pReveal = (window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.reveal) || 59;
+    const pMatch = (window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.match) || 99;
+
+    const genBtn = $("genBtn");
+    if (genBtn) {
+      genBtn.textContent = `Reveal the chart · ₹${pReveal}`;
+    }
+    const matchBtn = $("matchBtn");
+    if (matchBtn) {
+      matchBtn.textContent = "View Guna Milan · Free";
+    }
+    const unlockMatchBtn = $("unlockMatchBtn");
+    if (unlockMatchBtn) {
+      unlockMatchBtn.textContent = `Unlock detailed match · ₹${pMatch}`;
+    }
+    const accessBtn = $("accessBtn");
+    if (accessBtn) {
+      accessBtn.innerHTML = "<span>👑</span> Access Portal";
+    }
+    const payBtns = document.querySelectorAll("#paymentBtn, #paymentBtnFixed, #paymentBtnHeader");
+    payBtns.forEach((b) => {
+      b.textContent = "Pricing & Dakshina";
+      b.style.opacity = "1";
+    });
+    const vipNotice = $("vipActiveNotice");
+    if (vipNotice) {
+      vipNotice.style.display = "none";
+    }
+    if (typeof updateChatCount === "function") updateChatCount();
+  };
+
   window.enableVipAccess = function() {
     window.vipAccess = true;
+    window.isVipUser = true;
     document.body.classList.add("vip-active");
+    try {
+      localStorage.setItem("jyotish_vip_unlocked", "1");
+      if (window.lastVipCode) localStorage.setItem("jyotish_vip_code", window.lastVipCode);
+    } catch (e) {}
     if (typeof updateVipUi === "function") {
       updateVipUi();
     }
@@ -14743,7 +14796,23 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     const matchGate = $("matchPremiumGate");
     if (matchGate)
       matchGate.style.display = "none";
+    const vipNotice = $("vipActiveNotice");
+    if (vipNotice) {
+      vipNotice.style.display = "block";
+      const details = $("vipActiveNoticeDetails");
+      if (details) {
+        details.textContent = window.lastVipCode 
+          ? `VIP Code (${window.lastVipCode}) is active. Full chart revelations and Kundli matching are unlocked.`
+          : "VIP complimentary access is active. Full chart revelations and Kundli matching are unlocked.";
+      }
+    }
   };
+
+  $("exitVipBtn")?.addEventListener("click", () => {
+    window.resetVipAccess();
+    alert("Switched back to General Public Mode. Standard pricing restored.");
+    close("accessModal");
+  });
   let adminToken = "";
   function adminFetch(_0) {
     return __async(this, arguments, function* (url, opts = {}) {
@@ -14850,7 +14919,6 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     }
 
     if (isAdminPassword) {
-        window.enableVipAccess();
         window.openAdminPortal();
         $("promoInput").value = "";
     } else {
@@ -14867,7 +14935,14 @@ window.toggleMobileSection = function(targetId, triggerEl) {
             const data = yield pr.json();
             if (data && data.valid) {
               window.activePromoCode = data;
-              window.enableVipAccess();
+              if (Number(data.discount_percentage) === 100) {
+                window.enableVipAccess();
+              } else {
+                const disc = Number(data.discount_percentage) || 0;
+                const pReveal = Math.max(1, Math.round(59 * (1 - disc / 100)));
+                const genBtn = $("genBtn");
+                if (genBtn) genBtn.textContent = `Reveal the chart · ₹${pReveal} (${disc}% OFF applied)`;
+              }
               const msg = data.message || `Promo code "${data.code}" applied successfully! Discount: ${data.discount_percentage}% OFF`;
               alert(msg);
               $("promoInput").value = "";
@@ -16815,11 +16890,54 @@ function updateVipUi() {
   const isVip = Boolean(
     window.vipAccess || 
     document.body.classList.contains("vip-active") || 
-    (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1") || 
+    (typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1" && localStorage.getItem("jyotish_vip_code")) || 
     window.isVipUser
   );
-  if (!isVip)
+  const pReveal = (window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.reveal) || 59;
+  const pMatch = (window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.match) || 99;
+
+  if (!isVip) {
+    document.body.classList.remove("vip-active");
+    window.vipAccess = false;
+    window.isVipUser = false;
+    const genBtn = document.getElementById("genBtn");
+    if (genBtn) {
+      if (genBtn.textContent.includes("Cast this chart again"))
+        genBtn.textContent = `Cast this chart again · ₹${pReveal}`;
+      else if (!window.activePromoCode)
+        genBtn.textContent = `Reveal the chart · ₹${pReveal}`;
+    }
+    const matchBtn = document.getElementById("matchBtn");
+    if (matchBtn) {
+      if (matchBtn.textContent.includes("Match again"))
+        matchBtn.textContent = "Match again · Free";
+      else
+        matchBtn.textContent = "View Guna Milan · Free";
+    }
+    const unlockMatchBtn = document.getElementById("unlockMatchBtn");
+    if (unlockMatchBtn) {
+      unlockMatchBtn.textContent = `Unlock detailed match · ₹${pMatch}`;
+    }
+    const accessBtn = document.getElementById("accessBtn");
+    if (accessBtn) {
+      accessBtn.innerHTML = "<span>👑</span> Access Portal";
+    }
+    const vipNotice = document.getElementById("vipActiveNotice");
+    if (vipNotice) {
+      vipNotice.style.display = "none";
+    }
+    const chatStatusSpan = document.getElementById("chatStatusHelpText") || document.querySelector(".chat-status span");
+    if (chatStatusSpan) {
+      chatStatusSpan.textContent = "Consult the Jyotish Acharya on your natal chart, Dasha timeline, career trajectory, karmic relationships, or psychological gifts.";
+    }
+    const chatPricingBanner = document.getElementById("chatPricingBanner");
+    if (chatPricingBanner) {
+      chatPricingBanner.innerHTML = "";
+    }
+    if (typeof updateChatCount === "function") updateChatCount();
     return;
+  }
+
   window.vipAccess = true;
   window.isVipUser = true;
   document.body.classList.add("vip-active");
@@ -16841,6 +16959,20 @@ function updateVipUi() {
   const unlockMatchBtn = document.getElementById("unlockMatchBtn");
   if (unlockMatchBtn) {
     unlockMatchBtn.textContent = "Unlock detailed match (VIP Unlocked)";
+  }
+  const accessBtn = document.getElementById("accessBtn");
+  if (accessBtn) {
+    accessBtn.innerHTML = "<span>\u2726</span> VIP Active";
+  }
+  const vipNotice = document.getElementById("vipActiveNotice");
+  if (vipNotice) {
+    vipNotice.style.display = "block";
+    const details = document.getElementById("vipActiveNoticeDetails");
+    if (details) {
+      details.textContent = window.lastVipCode 
+        ? `VIP Code (${window.lastVipCode}) is active. Full chart revelations and Kundli matching are unlocked.`
+        : "VIP complimentary access is active. Full chart revelations and Kundli matching are unlocked.";
+    }
   }
   const chatStatusSpan = document.getElementById("chatStatusHelpText") || document.querySelector(".chat-status span");
   if (chatStatusSpan) {
@@ -19299,12 +19431,32 @@ var __async = (__this, __arguments, generator) => {
 };
 window.addEventListener("load", () => {
   try {
-    if (localStorage.getItem("jyotish_vip_unlocked") === "1") {
-      window.lastVipCode = localStorage.getItem("jyotish_vip_code") || "";
-      if (typeof window.enableVipAccess === "function")
-        window.enableVipAccess();
+    const savedCode = localStorage.getItem("jyotish_vip_code");
+    const isSavedVip = localStorage.getItem("jyotish_vip_unlocked") === "1";
+    if (savedCode && isSavedVip) {
+      // Validate saved code with backend before enabling VIP access
+      fetch("/api/vip/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ code: savedCode })
+      })
+      .then(r => r.json())
+      .then(j => {
+        if (j && j.valid) {
+          window.lastVipCode = savedCode;
+          if (typeof window.enableVipAccess === "function") window.enableVipAccess();
+        } else {
+          if (typeof window.resetVipAccess === "function") window.resetVipAccess();
+        }
+      })
+      .catch(() => {
+        if (typeof window.resetVipAccess === "function") window.resetVipAccess();
+      });
+    } else {
+      if (typeof window.resetVipAccess === "function") window.resetVipAccess();
     }
   } catch (e) {
+    if (typeof window.resetVipAccess === "function") window.resetVipAccess();
   }
   loadCurrentSky();
   setInterval(loadCurrentSky, 12e4);
