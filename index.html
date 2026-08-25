@@ -4051,6 +4051,7 @@ body input, body select, body textarea {
 
 /* Daily Horoscope & Rashifal Component Styles - Attached Directly Below Ring */
 .daily-rashifal-section {
+  display: none !important;
   margin: 24px 0 20px 0 !important;
   background: radial-gradient(circle at 50% 0%, rgba(20, 34, 48, 0.95), rgba(7, 13, 20, 0.98)) !important;
   border: 1.5px solid rgba(242, 215, 146, 0.45) !important;
@@ -6548,12 +6549,83 @@ p,
   transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
 }
 
-/* Hide all text/badges/elements on the wheel zodiac images */
-.hero-z-symbol, .hero-z-node .hero-z-symbol, .hero-z-badge {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
+/* Badges on the wheel zodiac images for Planetary Ruler and Zodiac Glyph */
+.hero-z-ruler-badge {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #1e293b, #090e17) !important;
+  border: 1.5px solid #f59e0b !important;
+  color: #fef08a !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7), inset 0 0 4px rgba(0,0,0,0.8) !important;
+  z-index: 15 !important;
+  pointer-events: none !important;
+  line-height: 1 !important;
 }
+
+.hero-z-glyph-badge {
+  position: absolute !important;
+  bottom: -6px !important;
+  left: -6px !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #0f172a, #030712) !important;
+  border: 1.5px solid #38bdf8 !important;
+  color: #bae6fd !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6), inset 0 0 4px rgba(0,0,0,0.8) !important;
+  z-index: 15 !important;
+  pointer-events: none !important;
+  line-height: 1 !important;
+}
+
+.hero-wheel-stage .hero-planet {
+  position: absolute !important;
+  border-radius: 50% !important;
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  width: 22px !important;
+  height: 22px !important;
+  background: rgba(14, 26, 36, 0.92) !important;
+  border: 1px solid currentColor !important;
+  box-shadow: 0 0 10px currentColor, 0 0 20px color-mix(in srgb, currentColor 40%, transparent) !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+.hero-wheel-stage .hero-planet:hover {
+  transform: scale(1.35) !important;
+}
+
+.hero-wheel-stage .hero-orbit.o1 .hero-planet.p-sun { left: 50% !important; top: -11px !important; margin-left: -11px !important; }
+.hero-wheel-stage .hero-orbit.o1 .hero-planet.p-mercury { right: -11px !important; top: 50% !important; margin-top: -11px !important; left: auto !important; }
+.hero-wheel-stage .hero-orbit.o1 .hero-planet.p-venus { left: -11px !important; top: 50% !important; margin-top: -11px !important; }
+
+.hero-wheel-stage .hero-orbit.o2 .hero-planet.p-moon { left: 50% !important; top: -11px !important; margin-left: -11px !important; }
+.hero-wheel-stage .hero-orbit.o2 .hero-planet.p-mars { left: 50% !important; bottom: -11px !important; top: auto !important; margin-left: -11px !important; }
+.hero-wheel-stage .hero-orbit.o2 .hero-planet.p-rahu { right: -11px !important; top: 50% !important; margin-top: -11px !important; left: auto !important; }
+
+.hero-wheel-stage .hero-orbit.o3 .hero-planet.p-jupiter { left: 50% !important; top: -11px !important; margin-left: -11px !important; }
+.hero-wheel-stage .hero-orbit.o3 .hero-planet.p-saturn { left: 50% !important; bottom: -11px !important; top: auto !important; margin-left: -11px !important; }
+.hero-wheel-stage .hero-orbit.o3 .hero-planet.p-ketu { left: -11px !important; top: 50% !important; margin-top: -11px !important; }
 
 .hero .zodiac-ring .hero-z-node:hover .hero-z-node-inner {
   transform: scale(1.25) !important;
@@ -6739,16 +6811,6 @@ p,
   border-radius: 16px;
   padding: 20px 24px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-}
-
-/* Hide daily horoscope section from main site flow */
-.daily-rashifal-section, #dailyRashifalSection {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 </style>
 
@@ -7246,9 +7308,21 @@ p,
 
     <!-- Orbiting Large Zodiac Nodes Ring -->
     <div class="zodiac-ring" id="zodiacRing"></div>
-    <div class="hero-orbit o1"><span class="hero-planet" style="color:#d9b568"></span></div>
-    <div class="hero-orbit o2"><span class="hero-planet"></span></div>
-    <div class="hero-orbit o3"><span class="hero-planet"></span></div>
+    <div class="hero-orbit o1">
+      <span class="hero-planet p-sun" style="color:#fde047" title="Surya · Sun (☉)">☉</span>
+      <span class="hero-planet p-mercury" style="color:#34d399" title="Budha · Mercury (☿)">☿</span>
+      <span class="hero-planet p-venus" style="color:#f472b6" title="Shukra · Venus (♀)">♀</span>
+    </div>
+    <div class="hero-orbit o2">
+      <span class="hero-planet p-moon" style="color:#e2e8f0" title="Chandra · Moon (☽)">☽</span>
+      <span class="hero-planet p-mars" style="color:#f87171" title="Mangal · Mars (♂)">♂</span>
+      <span class="hero-planet p-rahu" style="color:#a78bfa" title="Rahu · North Node (☊)">☊</span>
+    </div>
+    <div class="hero-orbit o3">
+      <span class="hero-planet p-jupiter" style="color:#fbbf24" title="Guru · Jupiter (♃)">♃</span>
+      <span class="hero-planet p-saturn" style="color:#60a5fa" title="Shani · Saturn (♄)">♄</span>
+      <span class="hero-planet p-ketu" style="color:#fb7185" title="Ketu · South Node (☋)">☋</span>
+    </div>
   </div>
 </div>
 
@@ -7375,13 +7449,42 @@ p,
         </g>
         <circle cx="100" cy="100" r="48" fill="rgba(8, 14, 22, 0.95)" stroke="url(#skyMandalaGold)" stroke-width="1.6" />
         <circle cx="100" cy="100" r="40" fill="none" stroke="#7fc5c0" stroke-width="0.8" stroke-dasharray="2,4" />
-        <text x="100" y="113" font-family="'Noto Serif Devanagari', serif" font-size="34" fill="url(#skyMandalaGold)" text-anchor="middle" font-weight="bold">ॐ</text>
+        <!-- Radiant Sun Symbol ☉ at center -->
+        <text x="100" y="112" font-family="'Cinzel', 'Marcellus', serif" font-size="38" fill="url(#skyMandalaGold)" text-anchor="middle" font-weight="bold">☉</text>
       </svg>
     </div>
-    <span class="sky-orbiter p1" title="Budha · Mercury">☿</span><span class="sky-orbiter p2" title="Shukra · Venus">♀</span><span class="sky-orbiter p3" title="Prithvi · Earth">♁</span><span class="sky-orbiter p4" title="Mangal · Mars">♂</span><span class="sky-orbiter p5" title="Guru · Jupiter">♃</span><span class="sky-orbiter p6" title="Shani · Saturn">♄</span><span class="sky-orbiter p7" title="Rahu · North Node">☊</span><span class="sky-orbiter p8" title="Ketu · South Node">☋</span>
+    <span class="sky-orbiter p1" title="Budha · Mercury (☿)">☿</span><span class="sky-orbiter p2" title="Shukra · Venus (♀)">♀</span><span class="sky-orbiter p3" title="Chandra · Moon (☽)">☽</span><span class="sky-orbiter p4" title="Mangal · Mars (♂)">♂</span><span class="sky-orbiter p5" title="Guru · Jupiter (♃)">♃</span><span class="sky-orbiter p6" title="Shani · Saturn (♄)">♄</span><span class="sky-orbiter p7" title="Rahu · North Node (☊)">☊</span><span class="sky-orbiter p8" title="Ketu · South Node (☋)">☋</span>
   </div>
   <div class="current-sky-grid" id="currentSkyGrid"><div class="sky-sync"><span class="sync-spinner"></span><div><b>Reading the sky</b><small>Synchronizing verified sidereal positions…</small></div></div></div>
   <div class="current-sky-foot">Sidereal positions · Lahiri ayanamsha · refreshed automatically in real-time.</div>
+</section>
+
+<!-- Daily Horoscope & Moon Sign Gochara Transits Section -->
+<section class="daily-rashifal-section" id="dailyRashifalSection" aria-label="Daily Rashifal and Horoscope">
+  <div class="rashifal-header">
+    <div class="rashifal-title-wrap">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;color:#fce7b0;">✨</span>
+        <h2 style="margin:0;">Vedic Daily Horoscope &amp; Gochara Transits (दैनिक राशिफल)</h2>
+      </div>
+      <p id="rashifalDateSubtitle">Daily planetary transit insights, career momentum, emotional harmony &amp; auspicious timings</p>
+    </div>
+    <div class="rashifal-date-controls">
+      <input type="date" id="rashifalDateInput" onchange="renderDailyRashifal(this.value)" class="rashifal-date-input" aria-label="Select Date for Daily Horoscope" />
+      <button type="button" class="rashifal-quick-btn" onclick="renderDailyRashifal(new Date())">Today</button>
+      <button type="button" class="rashifal-quick-btn" onclick="openDailyHoroscopeModal(activeRashifalSign)" style="border-color:rgba(127,197,192,0.6);color:#7fe3b5;">Full Modal View ↗</button>
+    </div>
+  </div>
+
+  <div class="rashifal-selector-wrap">
+    <div class="rashifal-grid-selector" id="rashifalSignSelector">
+      <!-- 12 sign selector pills rendered dynamically by renderRashifalPills -->
+    </div>
+  </div>
+
+  <div class="rashifal-showcase" id="rashifalShowcase">
+    <!-- Populated dynamically by renderDailyRashifal -->
+  </div>
 </section>
 
 <div class="disclaimer">
@@ -8660,7 +8763,10 @@ var _a, _b, _c;
 };
   const ZODIAC = ["\u2648", "\u2649", "\u264A", "\u264B", "\u264C", "\u264D", "\u264E", "\u264F", "\u2650", "\u2651", "\u2652", "\u2653"];
   const zNames = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+  const zHindi = ["मेष", "वृषभ", "मिथुन", "कर्क", "सिंह", "कन्या", "तुला", "वृश्चिक", "धनु", "मकर", "कुंभ", "मीन"];
   const imgNames = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+  const zRulerNames = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"];
+  const zRulerSymbols = ["\u2642", "\u2640", "\u263F", "\u263D", "\u2609", "\u263F", "\u2640", "\u2642", "\u2643", "\u2644", "\u2644", "\u2643"];
   const ZODIAC_IMAGE_MAP = {
     aries: "/images/zodiac/aries.png",
     taurus: "/images/zodiac/taurus.png",
@@ -8683,9 +8789,14 @@ var _a, _b, _c;
       const img = imgNames[i];
       const imgSrc = ZODIAC_IMAGE_MAP[img] || `/images/zodiac/${img}.png`;
       const name = zNames[i];
-      return `<div class="hero-z-node" style="transform:rotate(${angle}deg) translate(var(--ring-r, 220px)) rotate(${-angle}deg);" title="${name} · Click to view Zodiac Details" onclick="openZodiacDetailsModal('${img}'); event.stopPropagation();" role="button" tabindex="0">
+      const hindi = zHindi[i];
+      const ruler = zRulerNames[i];
+      const rulerSym = zRulerSymbols[i];
+      return `<div class="hero-z-node" style="transform:rotate(${angle}deg) translate(var(--ring-r, 220px)) rotate(${-angle}deg);" title="${hindi} · ${name} (${glyph}) · Lord: ${ruler} (${rulerSym}) · Click to view details" onclick="openZodiacDetailsModal('${img}'); event.stopPropagation();" role="button" tabindex="0">
         <div class="hero-z-node-inner">
           <img src="${imgSrc}" class="hero-z-img" alt="${name}" onerror="handleZodiacImgError(this, '${img}')" referrerPolicy="no-referrer" />
+          <span class="hero-z-ruler-badge" title="Ruler: ${ruler} (${rulerSym})">${rulerSym}</span>
+          <span class="hero-z-glyph-badge" title="${name} (${glyph})">${glyph}</span>
         </div>
       </div>`;
     }).join("");
@@ -8718,7 +8829,7 @@ var _a, _b, _c;
     const d = data[i];
     const img = imgNames[i];
     const imgSrc = `/images/zodiac/${img}.png`;
-    detail.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;"><img src="${imgSrc}" style="width:52px;height:52px;border-radius:50%;border:2px solid #f2d792;box-shadow:0 0 18px rgba(242,215,146,0.7), 0 0 35px rgba(127,197,192,0.45);" alt="${d[1]}" referrerPolicy="no-referrer" /><div><b style="font-size:16px;margin:0;color:#fce7b0;text-shadow:0 0 8px rgba(224,198,116,0.6);">${d[0]} \xB7 ${d[1]}</b><small style="color:#e0c674;font-weight:600;margin-top:2px;display:block;">${d[2]} Element \u2022 ${d[3]}</small></div></div><small style="text-align:center !important;display:block;color:#d6c3a0;">Ruler: <strong style="color:#f2d792">${d[4]}</strong> \u2014 ${d[5]}</small>`;
+    detail.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;"><img src="${imgSrc}" onerror="handleZodiacImgError(this, '${img}')" style="width:52px;height:52px;border-radius:50%;border:2px solid #f2d792;box-shadow:0 0 18px rgba(242,215,146,0.7), 0 0 35px rgba(127,197,192,0.45);" alt="${d[1]}" referrerPolicy="no-referrer" /><div><b style="font-size:16px;margin:0;color:#fce7b0;text-shadow:0 0 8px rgba(224,198,116,0.6);">${d[0]} · ${d[1]}</b><small style="color:#e0c674;font-weight:600;margin-top:2px;display:block;">${d[2]} Element • ${d[3]}</small></div></div><small style="text-align:center !important;display:block;color:#d6c3a0;">Ruler: <strong style="color:#f2d792">${d[4]}</strong> — ${d[5]}</small>`;
     detail.classList.add("open");
   }));
   document.addEventListener("click", (e) => {
@@ -10682,9 +10793,10 @@ function calculateCurrentHora(dateObj = new Date(), lat = 28.6139, lon = 77.209)
 }
 function updateHoraHeaderBadge(dateObj = new Date(), lat = 28.6139, lon = 77.209) {
   try {
-    const { currentHora, remainingMins } = calculateCurrentHora(dateObj, lat, lon);
+    const d = dateObj instanceof Date && !isNaN(dateObj.getTime()) ? dateObj : new Date();
+    const { currentHora, remainingMins } = calculateCurrentHora(d, lat, lon);
     const titleEl = document.getElementById("horaHeaderTitle");
-    if (titleEl && currentHora) {
+    if (titleEl && currentHora && currentHora.lord) {
       titleEl.innerHTML = `⏰ Current Hora: <b>${currentHora.lord.symbol} ${currentHora.lord.sanskrit} (${currentHora.lord.name})</b> · <small style="color:#7fc5c0;">${remainingMins}m left</small>`;
     }
   } catch (e) {
@@ -10698,35 +10810,39 @@ function openHoraModal() {
     return;
   const lat = parseFloat((_a2 = document.getElementById("f_lat")) == null ? void 0 : _a2.value) || 28.6139;
   const lon = parseFloat((_b2 = document.getElementById("f_lon")) == null ? void 0 : _b2.value) || 77.209;
-  const { currentHora, remainingMins, allHoras, vedicInfo } = calculateCurrentHora(new Date(), lat, lon);
-  const headingEl = document.getElementById("horaModalHeading");
-  const summaryEl = document.getElementById("horaCurrentSummary");
-  const container = document.getElementById("horaRowsContainer");
-  if (headingEl) {
-    const preSunriseNotice = vedicInfo.isPreSunrise ? ` (Pre-Sunrise: ${vedicInfo.vedicDayName} Cycle)` : "";
-    headingEl.textContent = `24-Hour Planetary Horas — ${vedicInfo.vedicVaraSanskrit}${preSunriseNotice}`;
-  }
-  if (summaryEl && currentHora) {
-    summaryEl.innerHTML = `✨ <b>Active Hora: ${currentHora.lord.symbol} ${currentHora.lord.sanskrit} (${currentHora.lord.name})</b> — ${currentHora.timeStr} (${remainingMins} mins remaining)<br><small style="color:#e8dcc8;">${currentHora.lord.desc}</small>`;
-  }
-  if (container) {
-    container.innerHTML = allHoras.map((h) => {
-      const isNow = h === currentHora;
-      const tagClass = h.lord.quality === "excellent" ? "hora-nature-excellent" : h.lord.quality === "good" ? "hora-nature-good" : h.lord.quality === "mixed" ? "hora-nature-mixed" : "hora-nature-intense";
-      return `
-        <div class="hora-row ${isNow ? "is-current" : ""}">
-          <span>${h.timeStr} ${isNow ? "🔥" : ""}</span>
-          <div class="hora-planet-cell">
-            <span style="font-size: 14px;">${h.lord.symbol}</span>
-            <span>${h.lord.sanskrit} <small style="color:#d6c3a0;">(${h.lord.name})</small></span>
+  try {
+    const { currentHora, remainingMins, allHoras, vedicInfo } = calculateCurrentHora(new Date(), lat, lon);
+    const headingEl = document.getElementById("horaModalHeading");
+    const summaryEl = document.getElementById("horaCurrentSummary");
+    const container = document.getElementById("horaRowsContainer");
+    if (headingEl && vedicInfo) {
+      const preSunriseNotice = vedicInfo.isPreSunrise ? ` (Pre-Sunrise: ${vedicInfo.vedicDayName} Cycle)` : "";
+      headingEl.textContent = `24-Hour Planetary Horas — ${vedicInfo.vedicVaraSanskrit}${preSunriseNotice}`;
+    }
+    if (summaryEl && currentHora && currentHora.lord) {
+      summaryEl.innerHTML = `✨ <b>Active Hora: ${currentHora.lord.symbol} ${currentHora.lord.sanskrit} (${currentHora.lord.name})</b> — ${currentHora.timeStr} (${remainingMins} mins remaining)<br><small style="color:#e8dcc8;">${currentHora.lord.desc}</small>`;
+    }
+    if (container && Array.isArray(allHoras)) {
+      container.innerHTML = allHoras.map((h) => {
+        const isNow = h === currentHora;
+        const tagClass = h.lord.quality === "excellent" ? "hora-nature-excellent" : h.lord.quality === "good" ? "hora-nature-good" : h.lord.quality === "mixed" ? "hora-nature-mixed" : "hora-nature-intense";
+        return `
+          <div class="hora-row ${isNow ? "is-current" : ""}">
+            <span>${h.timeStr} ${isNow ? "🔥" : ""}</span>
+            <div class="hora-planet-cell">
+              <span style="font-size: 14px;">${h.lord.symbol}</span>
+              <span>${h.lord.sanskrit} <small style="color:#d6c3a0;">(${h.lord.name})</small></span>
+            </div>
+            <span style="color: #e2d3b5;">${h.lord.desc}</span>
+            <div>
+              <span class="hora-nature-tag ${tagClass}">${h.lord.nature}</span>
+            </div>
           </div>
-          <span style="color: #e2d3b5;">${h.lord.desc}</span>
-          <div>
-            <span class="hora-nature-tag ${tagClass}">${h.lord.nature}</span>
-          </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("Failed to render hora modal:", err);
   }
   modal.classList.add("open");
 }
@@ -11657,10 +11773,8 @@ function handleZodiacImgError(imgEl, signKey) {
   if (count === 0) {
     imgEl.src = `/images/zodiac/${key}.png`;
   } else if (count === 1) {
-    imgEl.src = `/public/images/zodiac/${key}.svg`;
-  } else if (count === 2) {
-    imgEl.src = `/public/images/zodiac/${key}.png`;
-  } else if (count === 3 && window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
+    imgEl.src = `/images/zodiac/${key}.svg`;
+  } else if (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
     imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
     imgEl.onerror = null;
   } else {
@@ -11668,12 +11782,14 @@ function handleZodiacImgError(imgEl, signKey) {
   }
 }
 function initializeAllZodiacImages() {
-  document.querySelectorAll("img.rashifal-pill-img, img.rashi-pillar-img, img.hero-z-img, #zodiacModalImg, img.rashifal-gold-logo, img.sky-planet-zodiac-img, .guna-partner-icon img").forEach((img) => {
+  document.querySelectorAll("img.rashifal-pill-img, img.rashi-pillar-img, img.hero-z-img, #zodiacModalImg, img.rashifal-gold-logo, .guna-partner-icon img").forEach((img) => {
     const parentPill = img.closest("[data-sign]");
     const signKey = parentPill ? parentPill.dataset.sign : img.getAttribute("data-sign") || img.alt || "";
     if (signKey) {
       const key = getZodiacSignKey(signKey);
-      img.src = `/images/zodiac/${key}.svg`;
+      if (!img.src || img.src.includes("undefined")) {
+        img.src = `/images/zodiac/${key}.png`;
+      }
       img.onerror = function() { handleZodiacImgError(this, key); };
     }
   });
@@ -11840,7 +11956,7 @@ function renderCurrentSky(chart, stamp) {
       <div style="display:flex;align-items:center;gap:11px;">
         <img src="${svgUrl}" class="sky-planet-zodiac-img" alt="${p.sign}" width="36" height="36" />
         <div style="min-width:0;flex:1;">
-          <b>${p.name}</b>
+          <b><span style="color:#f59e0b;font-size:15px;margin-right:4px;">${PLANET_SYMBOLS[p.name] || ""}</span>${p.name}</b>
           <span>${formatRashiNameWithHindi(p.sign)} \xB7 ${formatDegree(p.degree)}</span>
           <small>${p.retrograde ? "Retrograde" : "Direct"}${p.nakshatra ? " \xB7 " + p.nakshatra : ""}</small>
         </div>
@@ -14459,13 +14575,36 @@ window.openGlossaryModal = function() {
 window.closeGlossaryModal = function() {
   window.closeModal("glossaryModal");
 };
-window.openDailyHoroscopeModal = function() {
+window.openDailyHoroscopeModal = function(signKey) {
+  if (signKey) {
+    activeDailyHoroscopeSign = String(signKey).toLowerCase();
+  }
+  const modal = document.getElementById("dailyHoroscopeModal");
+  if (!modal) return;
+  const dateInput = document.getElementById("modalHoroscopeDateInput");
+  if (dateInput) {
+    const d = (typeof modalHoroscopeDate !== "undefined" && modalHoroscopeDate instanceof Date) ? modalHoroscopeDate : new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    dateInput.value = `${y}-${m}-${day}`;
+  }
+  if (typeof renderModalHoroscopeSymbols === "function") renderModalHoroscopeSymbols();
+  if (typeof renderModalHoroscopeContent === "function") renderModalHoroscopeContent();
   window.openModal("dailyHoroscopeModal");
 };
 window.closeDailyHoroscopeModal = function() {
   window.closeModal("dailyHoroscopeModal");
 };
 window.openHoraModal = function() {
+  if (typeof openHoraModal === "function" && openHoraModal !== window.openHoraModal) {
+    try {
+      openHoraModal();
+      return;
+    } catch (e) {
+      console.warn("openHoraModal execution fallback:", e);
+    }
+  }
   window.openModal("horaScheduleModal");
 };
 window.closeHoraModal = function() {
@@ -14480,6 +14619,8 @@ window.closeSoundCustomizerModal = function() {
 window.openZodiacModal = function(signKey) {
   if (typeof window.openSpecificZodiacModal === "function") {
     window.openSpecificZodiacModal(signKey || "aries");
+  } else if (typeof window.openZodiacDetailsModal === "function") {
+    window.openZodiacDetailsModal(signKey || "aries");
   } else {
     window.openModal("zodiacFocusModal");
   }
@@ -19460,6 +19601,31 @@ window.addEventListener("load", () => {
   }
   loadCurrentSky();
   setInterval(loadCurrentSky, 12e4);
+  try {
+    if (typeof renderRashifalPills === "function") renderRashifalPills();
+    if (typeof renderDailyRashifal === "function") renderDailyRashifal();
+    if (typeof renderDailyPanchang === "function") renderDailyPanchang();
+    if (typeof updateHoraHeaderBadge === "function") updateHoraHeaderBadge();
+    if (typeof renderModalHoroscopeSymbols === "function") renderModalHoroscopeSymbols();
+    if (typeof renderModalHoroscopeContent === "function") renderModalHoroscopeContent();
+  } catch (e) {
+    console.warn("Init panchang / hora error:", e);
+  }
+  setInterval(() => {
+    try {
+      if (typeof updateHoraHeaderBadge === "function") updateHoraHeaderBadge();
+    } catch (e) {}
+  }, 30000);
+});
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    if (typeof renderRashifalPills === "function") renderRashifalPills();
+    if (typeof renderDailyRashifal === "function") renderDailyRashifal();
+    if (typeof renderDailyPanchang === "function") renderDailyPanchang();
+    if (typeof updateHoraHeaderBadge === "function") updateHoraHeaderBadge();
+    if (typeof renderModalHoroscopeSymbols === "function") renderModalHoroscopeSymbols();
+    if (typeof renderModalHoroscopeContent === "function") renderModalHoroscopeContent();
+  } catch (e) {}
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible")
