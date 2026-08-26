@@ -315,17 +315,32 @@ window.applyPricingToUI = function(cfg) {
   --header-bg: rgba(18, 5, 2, 0.94);
 }
 
-*{box-sizing:border-box; transition: background-color 0.35s ease, border-color 0.35s ease, color 0.25s ease;}
-html{background:#0c0813;}
-body{
-  margin:0;
-  background:transparent;
-  color:var(--ivory); font-family:'Cormorant Garamond',Georgia,serif; font-size:17px; min-height:100vh;
-  position:relative;
-  text-align:left;
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  background: #0c0813;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
-body button, body input, body select, body textarea{ text-align:left; }
-body h1, body h2, body h3, body h4, body label, body button, .subtitle, .intro-eyebrow, .intro-kicker, .question-chip, .chat-count{ text-align:initial; }
+body {
+  margin: 0;
+  background: transparent;
+  color: var(--ivory);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 17px;
+  min-height: 100vh;
+  position: relative;
+  text-align: left;
+  overflow-x: hidden;
+}
+button, input, select, textarea, a, .plan-card, .chart-tab, .rashifal-pill, .modal-box, .report-section-header, .dakshina-chip, .dot-nav-item, .chat-q-chip {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.report-section-block, .card, #reportCard, #chatCard, #progressCard, #readingNavigatorCard {
+  scroll-margin-top: 75px;
+}
+body button, body input, body select, body textarea { text-align: left; }
+body h1, body h2, body h3, body h4, body label, body button, .subtitle, .intro-eyebrow, .intro-kicker, .question-chip, .chat-count { text-align: initial; }
 
 
 /* --- Living cosmic backdrop: slowly shifting nebula colors, stars and orbital glow --- */
@@ -6182,18 +6197,18 @@ body::after {
 
 /* Stardust Modern Glassmorphism Cards */
 .card, .rashifal-showcase, .current-sky-card, .chart-card, .match-card, .chat-panel, .plan-card, .modal-box {
-  background: rgba(11, 19, 39, 0.82) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(245, 158, 11, 0.18) !important;
-  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.55), 0 0 24px rgba(56, 189, 248, 0.06) !important;
+  background: rgba(11, 19, 39, 0.92) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+  box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.55), 0 0 20px rgba(56, 189, 248, 0.05) !important;
   border-radius: 16px !important;
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease, border-color 0.28s ease !important;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
 }
 
 .card:hover, .rashifal-showcase:hover, .current-sky-card:hover {
   border-color: rgba(245, 158, 11, 0.35) !important;
-  box-shadow: 0 20px 48px -6px rgba(0, 0, 0, 0.65), 0 0 32px rgba(245, 158, 11, 0.12), 0 0 16px rgba(56, 189, 248, 0.1) !important;
+  box-shadow: 0 16px 42px -6px rgba(0, 0, 0, 0.65), 0 0 28px rgba(245, 158, 11, 0.12) !important;
 }
 
 /* Modern Stardust Buttons */
@@ -8005,31 +8020,31 @@ p,
     <div id="paymentPlansGrid" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
       <div class="plan-card active" data-plan="reveal" data-amount="59" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1.5px solid #d8a04c;background:rgba(216,160,76,0.08);cursor:pointer;transition:all 0.2s;">
         <div>
-          <strong style="font-size:15px;color:#fce7b0;display:block;">Complete Natal Chart Reading</strong>
+          <strong class="plan-title" style="font-size:15px;color:#fce7b0;display:block;">Complete Natal Chart Reading</strong>
           <span style="font-size:12.5px;color:var(--muted);">Full Lagna, Mahadasha timeline, planetary yogas &amp; D1-D9 analysis</span>
         </div>
-        <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹59</div>
+        <div class="plan-price" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹59</div>
       </div>
       <div class="plan-card" data-plan="question" data-amount="19" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;">
         <div>
-          <strong style="font-size:15px;color:#fce7b0;display:block;">1 Consultation Question (₹19)</strong>
+          <strong class="plan-title" style="font-size:15px;color:#fce7b0;display:block;">1 Consultation Question (₹19)</strong>
           <span style="font-size:12.5px;color:var(--muted);">Exhaustive ~2000-word Jyotish Acharya consultation answering your specific query</span>
         </div>
-        <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹19</div>
+        <div class="plan-price" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹19</div>
       </div>
       <div class="plan-card" data-plan="match" data-amount="99" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;">
         <div>
-          <strong style="font-size:15px;color:#fce7b0;display:block;">Detailed Kundli Matching (36 Gunas)</strong>
+          <strong class="plan-title" style="font-size:15px;color:#fce7b0;display:block;">Detailed Kundli Matching (36 Gunas)</strong>
           <span style="font-size:12.5px;color:var(--muted);">Ashtakoot Milan, Nadi/Bhakoot analysis, Manglik Dosha &amp; partnership synthesis</span>
         </div>
-        <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹99</div>
+        <div class="plan-price" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹99</div>
       </div>
       <div class="plan-card" data-plan="dakshina" data-amount="251" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;">
         <div>
-          <strong style="font-size:15px;color:#fce7b0;display:block;">Voluntary Sacred Dakshina</strong>
+          <strong class="plan-title" style="font-size:15px;color:#fce7b0;display:block;">Voluntary Sacred Dakshina</strong>
           <span style="font-size:12.5px;color:var(--muted);">Honor ancient Jyotish tradition with a voluntary sacred offering</span>
         </div>
-        <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹251+</div>
+        <div class="plan-price" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹251+</div>
       </div>
     </div>
 
@@ -8567,21 +8582,21 @@ window.PAYWALL_CONFIG = {
   plans: {
     reveal: { amountINR: 59, title: "Reveal your chart", description: "Unlock the complete individual chart reading, visual Kundli, Yogas, Dashas and life interpretation." },
     match: { amountINR: 99, title: "Kundli Matching", description: "Unlock the complete 36-point compatibility reading, Mangal analysis and relationship synthesis." },
-    question: { amountINR: 29, title: "Single Question Consultation", description: "Ask 1 specific chart-bound question to the Jyotish Acharya." },
-    questions_pack: { amountINR: 100, title: "5 Questions Value Pack", description: "Ask 5 detailed questions in one go. Save ₹45 compared to single questions." }
+    question: { amountINR: 19, title: "Single Question Consultation", description: "Ask 1 specific chart-bound question to the Jyotish Acharya." },
+    questions_pack: { amountINR: 100, title: "5 Questions Value Pack", description: "Ask 5 detailed questions in one go." }
   }
 };
 window.applyPricingToUI = function(cfg) {
   var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
   const c = cfg || window.SERVER_CONFIG || {
-    prices: { reveal: 59, match: 99, question: 29, questions_pack: 100 },
-    basePrices: { reveal: 59, match: 99, question: 29, questions_pack: 100 },
+    prices: { reveal: 59, match: 99, question: 19, questions_pack: 100 },
+    basePrices: { reveal: 59, match: 99, question: 19, questions_pack: 100 },
     offer: { enabled: false, percent: 0, label: "" },
-    features: { reveal: true, match: true, chat: true }
+    features: { reveal: true, match: true, chat: true, question: true }
   };
   const pReveal = Number((_b = (_a = c.prices) == null ? void 0 : _a.reveal) != null ? _b : 59);
   const pMatch = Number((_d = (_c = c.prices) == null ? void 0 : _c.match) != null ? _d : 99);
-  const pQuestion = Number((_f = (_e = c.prices) == null ? void 0 : _e.question) != null ? _f : 29);
+  const pQuestion = Number((_f = (_e = c.prices) == null ? void 0 : _e.question) != null ? _f : 19);
   const pQuestionsPack = Number((_l = (_m = c.prices) == null ? void 0 : _m.questions_pack) != null ? _l : 100);
   const isOffer = Boolean(((_g = c.offer) == null ? void 0 : _g.enabled) && Number((_h = c.offer) == null ? void 0 : _h.percent) > 0);
   const baseReveal = Number(((_i = c.basePrices) == null ? void 0 : _i.reveal) || pReveal);
@@ -8638,9 +8653,8 @@ window.applyPricingToUI = function(cfg) {
   const chatHintSpan = document.getElementById("chatStatusHelpText") || document.querySelector(".chat-status span");
   if (chatHintSpan) {
     const isHi = window.currentVedicLang === "hi";
-    chatHintSpan.textContent = isHi ? `कुंडली, दशा, योग, संबंध या करियर के बारे में प्रश्न पूछें।` : `Ask specific questions about the chart, Dasha, Yogas, relationships, or career. Live interaction packages available.`;
+    chatHintSpan.textContent = isHi ? `कुंडली, दशा, योग, संबंध या करियर के बारे में प्रश्न पूछें।` : `Ask specific questions about the chart, Dasha, Yogas, relationships, or career.`;
   }
-
 
   const planCards = document.querySelectorAll("#paymentPlansGrid .plan-card");
   planCards.forEach((card) => {
@@ -8656,6 +8670,10 @@ window.applyPricingToUI = function(cfg) {
     } else if (plan === "question") {
       price = pQuestion;
       basePrice = baseQuestion;
+      const titleEl = card.querySelector(".plan-title");
+      if (titleEl) {
+        titleEl.textContent = `1 Consultation Question (₹${price})`;
+      }
     } else if (plan === "questions_pack") {
       price = pQuestionsPack;
       basePrice = baseQuestionsPack;
@@ -10337,11 +10355,11 @@ function renderModalHoroscopeContent() {
   `;
 }
 
-/* Stardust Particle & Constellation Engine */
+/* Stardust Particle & Constellation Engine (High Performance) */
 function initStardustEngine() {
   const canvas = document.getElementById("stardustCanvas");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) return;
 
   let width = (canvas.width = window.innerWidth);
@@ -10350,9 +10368,9 @@ function initStardustEngine() {
   window.addEventListener("resize", () => {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
-  });
+  }, { passive: true });
 
-  const particleCount = Math.min(140, Math.floor((width * height) / 10000));
+  const particleCount = Math.min(36, Math.max(18, Math.floor((width * height) / 35000)));
   const particles = [];
   const colors = ["#fef08a", "#38bdf8", "#c084fc", "#ffffff", "#fbbf24"];
 
@@ -10360,43 +10378,44 @@ function initStardustEngine() {
     particles.push({
       x: Math.random() * width,
       y: Math.random() * height,
-      radius: Math.random() * 1.8 + 0.4,
+      radius: Math.random() * 1.5 + 0.5,
       color: colors[Math.floor(Math.random() * colors.length)],
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      alpha: Math.random() * 0.7 + 0.2,
+      vx: (Math.random() - 0.5) * 0.28,
+      vy: (Math.random() - 0.5) * 0.28,
+      alpha: Math.random() * 0.6 + 0.2,
       twinkleSpeed: Math.random() * 0.02 + 0.005,
       twinklePhase: Math.random() * Math.PI * 2
     });
   }
 
-  let mouseX = -1000;
-  let mouseY = -1000;
-  window.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
+  let isVisible = true;
+  document.addEventListener("visibilitychange", () => {
+    isVisible = !document.hidden;
   });
 
   function draw() {
+    if (!isVisible) {
+      setTimeout(() => requestAnimationFrame(draw), 250);
+      return;
+    }
+
     ctx.clearRect(0, 0, width, height);
 
-    // Draw connecting stardust constellation filaments
+    // Batch constellation filaments in a single efficient path
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.09)";
+    ctx.lineWidth = 0.55;
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 85) {
-          const alpha = (1 - dist / 85) * 0.14 * particles[i].alpha;
-          ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
+        if (dx * dx + dy * dy < 5625) { // 75px squared
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.stroke();
         }
       }
     }
+    ctx.stroke();
 
     // Draw and update stardust particles
     for (let i = 0; i < particles.length; i++) {
@@ -10417,12 +10436,9 @@ function initStardustEngine() {
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fillStyle = p.color;
       ctx.globalAlpha = currentAlpha;
-      ctx.shadowBlur = p.radius * 4;
-      ctx.shadowColor = p.color;
       ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
     }
+    ctx.globalAlpha = 1;
 
     requestAnimationFrame(draw);
   }
@@ -11000,15 +11016,22 @@ window.buildAtAGlance = buildAtAGlance;
     });
   });
 })();
+let pointerTicking = false;
 document.addEventListener("pointermove", (e) => {
-  const x = (e.clientX / window.innerWidth - 0.5) * 2;
-  const y = (e.clientY / window.innerHeight - 0.5) * 2;
-  document.documentElement.style.setProperty("--mx", x.toFixed(3));
-  document.documentElement.style.setProperty("--my", y.toFixed(3));
-  const wheel = document.querySelector(".zodiac-wheel");
-  if (wheel && window.innerWidth > 1e3)
-    wheel.style.setProperty("--parallax-y", `${y * 1.5}px`);
-});
+  if (!pointerTicking) {
+    pointerTicking = true;
+    requestAnimationFrame(() => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      document.documentElement.style.setProperty("--mx", x.toFixed(3));
+      document.documentElement.style.setProperty("--my", y.toFixed(3));
+      const wheel = document.querySelector(".zodiac-wheel");
+      if (wheel && window.innerWidth > 1000)
+        wheel.style.setProperty("--parallax-y", `${y * 1.5}px`);
+      pointerTicking = false;
+    });
+  }
+}, { passive: true });
 document.getElementById("advToggle").onclick = () => {
   document.getElementById("advBody").classList.toggle("open");
 };
@@ -12380,6 +12403,8 @@ window.updateChatCount = function() {
   const remainingTotal = max - used;
   const nextQNum = used + 1;
 
+  const qPrice = Number((window.SERVER_CONFIG?.prices?.question) || (window.PAYWALL_CONFIG?.plans?.question?.amountINR) || 19);
+
   if (used < freeAllowed) {
     // 1 Free question is ready to use!
     if (badge) {
@@ -12389,7 +12414,7 @@ window.updateChatCount = function() {
       badge.style.color = "#86efac";
     }
     if (banner) {
-      banner.textContent = "1st Question Free · 6 more available @ ₹19 each · Max 7 Total";
+      banner.textContent = `1st Question Free · 6 more available @ ₹${qPrice} each · Max 7 Total`;
       banner.style.color = "#d8a04c";
     }
     if (sendBtn) {
@@ -12399,7 +12424,7 @@ window.updateChatCount = function() {
       sendBtn.textContent = "Ask Free (1/1)";
     }
     if (footerQuota) {
-      footerQuota.textContent = `1 Free Question Ready • Next 6 questions @ ₹19 each (Max ${max} Total)`;
+      footerQuota.textContent = `1 Free Question Ready • Next 6 questions @ ₹${qPrice} each (Max ${max} Total)`;
     }
   } else {
     // Free question has been used; now in paid quota
@@ -12439,24 +12464,24 @@ window.updateChatCount = function() {
       }
     } else {
       if (badge) {
-        badge.textContent = `₹19 per question (${remainingTotal} left)`;
+        badge.textContent = `₹${qPrice} per question (${remainingTotal} left)`;
         badge.style.background = "rgba(216, 160, 76, 0.15)";
         badge.style.borderColor = "rgba(216, 160, 76, 0.4)";
         badge.style.color = "#fce8bd";
       }
       if (banner) {
-        banner.textContent = `Free question used · Unlock Question ${nextQNum} for ₹19 (Up to ${remainingTotal} more)`;
+        banner.textContent = `Free question used · Unlock Question ${nextQNum} for ₹${qPrice} (Up to ${remainingTotal} more)`;
         banner.style.color = "#d8a04c";
       }
       if (sendBtn) {
         sendBtn.disabled = false;
         sendBtn.style.opacity = "1";
         sendBtn.style.cursor = "pointer";
-        sendBtn.textContent = `Ask for ₹19 (Q${nextQNum}/${max})`;
+        sendBtn.textContent = `Ask for ₹${qPrice} (Q${nextQNum}/${max})`;
       }
     }
     if (footerQuota) {
-      footerQuota.textContent = `Question ${nextQNum} of ${max} • ₹19 per question • Max ${max} total`;
+      footerQuota.textContent = `Question ${nextQNum} of ${max} • ₹${qPrice} per question • Max ${max} total`;
     }
   }
 
@@ -13464,11 +13489,6 @@ ${generatedText}`;
       tagEl.className = "report-chapter-tag chapter-verified";
       tagEl.textContent = isHi ? "✨ शास्त्रीय एवं प्रामाणिक विवेचना" : "✨ Classical Jyotish Synthesis";
     }
-    renderKundliVisuals();
-    renderPlacementTable();
-    renderInterpretationTable();
-    buildAtAGlance();
-    renderClassicalModules();
     renderReadingNavigator();
     if (li) {
       li.classList.remove("active", "failed");
@@ -13564,6 +13584,14 @@ function runFrom(startIndex, reportBody, stepListEl, progressErrorEl, endIndex =
       document.getElementById("generationAdaptiveStatus").textContent = "Generation complete! ✨ All chapters successfully synthesized.";
       document.getElementById("generationEtaText").textContent = "Completed";
     }
+    // Smoothly scroll down to the Interactive Reading Navigator / Report Card so user can freely read
+    setTimeout(() => {
+      const reportCard = document.getElementById("reportCard");
+      if (reportCard && reportCard.style.display !== "none") {
+        const nav = document.getElementById("readingNavigatorCard") || reportCard;
+        nav.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 350);
     if (endIndex !== null && endIndex < activeSections.length) {
       document.getElementById("genBtn").disabled = false;
       document.getElementById("matchBtn").disabled = false;
@@ -14409,7 +14437,7 @@ function jumpToReportSection(sectionId, customNotice) {
   }
   document.querySelectorAll(".report-target-highlight").forEach((el) => el.classList.remove("report-target-highlight"));
   target.classList.add("report-target-highlight");
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
   setTimeout(() => {
     target.classList.remove("report-target-highlight");
   }, 3600);
@@ -14426,7 +14454,7 @@ function jumpToChatQuestion(qId) {
   }
   document.querySelectorAll(".chat-msg-highlight").forEach((el) => el.classList.remove("chat-msg-highlight"));
   target.classList.add("chat-msg-highlight");
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
   setTimeout(() => {
     target.classList.remove("chat-msg-highlight");
   }, 3600);
@@ -15079,41 +15107,6 @@ window.toggleMobileSection = function(targetId, triggerEl) {
       if (window.openPaymentModal) window.openPaymentModal("reveal");
     });
   }
-  let selectedPlan = "reveal";
-  let selectedAmount = 59;
-  document.querySelectorAll("#paymentPlansGrid .plan-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      document.querySelectorAll("#paymentPlansGrid .plan-card").forEach((c) => c.classList.remove("active"));
-      card.classList.add("active");
-      selectedPlan = card.dataset.plan || "reveal";
-      const presetRow = $("dakshinaPresets");
-      if (selectedPlan === "dakshina") {
-        if (presetRow)
-          presetRow.style.display = "flex";
-        const activeChip = presetRow == null ? void 0 : presetRow.querySelector(".dakshina-chip.active");
-        selectedAmount = activeChip ? Number(activeChip.dataset.val) : 251;
-      } else {
-        if (presetRow)
-          presetRow.style.display = "none";
-        selectedAmount = Number(card.dataset.amount || 59);
-      }
-      const payBtn = $("payProceedBtn");
-      if (payBtn) {
-        payBtn.textContent = `Proceed to Secure Payment (\u20B9${selectedAmount})`;
-      }
-    });
-  });
-  document.querySelectorAll(".dakshina-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      document.querySelectorAll(".dakshina-chip").forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      selectedAmount = Number(chip.dataset.val || 251);
-      const payBtn = $("payProceedBtn");
-      if (payBtn) {
-        payBtn.textContent = `Proceed to Secure Payment (\u20B9${selectedAmount})`;
-      }
-    });
-  });
   window.activePromoCode = null;
   // Obsolete listener removed.
 
@@ -16302,15 +16295,16 @@ ${item.message}`);
       <div class="admin-setting-card">
         <h3>General Pricing Configuration (Rupees ₹)</h3>
         <div class="admin-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
-          <label>Complete Chart Reading · ₹<input id="setReveal" type="number" min="1" value="${esc(s.reveal_price)}"></label>
-          <label>Kundli Matching (36 Gunas) · ₹<input id="setMatch" type="number" min="1" value="${esc(s.match_price)}"></label>
+          <label>Complete Chart Reading · ₹<input id="setReveal" type="number" min="1" value="${esc(s.reveal_price || '59')}"></label>
+          <label>Kundli Matching (36 Gunas) · ₹<input id="setMatch" type="number" min="1" value="${esc(s.match_price || '99')}"></label>
+          <label>Consultation Question · ₹<input id="setQuestion" type="number" min="1" value="${esc(s.question_price || '19')}"></label>
           <label>Voluntary Dakshina (Base) · ₹<input id="setDakshina" type="number" min="1" value="${esc(s.dakshina_price || '251')}"></label>
         </div>
       </div>
       <div class="admin-setting-card">
         <h3>Promotional Offer</h3>
         <div class="admin-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;align-items:center;">
-          <label>Discount %<input id="setOfferPercent" type="number" min="0" max="90" value="${esc(s.offer_percent)}"></label>
+          <label>Discount %<input id="setOfferPercent" type="number" min="0" max="90" value="${esc(s.offer_percent || '0')}"></label>
           <label>Offer label<input id="setOfferLabel" value="${esc(s.offer_label || "")}" placeholder="e.g. Festival Offer"></label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:18px;">
             <input id="setOfferEnabled" type="checkbox" ${disc ? "checked" : ""} style="width:auto;"> Enable discount offer
@@ -16321,11 +16315,15 @@ ${item.message}`);
         <h3>Feature Controls</h3>
         <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
           <label style="margin:0;">Individual chart generation</label>
-          <input id="setRevealEnabled" type="checkbox" ${s.reveal_enabled === "1" ? "checked" : ""} style="width:auto;">
+          <input id="setRevealEnabled" type="checkbox" ${s.reveal_enabled !== "0" ? "checked" : ""} style="width:auto;">
+        </div>
+        <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <label style="margin:0;">Kundli Matching (Guna Milan)</label>
+          <input id="setMatchEnabled" type="checkbox" ${s.match_enabled !== "0" ? "checked" : ""} style="width:auto;">
         </div>
         <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;">
-          <label style="margin:0;">Kundli Matching (Guna Milan)</label>
-          <input id="setMatchEnabled" type="checkbox" ${s.match_enabled === "1" ? "checked" : ""} style="width:auto;">
+          <label style="margin:0;">Astrology Consultation Questions</label>
+          <input id="setQuestionEnabled" type="checkbox" ${s.question_enabled !== "0" ? "checked" : ""} style="width:auto;">
         </div>
       </div>
       <button id="saveSettingsAdmin" type="button" style="margin-top:12px;padding:12px 24px;">Save pricing & feature settings</button>
@@ -16336,12 +16334,14 @@ ${item.message}`);
         const payload = {
           reveal_price: $("setReveal").value,
           match_price: $("setMatch").value,
+          question_price: $("setQuestion") ? $("setQuestion").value : "19",
           dakshina_price: $("setDakshina") ? $("setDakshina").value : "251",
           offer_enabled: $("setOfferEnabled").checked ? "1" : "0",
           offer_percent: $("setOfferPercent").value,
           offer_label: $("setOfferLabel").value,
           reveal_enabled: $("setRevealEnabled").checked ? "1" : "0",
-          match_enabled: $("setMatchEnabled").checked ? "1" : "0"
+          match_enabled: $("setMatchEnabled").checked ? "1" : "0",
+          question_enabled: $("setQuestionEnabled") ? ($("setQuestionEnabled").checked ? "1" : "0") : "1"
         };
         yield adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify(payload) });
         window.SERVER_CONFIG = null;
@@ -20125,6 +20125,16 @@ window.openPaymentModal = function(defaultPlan = "reveal") {
 };
 window.activePaymentPlan = "reveal";
 window.activePaymentAmount = 59;
+window.updatePaymentButtonText = function(amount) {
+  const btn = document.getElementById("payProceedBtn");
+  if (!btn) return;
+  let finalAmt = Number(amount || window.activePaymentAmount || 59);
+  if (window.activePromoCode && window.activePromoCode.discount_percentage) {
+    finalAmt = Math.max(1, Math.round(finalAmt * (1 - window.activePromoCode.discount_percentage / 100)));
+  }
+  btn.textContent = `Proceed to Secure Payment (₹${finalAmt})`;
+};
+
 window.selectPaymentPlan = function(plan) {
   const cards = document.querySelectorAll("#paymentPlansGrid .plan-card");
   let amt = 59;
@@ -20140,16 +20150,15 @@ window.selectPaymentPlan = function(plan) {
   if (plan === "dakshina") {
     if (presets)
       presets.style.display = "flex";
-    amt = 251;
+    const activeChip = presets ? presets.querySelector(".dakshina-chip.active") : null;
+    amt = activeChip ? (parseInt(activeChip.dataset.val, 10) || 251) : 251;
   } else {
     if (presets)
       presets.style.display = "none";
   }
   window.activePaymentPlan = plan;
   window.activePaymentAmount = amt;
-  const btn = document.getElementById("payProceedBtn");
-  if (btn)
-    btn.textContent = `Proceed to Secure Payment (\u20B9${amt})`;
+  window.updatePaymentButtonText(amt);
 };
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#paymentPlansGrid .plan-card").forEach((card) => {
@@ -20163,9 +20172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chip.classList.add("active");
       const val = parseInt(chip.dataset.val, 10) || 251;
       window.activePaymentAmount = val;
-      const btn = document.getElementById("payProceedBtn");
-      if (btn)
-        btn.textContent = `Proceed to Secure Payment (₹${val})`;
+      window.updatePaymentButtonText(val);
     });
   });
   
@@ -20189,12 +20196,7 @@ document.addEventListener("DOMContentLoaded", () => {
           st.style.background = "rgba(46,204,113,0.2)";
           st.style.color = "#2ecc71";
           st.textContent = `✓ Code applied! ${j.promo.discount_percentage || 0}% discount active.`;
-          if (j.promo.discount_percentage) {
-            const currentAmt = window.activePaymentAmount || 59;
-            const discounted = Math.max(1, Math.round(currentAmt * (1 - j.promo.discount_percentage / 100)));
-            const btn = document.getElementById("payProceedBtn");
-            if (btn) btn.textContent = `Proceed to Secure Payment (₹${discounted})`;
-          }
+          window.updatePaymentButtonText(window.activePaymentAmount);
         } else {
           st.style.background = "rgba(231,76,60,0.2)";
           st.style.color = "#e74c3c";
@@ -20995,13 +20997,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (kCard && kCard.classList.contains('active')) targetId = 'kundliSetupCard';
       }
       const el = document.getElementById(targetId);
-      if (el && window.getComputedStyle(el).display !== 'none') {
+      if (el && el.style.display !== 'none' && (el.offsetWidth > 0 || el.offsetHeight > 0)) {
         d.dot.style.display = 'block';
       } else {
         d.dot.style.display = 'none';
       }
     });
-  }, 1000);
+  }, 2000);
 });
 </script>
 <style>
