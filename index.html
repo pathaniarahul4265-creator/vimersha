@@ -12117,51 +12117,39 @@ function loadCurrentSky() {
   });
 }
 function buildBirthContext() {
-  const name = document.getElementById("f_name").value || "the native";
-  const gender = document.getElementById("f_gender").value;
-  const dob = document.getElementById("f_dob").value;
-  const tob = document.getElementById("f_tob").value;
-  const pob = document.getElementById("f_pob").value;
-  const lat = parseFloat(document.getElementById("f_lat").value) || 28.6139;
-  const lon = parseFloat(document.getElementById("f_lon").value) || 77.209;
+  const name = document.getElementById("f_name")?.value || document.getElementById("k1_name")?.value || "the native";
+  const gender = document.getElementById("f_gender")?.value || "Not specified";
+  const dob = document.getElementById("f_dob")?.value || document.getElementById("f_dob_display")?.innerText?.replace(/📅|Choose a date/g, "")?.trim() || "";
+  const tob = document.getElementById("f_tob")?.value || document.getElementById("f_tob_display")?.innerText?.replace(/🕐|Choose a time/g, "")?.trim() || "";
+  const pob = document.getElementById("f_pob")?.value || document.getElementById("k1_pob")?.value || "";
+  const lat = parseFloat(document.getElementById("f_lat")?.value || document.getElementById("lat")?.value) || 28.6139;
+  const lon = parseFloat(document.getElementById("f_lon")?.value || document.getElementById("lon")?.value) || 77.209;
   let s = `Native's name: ${name}
 Gender: ${gender}
-Date of birth: ${dob}
-Time of birth: ${tob}
-Place of birth: ${pob}`;
+Date of birth: ${dob || "Not specified"}
+Time of birth: ${tob || "Not specified"}
+Place of birth: ${pob || "Not specified"}`;
   if (lat && lon)
     s += `
 Coordinates: latitude ${lat}, longitude ${lon}`;
-  const pData = getDailyPanchangData(dob ? new Date(dob) : new Date(), lat, lon);
-  if (pData) {
-    s += `
+  try {
+    const pData = getDailyPanchangData(dob ? new Date(dob) : new Date(), lat, lon);
+    if (pData) {
+      s += `
 
 DAINIK PANCHANG, HINDU CALENDAR, RAHU KAAL & FESTIVAL ALMANAC (${pData.dateStr}):`;
-    s += `
-- Hindu Calendar: ${pData.hinduCal.hinduDateFormatted} (${pData.hinduCal.vikramSamvat}, ${pData.hinduCal.sakaSamvat}, ${pData.hinduCal.maas})`;
-    s += `
-- Tithi: ${pData.tithi}`;
-    s += `
-- Nakshatra: ${pData.nakshatra}`;
-    s += `
-- Yoga: ${pData.yoga}`;
-    s += `
-- Karana: ${pData.karana}`;
-    s += `
-- Rahu Kaal Window: ${pData.rahuKaal} (Inauspicious window; provide timing precautions for starting major new ventures or contracts)`;
-    s += `
-- Abhijit Muhurat: ${pData.abhijit} (Auspicious Shubh Muhurat window for initiating auspicious work)`;
-    s += `
-- Sunrise / Sunset (Calculated): ${pData.sun.sunrise} / ${pData.sun.sunset} (Day Length: ${pData.sun.dayLength})`;
-    if (pData.activeEvents.length > 0) {
-      s += `
-- Active Seasonal Festival / Vrat: ${pData.activeEvents.map((e) => e.name + " (" + e.desc + ")").join(", ")}`;
+      if (pData.hinduCal) {
+        s += `
+- Hindu Calendar: ${pData.hinduCal.hinduDateFormatted || ''} (${pData.hinduCal.vikramSamvat || ''}, ${pData.hinduCal.sakaSamvat || ''}, ${pData.hinduCal.maas || ''})`;
+      }
+      if (pData.tithi) s += `\n- Tithi: ${pData.tithi}`;
+      if (pData.nakshatra) s += `\n- Nakshatra: ${pData.nakshatra}`;
+      if (pData.yoga) s += `\n- Yoga: ${pData.yoga}`;
+      if (pData.karana) s += `\n- Karana: ${pData.karana}`;
+      if (pData.rahuKaal) s += `\n- Rahu Kaal: ${pData.rahuKaal}`;
+      if (pData.abhijit) s += `\n- Abhijit Muhurat: ${pData.abhijit}`;
     }
-    if (pData.upcomingEvents.length > 0) {
-      s += `
-- Upcoming Festivals / Minor Vrats (Next 30 Days): ${pData.upcomingEvents.map((e) => e.name + " [" + (e.daysAway === 1 ? "Tomorrow" : "in " + e.daysAway + " days") + "]").join(", ")}`;
-    }
-  }
+  } catch (pe) {}
   if (window.lastGunaMilanResult) {
     const r = window.lastGunaMilanResult;
     s += `
@@ -12180,7 +12168,7 @@ ASHTAKOOT GUNA MILAN RESULT (DETERMINISTIC ENGINE):
   if (window.currentVedicLang === "hi") {
     s += `
 
-LANGUAGE INSTRUCTION: Write the entire reading and report analysis in pure, fluent, professional Hindi (\u0939\u093F\u0902\u0926\u0940 / \u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940 \u0932\u093F\u092A\u093F) using authentic Sanskrit Vedic astrological terms (e.g. \u0932\u0917\u094D\u0928, \u092E\u0939\u093E\u0926\u0936\u093E, \u0905\u0902\u0924\u0930\u094D\u0926\u0936\u093E, \u0917\u094B\u091A\u0930, \u092F\u094B\u0917, \u092D\u093E\u0935, \u0917\u094D\u0930\u0939 \u0938\u094D\u0925\u093F\u0924\u093F).`;
+LANGUAGE INSTRUCTION: Write the entire reading and report analysis in pure, fluent, professional Hindi (हिंदी / देवनागरी लिपि) using authentic Sanskrit Vedic astrological terms (e.g. लग्न, महादशा, अंतर्दशा, गोचर, योग, भाव, ग्रह स्थिति).`;
   }
   return s;
 }
@@ -14567,6 +14555,11 @@ window.selectQuickPrompt = function(btn) {
   if (!btn) return;
   const rawText = btn.textContent || btn.innerText || "";
   const cleaned = rawText.replace(/^[^\w\s\?]+/, '').trim();
+  const chatCard = document.getElementById("chatCard");
+  if (chatCard) {
+    chatCard.style.display = "block";
+    chatCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   const input = document.getElementById("chatInput");
   if (input) {
     input.value = cleaned;
@@ -14582,46 +14575,16 @@ const sendButtonEl = document.getElementById("chatSend");
 if (sendButtonEl) {
   sendButtonEl.onclick = () => __async(this, null, function* () {
   var _a2, _b2, _c2;
+  const chatCard = document.getElementById("chatCard");
+  if (chatCard) {
+    chatCard.style.display = "block";
+  }
+  const hint = document.getElementById("chatHint");
+  if (hint) {
+    hint.remove();
+  }
   const input = document.getElementById("chatInput");
   const q = (input ? input.value : "").trim();
-
-  const maxTotal = window.MAX_TOTAL_QUESTIONS || 7;
-  const freeAllowed = window.FREE_QUESTIONS_ALLOWANCE || 1;
-
-  if (chatQuestionsUsed >= maxTotal) {
-    alert("You have reached the maximum quota of 7 astrological consultations for this reading (1 Free + 6 Inquiries). This chart consultation is complete.");
-    updateChatCount();
-    return;
-  }
-
-  const isVip = typeof window.isVipActive === "function" && window.isVipActive();
-  const availableCredits = typeof window.getQuestionCredits === "function" ? window.getQuestionCredits() : 0;
-  const qPrice = Number((window.SERVER_CONFIG?.prices?.question) || (window.PAYWALL_CONFIG?.plans?.question?.amountINR) || 19);
-
-  // If beyond the 1 free question and not VIP and no credits, require payment
-  if (chatQuestionsUsed >= freeAllowed && !isVip && availableCredits <= 0) {
-    // If the user clicks the paid button without typing first, focus the input
-    if (!q) {
-      if (input) {
-        input.focus();
-        input.placeholder = "Please enter your question here first, then click Ask...";
-      }
-      return;
-    }
-
-    const questionNumber = chatQuestionsUsed + 1;
-    if (window.requestPaidAccess) {
-      const paymentApproved = yield window.requestPaidAccess("question", qPrice, {
-        name: (document.getElementById("f_name") && document.getElementById("f_name").value) || (document.getElementById("k1_name") && document.getElementById("k1_name").value) || "",
-        email: (document.getElementById("f_email") && document.getElementById("f_email").value) || "",
-        title: `Astrological Consultation Inquiry #${questionNumber}`,
-        question: q
-      });
-      if (!paymentApproved) {
-        return; // User canceled or payment did not complete
-      }
-    }
-  }
 
   if (!q) {
     if (input) {
@@ -14631,11 +14594,13 @@ if (sendButtonEl) {
     return;
   }
 
-  // Deduct paid credit if applicable
-  if (chatQuestionsUsed >= freeAllowed && !isVip) {
-    if (window.consumeQuestionCredit) {
-      window.consumeQuestionCredit();
-    }
+  const isVip = typeof window.isVipActive === "function" && window.isVipActive();
+  const availableCredits = typeof window.getQuestionCredits === "function" ? window.getQuestionCredits() : 0;
+  const qPrice = Number((window.SERVER_CONFIG?.prices?.question) || (window.PAYWALL_CONFIG?.plans?.question?.amountINR) || 19);
+
+  // Consume paid question credit if active
+  if (window.consumeQuestionCredit) {
+    window.consumeQuestionCredit();
   }
 
   chatUnlocked = true;
@@ -14664,22 +14629,28 @@ if (sendButtonEl) {
 
   const sendBtn = document.getElementById("chatSend");
   if (sendBtn) sendBtn.disabled = true;
-  const pendingDiv = appendChat("pending", "Analyzing planetary dignities & synthesizing detailed Vedic Shastra consultation…");
+  const pendingDiv = appendChat("pending", "Analyzing birth details & planetary alignments with Jyotish Acharya…");
   const reportContext = fullReportText ? fullReportText.trim() : "";
   const historyText = chatHistory.map((m) => `${m.role === "user" ? "Question" : "Answer"}: ${m.text}`).join("\n\n");
   
+  const nameVal = document.getElementById("f_name")?.value || document.getElementById("k1_name")?.value || "the native";
+  const dobVal = document.getElementById("f_dob")?.value || document.getElementById("f_dob_display")?.innerText?.replace(/📅|Choose a date/g, "")?.trim() || "";
+  const tobVal = document.getElementById("f_tob")?.value || document.getElementById("f_tob_display")?.innerText?.replace(/🕐|Choose a time/g, "")?.trim() || "";
+  const pobVal = document.getElementById("f_pob")?.value || document.getElementById("k1_pob")?.value || "";
+  const latVal = parseFloat(document.getElementById("f_lat")?.value || document.getElementById("lat")?.value) || 28.6139;
+  const lonVal = parseFloat(document.getElementById("f_lon")?.value || document.getElementById("lon")?.value) || 77.209;
+
   const activeChart = verifiedChart || window.verifiedChart || (window.lastVerifiedChart && window.lastVerifiedChart.normalized) || (verifiedCharts && verifiedCharts.partnerA) || {};
   let astroDetails = "";
-  if (activeChart) {
+  if (activeChart && activeChart.planets) {
     const ascName = activeChart.ascSign || (activeChart.ascendant && activeChart.ascendant.rashiName) || "Aries";
     const ascDeg = activeChart.ascDeg !== undefined ? activeChart.ascDeg : (activeChart.ascendant ? activeChart.ascendant.degrees : 0);
     const moonName = activeChart.moonRashi || (activeChart.moonSign && activeChart.moonSign.rashiName) || "Taurus";
     const nakName = activeChart.nakshatra ? (activeChart.nakshatra.name || activeChart.nakshatra) : "Rohini";
-    const padaNum = activeChart.pada || (activeChart.nakshatra && activeChart.nakshatra.pada) || 1;
     const sunName = activeChart.sunRashi || (activeChart.sunSign && activeChart.sunSign.rashiName) || "Leo";
     const dashaText = (activeChart.dasha && `${activeChart.dasha.activeMahadasha || "Jupiter"} Mahadasha / ${activeChart.dasha.activeAntardasha || "Saturn"} Antardasha`) || (activeChart.dashaTimeline && activeChart.dashaTimeline.current ? `${activeChart.dashaTimeline.current.mahadasha} Mahadasha (${activeChart.dashaTimeline.current.antardasha || 'Antardasha'})` : "Active Vimshottari Cycle");
     
-    astroDetails = `Ascendant (Lagna): ${ascName} (${ascDeg}°)\nMoon: ${moonName} (${nakName} Nakshatra, Pada ${padaNum})\nSun: ${sunName}\nActive Vimshottari Cycle: ${dashaText}`;
+    astroDetails = `Ascendant (Lagna): ${ascName} (${ascDeg}°)\nMoon: ${moonName} (${nakName} Nakshatra)\nSun: ${sunName}\nActive Vimshottari Cycle: ${dashaText}`;
     if (activeChart.planets && Array.isArray(activeChart.planets)) {
       astroDetails += `\nPlanetary Placements: ${activeChart.planets.map((p) => `${p.name} in ${p.rashi} (${p.house}th House)`).join(", ")}`;
     }
@@ -14693,58 +14664,35 @@ if (sendButtonEl) {
 
   const isHindi = window.currentVedicLang === "hi";
   const languageInstruction = isHindi ? "Respond entirely in pure, refined Hindi (देवनागरी लिपि)." : "Respond in clear, articulate English.";
-  const userText = `Birth data & Chart Significators:
+  const userText = `Native's Birth Data:
+Name: ${nameVal}
+Date of Birth: ${dobVal || "Provided in context"}
+Time of Birth: ${tobVal || "Provided in context"}
+Place of Birth: ${pobVal || "Provided in context"}
+Coordinates: Latitude ${latVal}, Longitude ${lonVal}
+
 ${birthContext || astroDetails}
 
-Summary of the foundational Vedic chart reading:
-${reportSummary || reportContext || "Complete Vedic Kundli Consultation"}
+${reportSummary ? `Summary of Natal Chart: ${reportSummary}` : ''}
 
-Conversation history so far:
+Conversation History:
 ${historyText}
 
 Inquiry from the native:
 "${q}"
 
-TASK: Provide an in-depth, deeply analytical, and classical Parashari astrological response (up to 1000-1500 words) answering this question with profound mathematical rigor, psychological depth, and concrete timing windows.`;
+TASK: Provide an authentic, direct, insightful, and deeply reassuring Vedic astrological consultation answering this question based on the native's birth details and planetary significators. Include clear timing windows, planetary strengths, and practical Sattvic advice.`;
 
   try {
     const chatSystemRules = `You are the revered Jyotish Acharya & Classical Vedic Astrologer for Jyotish Vimarsha.
 
-CRITICAL DIRECTIVE - LENGTH & DEPTH:
-The user has requested an in-depth, comprehensive astrological consultation for this specific inquiry.
-You MUST provide an extensive, deep, granular, and classical consultation of up to 1000-1500 words.
-Do NOT give brief or casual summaries. Treat this answer with scholarly depth, clarity, actionable timing windows, and specific planetary analysis. Avoid unnecessary conversational fluff and dive straight into the classical analysis.
-
-ASTROLOGICAL ACCURACY:
-- Ground every deduction in the native's verified Lagna, Moon sign, Nakshatra, House lords, Dasha timeline, and Gochar transits.
-- Never invent planetary positions, house placements, or dashas.
-- Cite classical Sanskrit principles from Brihat Parashara Hora Shastra, Jaimini Sutras, Phaladeepika, or Saravali where illuminating.
-- NEVER prescribe commercial rituals, expensive gemstone purchases, black magic wards, or superstitions. Provide psychological clarity, conscious awareness, and authentic Sattvic disciplines.
-
-REQUIRED COMPREHENSIVE 6-PART STRUCTURE (Use clear Markdown H3 headings):
-
-### 1. Classical Bhava & Planetary Significator Diagnosis
-(Analyze primary and secondary Bhavas [Houses 1–12] governing this inquiry, Karaka grahas, dispositors, house lord strengths, combustions, retrogrades, and mutual Drishti / aspects.)
-
-### 2. Nakshatra, Pada & Subtle Navamsha (D9) Alignments
-(Analyze the lunar Nakshatra lord, pada implications, Navamsha dignity [Vargottama / Pushkara Navamsha], and inner soul karmic patterns governing this life domain.)
-
-### 3. Vimshottari Dasha Sequencing & Chronological Event Timing
-(Break down the current Mahadasha, Antardasha, and upcoming Pratyantardasha milestones. Detail exact chronological time windows and inflection years when events will fructify.)
-
-### 4. Gochar (Transits) & Current Cosmic Inflection Windows
-(Synthesize major transits — Jupiter/Guru transit through natal houses, Saturn/Shani Sade Sati/Dhaiyya or Kendra transits, Rahu-Ketu nodal axis — and their timing impact on the native's question.)
-
-### 5. Psychological & Real-World Life Guidance
-(Translate celestial mechanics into actionable, clear, compassionate, and realistic life guidance addressing career, relationships, finance, or personal development with grounded clarity.)
-
-### 6. Classical Sattvic Upayas & Karmic Neutralization
-(Provide authentic, safe, traditional remedial guidance: Vedic contemplation, auspicious colors, day-wise disciplines, daana/charity, and mindful lifestyle alignment for balancing the governing planets.)
-
+Provide a comprehensive, scholarly, and compassionate Vedic astrological response directly addressing the native's inquiry.
+Ground every answer in the native's birth data (DOB, Time, Place, Lagna, Moon sign, planetary houses, and active Dasha).
+Use clear Markdown headings, actionable guidance, timing indications, and classical Sattvic remedies.
 Language requirement: ${languageInstruction}`;
 
     const combinedRules = `${activeRules || RULES}\n\n${chatSystemRules}`;
-    const rawText = yield callGemini(combinedRules, userText, 8192);
+    const rawText = yield callGemini(combinedRules, userText, 4096);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
     appendChat("model", text, currentQIndex, topicInfo);
