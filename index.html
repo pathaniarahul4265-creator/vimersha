@@ -7957,7 +7957,7 @@ p,
       <div style="color:#d8a04c;font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">✦ SHASTRA CONSULTATION &amp; LIVE CHART INQUIRY ✦</div>
       <h2 id="chatHeading" style="margin:0 0 6px;font-family:'Cinzel',serif;font-size:23px;color:#fce8bd;">Ask the Chart · Jyotish Acharya</h2>
       <div class="chat-status" style="font-size:13.5px;color:#cbd5e1;line-height:1.55;">
-        <span id="chatStatusHelpText">Receive an in-depth, classical ~2000-word Shastra consultation for your specific question. 1st question complimentary, up to 6 additional questions at ₹19 each (max 7 total).</span>
+        <span id="chatStatusHelpText">Receive an in-depth, classical Jyotish consultation for your specific question. 1st question complimentary, up to 6 additional questions at ₹19 each (max 7 total).</span>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
@@ -7988,7 +7988,7 @@ p,
   <!-- Chat Log Messages -->
   <div class="chatlog" id="chatLog" style="min-height:140px;max-height:650px;overflow-y:auto;padding:16px;background:rgba(8,13,25,0.75);border:1px solid rgba(216,160,76,0.22);border-radius:12px;margin-bottom:16px;">
     <div class="empty-hint" id="chatHint" style="text-align:center;padding:28px 16px;color:#94a3b8;font-size:13.5px;line-height:1.65;">
-      ✦ Your chart is cast. You have <strong>1 Free Astrological Consultation</strong> available.<br>Ask any question regarding your Kundli, Dashas, career, marriage, or finances to receive an exhaustive ~2000-word analysis.
+      ✦ Your chart is cast. You have <strong>1 Free Astrological Consultation</strong> available.<br>Ask any question regarding your Kundli, Dashas, career, marriage, or finances to receive an in-depth, detailed analysis.
     </div>
   </div>
 
@@ -8003,9 +8003,9 @@ p,
     <textarea id="chatInput" rows="2" placeholder="Type your specific question about your chart (e.g. When will I get a job promotion?)..." style="flex:1;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(216,160,76,0.3);border-radius:10px;color:#fff;font-size:14px;resize:vertical;min-height:52px;line-height:1.5;font-family:inherit;"></textarea>
     <button type="button" id="chatSend" style="padding:13px 24px;border-radius:10px;background:linear-gradient(135deg, #d8a04c, #b98132);border:none;color:#070e1c;font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:0.04em;cursor:pointer;white-space:nowrap;height:52px;transition:all 0.2s;">Ask Free (1/1)</button>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:#94a3b8;flex-wrap:wrap;gap:6px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:#94a3b8;flex-wrap:gap:6px;">
     <span id="chatFooterQuota">1 Free Consultation • ₹19 per additional question • Max 7 total</span>
-    <span style="color:#d8a04c;">⚡ Exhaustive ~2000-word Jyotish Shastra Analysis</span>
+    <span style="color:#d8a04c;">⚡ In-Depth Classical Jyotish Consultation</span>
   </div>
 </div>
 
@@ -8028,7 +8028,7 @@ p,
       <div class="plan-card" data-plan="question" data-amount="19" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;">
         <div>
           <strong class="plan-title" style="font-size:15px;color:#fce7b0;display:block;">1 Consultation Question (₹19)</strong>
-          <span style="font-size:12.5px;color:var(--muted);">Exhaustive ~2000-word Jyotish Acharya consultation answering your specific query</span>
+          <span style="font-size:12.5px;color:var(--muted);">In-depth, detailed Jyotish Acharya consultation answering your specific query</span>
         </div>
         <div class="plan-price" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#fce7b0;white-space:nowrap;margin-left:12px;">₹19</div>
       </div>
@@ -12255,8 +12255,8 @@ function rawCall(systemText, userText, maxTokens) {
   return __async(this, null, function* () {
     let res, data;
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    // Fast 25s client-side timeout so frontend never hangs indefinitely
-    const timeoutId = controller ? setTimeout(() => controller.abort(), 25000) : null;
+    // 45s client-side timeout matching backend limit so requests complete reliably
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 45000) : null;
     try {
       res = yield fetch("/api/ai", {
         method: "POST",
@@ -12491,14 +12491,17 @@ window.updateChatCount = function() {
   }
 };
 function unlockChat() {
-  var _a2, _b2;
-  if (((_b2 = (_a2 = window.SERVER_CONFIG) == null ? void 0 : _a2.features) == null ? void 0 : _b2.chat) === false) {
+  var _a2;
+  const feat = (_a2 = window.SERVER_CONFIG) == null ? void 0 : _a2.features;
+  if (feat && (feat.chat === false || feat.question === false || feat.question_enabled === false)) {
     chatUnlocked = false;
-    document.getElementById("chatCard").style.display = "none";
+    const chatCard = document.getElementById("chatCard");
+    if (chatCard) chatCard.style.display = "none";
     return;
   }
   chatUnlocked = true;
-  document.getElementById("chatCard").style.display = "block";
+  const chatCard = document.getElementById("chatCard");
+  if (chatCard) chatCard.style.display = "block";
   const hint = document.getElementById("chatHint");
   if (hint)
     hint.remove();
@@ -14341,6 +14344,12 @@ function renderReadingNavigator() {
   const navCard = document.getElementById("readingNavigatorCard");
   if (!navCard)
     return;
+  const feat = window.SERVER_CONFIG && window.SERVER_CONFIG.features;
+  const isQuestionEnabled = !feat || (feat.question !== false && feat.chat !== false && feat.question_enabled !== false);
+  const navTabQ = document.getElementById("navTabQuestions");
+  const navPanelQ = document.getElementById("navPanelQuestions");
+  if (navTabQ) navTabQ.style.display = isQuestionEnabled ? "" : "none";
+  if (navPanelQ && !isQuestionEnabled) navPanelQ.style.display = "none";
   const countBadge = document.getElementById("navChapterCount");
   if (countBadge)
     countBadge.textContent = isHi ? `(${activeSections.length} \u0905\u0927\u094D\u092F\u093E\u092F)` : `(${activeSections.length} Chapters)`;
@@ -14409,7 +14418,9 @@ function renderChatQuestionsRibbon() {
   const ribbon = document.getElementById("chatQuestionsRibbon");
   if (!ribbon)
     return;
-  if (consultationQuestionsLog.length === 0) {
+  const feat = window.SERVER_CONFIG && window.SERVER_CONFIG.features;
+  const isQuestionEnabled = !feat || (feat.question !== false && feat.chat !== false && feat.question_enabled !== false);
+  if (!isQuestionEnabled || consultationQuestionsLog.length === 0) {
     ribbon.style.display = "none";
     ribbon.innerHTML = "";
     return;
@@ -14573,8 +14584,6 @@ if (sendButtonEl) {
   var _a2, _b2, _c2;
   const input = document.getElementById("chatInput");
   const q = (input ? input.value : "").trim();
-  if (!q)
-    return;
 
   const maxTotal = window.MAX_TOTAL_QUESTIONS || 7;
   const freeAllowed = window.FREE_QUESTIONS_ALLOWANCE || 1;
@@ -14587,13 +14596,22 @@ if (sendButtonEl) {
 
   const isVip = typeof window.isVipActive === "function" && window.isVipActive();
   const availableCredits = typeof window.getQuestionCredits === "function" ? window.getQuestionCredits() : 0;
+  const qPrice = Number((window.SERVER_CONFIG?.prices?.question) || (window.PAYWALL_CONFIG?.plans?.question?.amountINR) || 19);
 
-  // If beyond the 1 free question and not VIP and no credits, require ₹19 payment
+  // If beyond the 1 free question and not VIP and no credits, require payment
   if (chatQuestionsUsed >= freeAllowed && !isVip && availableCredits <= 0) {
+    // If the user clicks the paid button without typing first, immediately open the payment modal with the question plan selected
+    if (!q) {
+      if (typeof window.openPaymentModal === "function") {
+        window.openPaymentModal("question");
+      }
+      return;
+    }
+
     const questionNumber = chatQuestionsUsed + 1;
     if (window.requestPaidAccess) {
-      const paymentApproved = yield window.requestPaidAccess("question", 19, {
-        name: (document.getElementById("f_name") && document.getElementById("f_name").value) || "",
+      const paymentApproved = yield window.requestPaidAccess("question", qPrice, {
+        name: (document.getElementById("f_name") && document.getElementById("f_name").value) || (document.getElementById("k1_name") && document.getElementById("k1_name").value) || "",
         email: (document.getElementById("f_email") && document.getElementById("f_email").value) || "",
         title: `Astrological Consultation Inquiry #${questionNumber}`,
         question: q
@@ -14602,6 +14620,14 @@ if (sendButtonEl) {
         return; // User canceled or payment did not complete
       }
     }
+  }
+
+  if (!q) {
+    if (input) {
+      input.focus();
+      input.placeholder = "Please enter your question here first, then click Ask...";
+    }
+    return;
   }
 
   // Deduct paid credit if applicable
@@ -14637,7 +14663,7 @@ if (sendButtonEl) {
 
   const sendBtn = document.getElementById("chatSend");
   if (sendBtn) sendBtn.disabled = true;
-  const pendingDiv = appendChat("pending", "Analyzing planetary dignities & synthesizing classical Vedic Shastra response (approx. 2000 words)…");
+  const pendingDiv = appendChat("pending", "Analyzing planetary dignities & synthesizing detailed Vedic Shastra consultation…");
   const reportContext = fullReportText ? fullReportText.trim() : "";
   const historyText = chatHistory.map((m) => `${m.role === "user" ? "Question" : "Answer"}: ${m.text}`).join("\n\n");
   
@@ -14658,6 +14684,12 @@ if (sendButtonEl) {
     }
   }
 
+  if (!birthContext || birthContext.trim().length === 0) {
+    if (typeof buildBirthContext === "function") {
+      birthContext = buildBirthContext();
+    }
+  }
+
   const isHindi = window.currentVedicLang === "hi";
   const languageInstruction = isHindi ? "Respond entirely in pure, refined Hindi (देवनागरी लिपि)." : "Respond in clear, articulate English.";
   const userText = `Birth data & Chart Significators:
@@ -14672,15 +14704,15 @@ ${historyText}
 Inquiry from the native:
 "${q}"
 
-TASK: Provide an exhaustive, deeply analytical, and classical Parashari astrological response (approximately 1500 to 2000 words in length) answering this question with profound mathematical rigor, psychological depth, and concrete timing.`;
+TASK: Provide an in-depth, deeply analytical, and classical Parashari astrological response (up to 1000-1500 words) answering this question with profound mathematical rigor, psychological depth, and concrete timing windows.`;
 
   try {
     const chatSystemRules = `You are the revered Jyotish Acharya & Classical Vedic Astrologer for Jyotish Vimarsha.
 
 CRITICAL DIRECTIVE - LENGTH & DEPTH:
-The user has requested an exhaustive, comprehensive astrological consultation report for this specific inquiry.
-You MUST provide an extensive, deep, and granular consultation of approximately 1500 to 2000 words.
-Do NOT give brief or casual summaries. Treat this answer with the same monumental rigor, elegance, structural beauty, and scholarly depth as our primary foundational chart reports.
+The user has requested an in-depth, comprehensive astrological consultation for this specific inquiry.
+You MUST provide an extensive, deep, granular, and classical consultation of up to 1000-1500 words.
+Do NOT give brief or casual summaries. Treat this answer with scholarly depth, clarity, actionable timing windows, and specific planetary analysis. Avoid unnecessary conversational fluff and dive straight into the classical analysis.
 
 ASTROLOGICAL ACCURACY:
 - Ground every deduction in the native's verified Lagna, Moon sign, Nakshatra, House lords, Dasha timeline, and Gochar transits.
@@ -14691,7 +14723,7 @@ ASTROLOGICAL ACCURACY:
 REQUIRED COMPREHENSIVE 6-PART STRUCTURE (Use clear Markdown H3 headings):
 
 ### 1. Classical Bhava & Planetary Significator Diagnosis
-(Provide an exhaustive analysis of the primary and secondary Bhavas [Houses 1–12] governing this inquiry, the Karaka grahas [significators], dispositors, house lord strengths, combustions, retrogrades, and mutual Drishti / aspects.)
+(Analyze primary and secondary Bhavas [Houses 1–12] governing this inquiry, Karaka grahas, dispositors, house lord strengths, combustions, retrogrades, and mutual Drishti / aspects.)
 
 ### 2. Nakshatra, Pada & Subtle Navamsha (D9) Alignments
 (Analyze the lunar Nakshatra lord, pada implications, Navamsha dignity [Vargottama / Pushkara Navamsha], and inner soul karmic patterns governing this life domain.)
@@ -14710,7 +14742,8 @@ REQUIRED COMPREHENSIVE 6-PART STRUCTURE (Use clear Markdown H3 headings):
 
 Language requirement: ${languageInstruction}`;
 
-    const rawText = yield callGemini(chatSystemRules, userText, 8192);
+    const combinedRules = `${activeRules || RULES}\n\n${chatSystemRules}`;
+    const rawText = yield callGemini(combinedRules, userText, 8192);
     const text = cleanAstroText(rawText);
     if (pendingDiv && pendingDiv.parentNode) pendingDiv.remove();
     appendChat("model", text, currentQIndex, topicInfo);
@@ -16364,15 +16397,58 @@ ${item.message}`);
   function applyFeatureVisibility() {
     var _a3;
     const f = ((_a3 = window.SERVER_CONFIG) == null ? void 0 : _a3.features) || {};
+    const isRevealEnabled = f.reveal !== false && f.reveal_enabled !== false;
+    const isMatchEnabled = f.match !== false && f.match_enabled !== false;
+    const isQuestionEnabled = f.question !== false && f.chat !== false && f.question_enabled !== false;
+
     const revealBtn = $("genBtn"), matchBtn = $("matchBtn"), chat = $("chatCard"), matchTab = $("tabKundli");
+    const ribbon = $("chatQuestionsRibbon"), navTabQ = $("navTabQuestions"), navPanelQ = $("navPanelQuestions");
+
     if (revealBtn)
-      revealBtn.disabled = f.reveal === false;
+      revealBtn.disabled = !isRevealEnabled;
     if (matchBtn)
-      matchBtn.disabled = f.match === false;
+      matchBtn.disabled = !isMatchEnabled;
     if (matchTab)
-      matchTab.style.display = f.match === false ? "none" : "";
-    if (chat && f.chat === false)
-      chat.style.display = "none";
+      matchTab.style.display = isMatchEnabled ? "" : "none";
+
+    if (chat) {
+      if (!isQuestionEnabled) {
+        chat.style.setProperty("display", "none", "important");
+        chat.setAttribute("data-feature-hidden", "true");
+      } else {
+        chat.removeAttribute("data-feature-hidden");
+      }
+    }
+    if (ribbon && !isQuestionEnabled) {
+      ribbon.style.setProperty("display", "none", "important");
+    }
+    if (navTabQ) {
+      navTabQ.style.setProperty("display", isQuestionEnabled ? "" : "none", isQuestionEnabled ? "" : "important");
+    }
+    if (navPanelQ && !isQuestionEnabled) {
+      navPanelQ.style.setProperty("display", "none", "important");
+    }
+
+    document.querySelectorAll('.plan-card[data-plan="question"], .plan-card[data-plan="questions_pack"]').forEach((card) => {
+      if (!isQuestionEnabled) {
+        card.style.setProperty("display", "none", "important");
+        if (card.classList.contains("active")) {
+          card.classList.remove("active");
+          const revealCard = document.querySelector('.plan-card[data-plan="reveal"]');
+          if (revealCard) revealCard.classList.add("active");
+        }
+      } else {
+        card.style.removeProperty("display");
+      }
+    });
+
+    document.querySelectorAll(".jump-to-ask-btn, .ask-chart-link, .nav-q-btn, .chat-q-chip").forEach((el) => {
+      if (!isQuestionEnabled) {
+        el.style.setProperty("display", "none", "important");
+      } else {
+        el.style.removeProperty("display");
+      }
+    });
   }
   function esc(v) {
     return String(v != null ? v : "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c]);
@@ -17152,7 +17228,10 @@ var __async = (__this, __arguments, generator) => {
   function enabled(plan) {
     var _a;
     const f = ((_a = window.SERVER_CONFIG) == null ? void 0 : _a.features) || {};
-    return plan === "reveal" ? f.reveal !== false : plan === "match" ? f.match !== false : f.chat !== false;
+    if (plan === "reveal") return f.reveal !== false && f.reveal_enabled !== false;
+    if (plan === "match") return f.match !== false && f.match_enabled !== false;
+    if (plan === "question" || plan === "questions_pack") return f.question !== false && f.chat !== false && f.question_enabled !== false;
+    return true;
   }
 
   function pay(plan, customAmount, customPrefill) {

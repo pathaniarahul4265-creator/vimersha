@@ -525,13 +525,23 @@ export default async function handler(req,res){
         let amount = b.amount ? Number(b.amount) : 0;
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
+        const s = await getSettings();
+        const map = { 
+          reveal: ['reveal_price', 'reveal_enabled'], 
+          match: ['match_price', 'match_enabled'], 
+          question: ['question_price', 'question_enabled'], 
+          questions_pack: ['question_price', 'question_enabled'], 
+          dakshina: ['reveal_price', 'reveal_enabled'] 
+        };
+
+        if (map[plan] && s[map[plan][1]] === '0') {
+          return json(res, 403, { error: 'This feature is currently unavailable.' });
+        }
+
         if (!amount) {
-          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'question_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
-          const s = await getSettings();
-          if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
           const cfg = pricing(s);
-          let baseAmt = (cfg.prices[plan] || 59) * 100;
+          let baseAmt = (cfg.prices[plan] || (plan === 'question' ? 19 : plan === 'questions_pack' ? 79 : 59)) * 100;
           if (b.promoCode) {
             const codeStr = b.promoCode.toUpperCase().trim();
             let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);

@@ -203,7 +203,9 @@ export function pricing(s = {}) {
     features: {
       reveal: s.reveal_enabled !== '0',
       match: s.match_enabled !== '0',
-      question: s.question_enabled !== '0'
+      question: s.question_enabled !== '0',
+      chat: s.question_enabled !== '0',
+      question_enabled: s.question_enabled !== '0'
     }
   };
 }
