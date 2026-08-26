@@ -526,7 +526,7 @@ export default async function handler(req,res){
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         if (!amount) {
-          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
+          const map = { reveal: ['reveal_price', 'reveal_enabled'], match: ['match_price', 'match_enabled'], question: ['question_price', 'question_enabled'], dakshina: ['reveal_price', 'reveal_enabled'] };
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
           const s = await getSettings();
           if (map[plan] && !s[map[plan][1]]) return json(res, 403, { error: 'This feature is currently unavailable.' });
@@ -1460,20 +1460,20 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{reveal_price:String(settings.reveal_price || '59'),match_price:String(settings.match_price || '99'),reveal_enabled:settings.reveal_enabled!==false && settings.reveal_enabled!=='0'?'1':'0',match_enabled:settings.match_enabled!==false && settings.match_enabled!=='0'?'1':'0',offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',offer_percent:String(settings.offer_percent || '0'),offer_label:settings.offer_label || ''}});
+          return json(res,200,{settings:{reveal_price:String(settings.reveal_price || '59'),match_price:String(settings.match_price || '99'),question_price:String(settings.question_price || '19'),reveal_enabled:settings.reveal_enabled!==false && settings.reveal_enabled!=='0'?'1':'0',match_enabled:settings.match_enabled!==false && settings.match_enabled!=='0'?'1':'0',question_enabled:settings.question_enabled!==false && settings.question_enabled!=='0'?'1':'0',offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',offer_percent:String(settings.offer_percent || '0'),offer_label:settings.offer_label || ''}});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        for(const k of ['reveal_price','match_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
-        for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = (b[k] === '1' || b[k] === true) ? '1' : '0';
+        for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
+        for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = (b[k] === '1' || b[k] === true) ? '1' : '0';
         saveJsonFile('settings.json', inMemorySettings);
         try {
           const patch={};
-          for(const k of ['reveal_price','match_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
+          for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
         } catch {}

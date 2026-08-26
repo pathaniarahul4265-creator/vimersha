@@ -217,7 +217,7 @@ async function validatePremiumSession(sessionToken, vipToken) {
   return true; // Bypass for now so AI can generate reports
 }
 
-export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') {
+export function sanitizeModelName(modelName, defaultModel = 'gemini-3.6-flash') {
   if (!modelName) return defaultModel;
   const m = String(modelName).trim().replace(/^models\//, '');
   // Sanitize deprecated models to modern valid models
@@ -227,7 +227,7 @@ export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') 
   return m;
 }
 
-export function normalizeModel(m, defaultModel = 'gemini-3.7-flash') {
+export function normalizeModel(m, defaultModel = 'gemini-3.6-flash') {
   return sanitizeModelName(m, defaultModel);
 }
 
@@ -250,26 +250,27 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
     throw err;
   }
 
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.6-flash');
   const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
-  // Define ordered list of candidate models
+  // Define ordered list of candidate models for maximum speed and uptime
   const candidateModels = [];
   const addCandidate = (m) => {
     if (m && !candidateModels.includes(m)) candidateModels.push(m);
   };
   addCandidate(primaryModel);
   addCandidate(fallbackModel);
-  addCandidate('gemini-3.7-flash');
+  addCandidate('gemini-3.6-flash');
   addCandidate('gemini-3.1-flash-lite');
+  addCandidate('gemini-3.7-flash');
 
   let lastErr = null;
 
   for (const modelToTry of candidateModels) {
     let attempt = 0;
-    const maxAttemptsPerModel = 2;
+    const maxAttemptsPerModel = 1;
 
     while (attempt < maxAttemptsPerModel) {
       attempt++;
@@ -295,9 +296,9 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
           maxOutputTokens: Math.max(256, Number(maxTokens) || 8192),
         };
 
-        // Enable low thinking for pro/reasoning models
-        if (modelToTry.includes('pro') || modelToTry.includes('3.7') || modelToTry.includes('3.1')) {
-          configPayload.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+        // For fast response without lag, keep thinking budget minimal or 0
+        if (modelToTry.includes('3.7') || modelToTry.includes('3.1') || modelToTry.includes('3.6')) {
+          configPayload.thinkingConfig = { thinkingBudget: 0 };
         }
 
         const callPromise = ai.models.generateContent({
@@ -306,9 +307,9 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
           config: configPayload,
         });
 
-        // Enforce a snappy 18-second timeout per attempt to guarantee no UI hangs
+        // 45-second timeout per attempt for comprehensive reports and consultation
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI generation response delayed beyond 18s')), 18000)
+          setTimeout(() => reject(new Error('AI generation response delayed beyond 45s')), 45000)
         );
 
         const response = await Promise.race([callPromise, timeoutPromise]);
@@ -320,11 +321,6 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
 
         if (!text || text.trim().length === 0) {
           recordKeyFailure(chosenKey, keyIdx, 500, 'Empty text returned by model');
-          if (attempt < maxAttemptsPerModel) {
-            activeKeyPoolIndex = (keyIdx + 1) % pool.length;
-            await new Promise(res => setTimeout(res, 300));
-            continue;
-          }
           break;
         }
 
@@ -337,20 +333,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
         lastErr.status = status;
 
         recordKeyFailure(chosenKey, keyIdx, status, errMsg);
-
-        const is404 = status === 404 || errMsg.toLowerCase().includes('not found') || errMsg.toLowerCase().includes('not available');
-        if (is404) {
-          break;
-        }
-
-        const isRetryable = status === 429 || status === 503 || status === 504 || status === 502 || status === 500 || errMsg.includes('timed out');
-        if (isRetryable && attempt < maxAttemptsPerModel && pool.length > 1) {
-          activeKeyPoolIndex = (keyIdx + 1) % pool.length;
-          await new Promise(res => setTimeout(res, 400));
-          continue;
-        } else {
-          break;
-        }
+        break;
       }
     }
   }
