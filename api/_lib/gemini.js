@@ -264,7 +264,9 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   if (requestedModel) addCandidate(requestedModel);
   addCandidate(primaryModel);
   addCandidate('gemini-3.6-flash');
+  addCandidate('gemini-3.5-flash');
   addCandidate('gemini-3.5-flash-lite');
+  addCandidate('gemini-2.5-flash');
   addCandidate(fallbackModel);
 
   let lastErr = null;
@@ -404,11 +406,11 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     }
   }
   
-  const isChat = userText.includes('Conversation so far:') || userText.includes("Answer the native's latest question") || userText.includes('Question:');
+  const isChat = userText.includes('Conversation so far:') || userText.includes("Answer the native's latest question") || userText.includes('Question:') || userText.includes('Inquiry from the native:');
   
   if (isChat) {
     let userQuestion = 'Life trajectory & planetary alignment';
-    const qMatches = [...userText.matchAll(/Question:\s*([^\n]+)/gi)];
+    const qMatches = [...userText.matchAll(/(?:Question:|Inquiry from the native:\s*"?)\s*([^\n"]+)/gi)];
     if (qMatches.length > 0) userQuestion = qMatches[qMatches.length - 1][1].trim();
 
     if (isHi) {
