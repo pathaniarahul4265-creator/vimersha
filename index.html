@@ -14600,10 +14600,11 @@ if (sendButtonEl) {
 
   // If beyond the 1 free question and not VIP and no credits, require payment
   if (chatQuestionsUsed >= freeAllowed && !isVip && availableCredits <= 0) {
-    // If the user clicks the paid button without typing first, immediately open the payment modal with the question plan selected
+    // If the user clicks the paid button without typing first, focus the input
     if (!q) {
-      if (typeof window.openPaymentModal === "function") {
-        window.openPaymentModal("question");
+      if (input) {
+        input.focus();
+        input.placeholder = "Please enter your question here first, then click Ask...";
       }
       return;
     }
@@ -17451,42 +17452,8 @@ var __async = (__this, __arguments, generator) => {
     if (plan === "reveal" && entitlements.reveal) return Promise.resolve(true);
     if (plan === "match" && entitlements.match) return Promise.resolve(true);
     
-    if (customPrefill) {
-      return pay(plan, customAmount, customPrefill);
-    }
-    return new Promise((resolve) => {
-      window.openPaymentModal(plan);
-      
-      let settled = false;
-      const finish = (result) => {
-        if (!settled) {
-          settled = true;
-          window.removeEventListener("premium-unlocked", successHandler);
-          window.removeEventListener("payment-modal-closed", closeHandler);
-          resolve(result);
-        }
-      };
-
-      const successHandler = (e) => {
-        finish(true);
-      };
-      
-      const closeHandler = () => {
-        if ((plan === "reveal" && entitlements.reveal) || 
-            (plan === "match" && entitlements.match) || 
-            (plan === "vip" && entitlements.reveal) ||
-            (plan === "premium" && entitlements.reveal) ||
-            entitlements[plan] ||
-            window.isVipActive()) {
-          finish(true);
-        } else {
-          finish(false);
-        }
-      };
-
-      window.addEventListener("premium-unlocked", successHandler);
-      window.addEventListener("payment-modal-closed", closeHandler);
-    });
+    // Directly initiate checkout for the specific plan without intermediate plans modal popup
+    return pay(plan, customAmount, customPrefill);
   };
 
   window.triggerReportGenerationAfterPayment = function(plan) {

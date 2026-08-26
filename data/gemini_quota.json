@@ -4,18 +4,18 @@
     "label": "Primary (Key 1)",
     "masked": "AQ.Ab8...JShg",
     "day": "2026-08-26",
-    "requestsToday": 13,
+    "requestsToday": 23,
     "recentTimestamps": [
-      1787741422787,
-      1787741423204,
-      1787741430090,
-      1787741430484
+      1787757976196,
+      1787757981791,
+      1787757990274,
+      1787758019370
     ],
-    "estimatedTokensToday": 2374,
-    "totalSuccess": 39,
-    "totalFailures": 42,
+    "estimatedTokensToday": 2735,
+    "totalSuccess": 45,
+    "totalFailures": 45,
     "exhaustedUntil": 1787745030483,
-    "exhaustionReason": "Authentication / Permission error",
-    "lastUsed": "2026-08-26T10:50:30.484Z"
+    "exhaustionReason": "",
+    "lastUsed": "2026-08-26T15:26:59.370Z"
   }
 }
