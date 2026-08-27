@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DATA_DIR = process.env.VERCEL ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -172,15 +172,11 @@ export const db = {
 };
 
 export async function getSettings() {
-  const localSettings = loadJsonFile('settings.json', null);
-  if (localSettings && Object.keys(localSettings).length > 0) {
-    return localSettings;
-  }
   try {
     const rows = await db.select('settings', 'id=eq.1&limit=1');
     if (rows && rows[0]) return rows[0];
   } catch (e) {}
-  return inMemorySettings;
+  return loadJsonFile('settings.json', inMemorySettings);
 }
 
 export function pricing(s = {}) {
