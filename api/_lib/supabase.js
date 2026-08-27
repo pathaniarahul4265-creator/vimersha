@@ -172,11 +172,15 @@ export const db = {
 };
 
 export async function getSettings() {
+  const localSettings = loadJsonFile('settings.json', null);
+  if (localSettings && Object.keys(localSettings).length > 0) {
+    return localSettings;
+  }
   try {
     const rows = await db.select('settings', 'id=eq.1&limit=1');
     if (rows && rows[0]) return rows[0];
   } catch (e) {}
-  return loadJsonFile('settings.json', inMemorySettings);
+  return inMemorySettings;
 }
 
 export function pricing(s = {}) {
