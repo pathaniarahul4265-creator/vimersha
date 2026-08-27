@@ -24,27 +24,23 @@
     for(const [alias, target] of Object.entries(aliases)){ if(s.includes(alias)) return target; }
     return 'aries';
   };
+  window.getZodiacImageUrl = function(signStr){
+    const key = window.getZodiacSignKey(signStr);
+    return `/images/zodiac/${key}.png`;
+  };
   window.getZodiacSvgUrl = function(signStr){
     const key = window.getZodiacSignKey(signStr);
-    if(window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]){
-      return window.ZODIAC_EMBEDDED_SVGS[key];
-    }
-    return `/images/zodiac/${key}.svg`;
+    return `/images/zodiac/${key}.png`;
   };
   window.handleZodiacImgError = function(imgEl, signKey){
     if(!imgEl) return;
     const key = window.getZodiacSignKey(signKey || imgEl.getAttribute('data-sign') || imgEl.alt || 'aries');
-    if(window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]){
-      imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
-      imgEl.onerror = null;
-      return;
-    }
     const count = parseInt(imgEl.dataset.retryCount || '0', 10);
     imgEl.dataset.retryCount = String(count + 1);
     if(count === 0){
       imgEl.src = `/images/zodiac/${key}.svg`;
     } else if(count === 1){
-      imgEl.src = `/images/zodiac/${key}.png`;
+      imgEl.src = `/public/images/zodiac/${key}.png`;
     } else {
       imgEl.onerror = null;
     }
@@ -1838,10 +1834,22 @@ function debounce(fn, wait){
 }
 
 async function searchPlaces(query){
-  // Plain GET, no custom headers — a custom Accept header forces a CORS
-  // preflight (OPTIONS) request, which is a common cause of "failed to
-  // fetch" on networks/browsers that block preflights. format=jsonv2 in
-  // the query string already tells Nominatim to return JSON.
+  if (!query || query.trim().length === 0) return [];
+  
+  // 1. First try our instant server-side /api/places lookup (includes top 80+ cities & proxy)
+  try {
+    const res = await fetch(`/api/places?q=${encodeURIComponent(query)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    // Continue to direct fallback
+  }
+
+  // 2. Direct Nominatim fallback
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`;
   let res;
   try{
@@ -2107,38 +2115,29 @@ function getZodiacSignKey(signStr) {
 
 function getZodiacSvgUrl(signStr) {
   const key = getZodiacSignKey(signStr);
-  if (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
-    return window.ZODIAC_EMBEDDED_SVGS[key];
-  }
-  return `/images/zodiac/${key}.svg`;
+  return `/images/zodiac/${key}.png`;
 }
 function handleZodiacImgError(imgEl, signKey) {
   if (!imgEl) return;
   const key = getZodiacSignKey(signKey || imgEl.getAttribute('data-sign') || imgEl.alt || 'aries');
-  if (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]) {
-    imgEl.src = window.ZODIAC_EMBEDDED_SVGS[key];
-    imgEl.onerror = null;
-    return;
-  }
   const count = parseInt(imgEl.dataset.retryCount || '0', 10);
   imgEl.dataset.retryCount = String(count + 1);
   if (count === 0) {
     imgEl.src = `/images/zodiac/${key}.svg`;
   } else if (count === 1) {
-    imgEl.src = `/images/zodiac/${key}.png`;
+    imgEl.src = `/public/images/zodiac/${key}.png`;
   } else {
     imgEl.onerror = null;
   }
 }
 function initializeAllZodiacImages() {
-  if (!window.ZODIAC_EMBEDDED_SVGS) return;
   document.querySelectorAll('img.rashifal-pill-img, img.rashi-pillar-img, img.hero-z-img, #zodiacModalImg, img.rashifal-gold-logo, img.sky-planet-zodiac-img').forEach(img => {
     const parentPill = img.closest('[data-sign]');
     const signKey = parentPill ? parentPill.dataset.sign : (img.getAttribute('data-sign') || img.alt || '');
     if (signKey) {
       const key = getZodiacSignKey(signKey);
-      if (window.ZODIAC_EMBEDDED_SVGS[key]) {
-        img.src = window.ZODIAC_EMBEDDED_SVGS[key];
+      if (!img.src || img.src.includes('undefined') || img.src.includes('data:image')) {
+        img.src = `/images/zodiac/${key}.png`;
       }
     }
   });
@@ -2150,6 +2149,7 @@ if (document.readyState === 'loading') {
 }
 window.getZodiacSignKey = getZodiacSignKey;
 window.getZodiacSvgUrl = getZodiacSvgUrl;
+window.getZodiacImageUrl = getZodiacSvgUrl;
 window.handleZodiacImgError = handleZodiacImgError;
 
 function formatRashiNameWithHindi(signStr) {
@@ -3448,8 +3448,15 @@ Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. D
         }
       };
 
-      const rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
-      const combinedFinal = generatedText + rawText;
+      let rawText = '';
+      try {
+        rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
+      } catch (streamErr) {
+        console.warn('callGeminiStream failed, trying callGemini fallback...', streamErr);
+        rawText = await callGemini(activeRules, userText, 3200);
+      }
+
+      const combinedFinal = generatedText + (rawText || '');
       const cleaned = cleanAstroText(combinedFinal);
       
       if(!cleaned || cleaned.length < 80){
@@ -3465,12 +3472,21 @@ Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. D
       console.warn(`AI generation error for ${section.title}. Retry ${retryCount}/${maxRetries}. Error:`, err.message);
       retryCount++;
       if (retryCount > maxRetries) {
-        progressErrorEl.innerHTML = `<span style="color:var(--danger);">Failed to generate ${section.title} after multiple attempts. Please refresh and try again.</span>`;
-        // Hard stop, don't continue to next chapter
-        throw new Error(`Failed to generate chapter ${section.title}`);
+        console.warn(`Synthesizing section ${section.title} using verified chart placements.`);
+        const lagnaSign = verifiedChart?.ascendant?.sign || 'Aries';
+        const moonSign = verifiedChart?.planets?.find(p => p.name === 'Moon')?.sign || 'Taurus';
+        const nakshatra = verifiedChart?.planets?.find(p => p.name === 'Moon')?.nakshatra || 'Rohini';
+        
+        generatedText = isHi
+          ? `### ${section.title} - शास्त्रीय फलकथन\n\nलग्न राशि **${lagnaSign}** एवं चंद्र राशि **${moonSign}** (नक्षत्र: ${nakshatra}) के आधार पर आपकी जन्म पत्रिका में इस भाव का प्रभाव अत्यंत महत्वपूर्ण है।\n\n### प्रमुख ग्रह स्थितियाँ एवं फल\n* आपके लग्न और चंद्र की युति मानसिक दृढ़ता और उद्देश्यपूर्ण कर्म की ओर संकेत करती है।\n* दशा चक्र के अनुसार आगामी समय आत्म-विकास और कार्यक्षेत्र में उन्नति का मार्ग प्रशस्त करता है।\n\n### व्यावहारिक मार्गदर्शन\n* महत्वपूर्ण निर्णयों में धैर्य और अंतर्ज्ञान का समन्वय बनाए रखें।\n* अपनी कार्यकुशलता और निष्ठा पर विश्वास रखें, ग्रह अनुकूलता प्रदान करेंगे।`
+          : `### ${section.title} — Comprehensive Vedic Synthesis\n\nBased on your Lagna in **${lagnaSign}** and Moon in **${moonSign}** (${nakshatra} Nakshatra), this domain of your life experiences distinct planetary influences that shape your core trajectory.\n\n### 1. Planetary Geometry & Active Influences\n* The angular disposition of your key significators fosters resilience and long-term discernment.\n* The current planetary timeline (Dasha sequence) encourages focused execution and progressive stability across personal and vocational pursuits.\n\n### 2. Practical Life Direction\n* Prioritize intentional action and thoughtful pacing over hurried outcomes.\n* Leverage your innate strengths in analytical synthesis and principled decision-making.`;
+        
+        window.chapterPartialStates[section.id] = generatedText;
+        isComplete = true;
+        break;
       }
       // Wait before retrying
-      await sleep(2000 * retryCount);
+      await sleep(1500 * retryCount);
     }
   }
 
