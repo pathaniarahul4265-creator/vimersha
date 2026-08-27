@@ -15,14 +15,6 @@
     kumbha:'aquarius', kumbh:'aquarius',
     meena:'pisces', meen:'pisces'
   };
-  window.closeZodiacModal = function(){
-    const modal = document.getElementById('zodiacFocusModal') || document.getElementById('zodiacModal');
-    if (modal) {
-      modal.classList.remove('open');
-      modal.setAttribute('aria-hidden', 'true');
-    }
-  };
-  window.closeSpecificZodiacModal = window.closeZodiacModal;
   window.getZodiacSignKey = function(signStr){
     if(!signStr) return 'aries';
     const s = String(signStr).toLowerCase().trim().replace(/[^a-z]/g,'');
@@ -1527,7 +1519,7 @@ if (document.readyState === 'loading') {
 }
 
 // --- Report intelligence: create a concise, chart-grounded opening summary ---
-function buildInitialAtAGlance(){
+function buildAtAGlance(){
   const card=document.getElementById('atAGlanceCard'), grid=document.getElementById('glanceGrid'), syn=document.getElementById('glanceSynthesis');
   if(!card||!fullReportText.trim())return;
   const t=cleanAstroText(fullReportText);
