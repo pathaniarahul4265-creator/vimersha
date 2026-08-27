@@ -6,7 +6,7 @@ import Razorpay from 'razorpay';
 import { db, getSettings, pricing } from './_lib/supabase.js';
 import { aiCall, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = process.env.VERCEL ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -69,22 +69,35 @@ function getRazorpay() {
 }
 
 function json(res, status, body) {
+  if (res.headersSent) return;
   res.status(status);
   res.setHeader('Cache-Control', 'no-store');
-  res.json(body);
+  if (typeof res.json === 'function') {
+    return res.json(body);
+  }
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  return res.end(JSON.stringify(body));
 }
 function readBody(req) {
-  if (req.body !== undefined && req.body !== null && typeof req.body === 'object') return Promise.resolve(req.body);
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'object') return Promise.resolve(req.body);
+    if (typeof req.body === 'string') {
+      try { return Promise.resolve(JSON.parse(req.body)); } catch { return Promise.resolve({}); }
+    }
+  }
   if (typeof req.on !== 'function') return Promise.resolve(req.body || {});
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let raw='';
-    req.on('data', c => { raw += c; if (raw.length > 8e6) reject(new Error('payload too large')); });
-    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : (req.body || {})); } catch { reject(new Error('invalid json')); } });
-    req.on('error', reject);
+    req.on('data', c => { raw += c; if (raw.length > 8e6) resolve({}); });
+    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : (req.body || {})); } catch { resolve(req.body || {}); } });
+    req.on('error', () => resolve(req.body || {}));
   });
 }
 function rawBody(req) {
-  return new Promise((resolve,reject)=>{ let raw=''; req.on('data',c=>{raw+=c;if(raw.length>8e6)reject(new Error('payload too large'));}); req.on('end',()=>resolve(raw)); req.on('error',reject); });
+  if (req.rawBody) return Promise.resolve(req.rawBody);
+  if (typeof req.body === 'string') return Promise.resolve(req.body);
+  if (typeof req.on !== 'function') return Promise.resolve(JSON.stringify(req.body || {}));
+  return new Promise((resolve)=>{ let raw=''; req.on('data',c=>{raw+=c;if(raw.length>8e6)resolve('');}); req.on('end',()=>resolve(raw)); req.on('error',()=>resolve('')); });
 }
 function hashCode(code){ return crypto.createHash('sha256').update(String(code).trim().toUpperCase()).digest('hex'); }
 function b64(v){ return Buffer.from(v).toString('base64url'); }
@@ -199,11 +212,34 @@ async function createOrder(amount, plan, receiptCustom){
   }
 }
 
-export default async function handler(req,res){
-  let rawPath = req.path || (req.url ? req.url.split('?')[0] : '');
-  rawPath = rawPath.replace(/^\/api\/?/, '').replace(/^\/+/, '');
-  const pathParts = Array.isArray((req.query && req.query.path)) ? req.query.path : (rawPath ? rawPath.split('/').filter(Boolean) : []);
-  const path = '/' + pathParts.join('/');
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200);
+    return res.end();
+  }
+
+  let path = '';
+  if (req.query && req.query.path) {
+    if (Array.isArray(req.query.path)) {
+      path = '/' + req.query.path.join('/');
+    } else if (typeof req.query.path === 'string' && !req.query.path.startsWith('[...')) {
+      path = '/' + req.query.path.replace(/^\/+/, '');
+    }
+  }
+  if (!path || path === '/' || path.includes('[...path]')) {
+    let raw = req.path || (req.url ? req.url.split('?')[0] : '');
+    raw = raw.replace(/^\/api\/?/, '').replace(/^\/+/, '');
+    if (raw && !raw.startsWith('[...path]') && !raw.startsWith('%5B...path%5D')) {
+      path = '/' + raw;
+    }
+  }
+  path = path.replace(/\/+$/, '') || '/';
+  if (!path.startsWith('/')) path = '/' + path;
+
   try{
     if(req.method==='GET'&&path==='/health') return json(res,200,{ok:true,service:'jyotish-vimarsha',time:new Date().toISOString()});
     if(req.method==='GET'&&path==='/config'){const s=await getSettings();return json(res,200,pricing(s));}
