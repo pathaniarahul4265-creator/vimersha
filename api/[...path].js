@@ -154,6 +154,8 @@ const inMemorySettings = loadJsonFile('settings.json', {
   match_price: '99',
   reveal_enabled: '1',
   match_enabled: '1',
+  question_enabled: '1',
+  question_price: '19',
   offer_enabled: '0',
   offer_percent: '0',
   offer_label: ''
