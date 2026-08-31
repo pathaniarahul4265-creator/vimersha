@@ -5531,9 +5531,7 @@ window.closeCompanyModal = function() {
     const p = cfg.plans[plan] || { title: 'Voluntary Sacred Dakshina', amountINR: customAmount || 251 };
     try{
       const payload = { plan };
-      const livePrices = window.SERVER_CONFIG?.prices || {};
-      const amountINR = customAmount || livePrices[plan] || p.amountINR;
-      if (amountINR) payload.amount = Math.round(Number(amountINR) * 100);
+      if (customAmount !== undefined) payload.amount = Math.round(customAmount * 100);
       const r = await fetch(cfg.createOrderEndpoint||'/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

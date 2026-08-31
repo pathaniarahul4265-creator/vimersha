@@ -555,16 +555,16 @@ export default async function handler(req,res){
                baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
             }
           }
-          amount = Math.max(100, Math.round(baseAmt));
+          amount = Math.round(baseAmt);
         }
 
-        if (isNaN(amount) || amount < 100) {
-          return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
+        if (isNaN(amount) || amount < 0) {
+          return json(res, 400, { error: 'Invalid amount.' });
         }
 
 
         // If 100% free due to promo code or base price
-        if (amount <= 100 && b.promoCode) {
+        if (amount === 0 || (amount <= 100 && b.promoCode)) {
            const sessionToken = crypto.randomBytes(32).toString('hex');
            return json(res, 200, {
              id: 'free_order_' + Date.now(),
@@ -1483,13 +1483,10 @@ export default async function handler(req,res){
         try {
           const patch={};
           for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) {
-            const dbKey = k === 'question_enabled' ? 'chat_enabled' : k;
-            patch[dbKey] = (b[k] === '1' || b[k] === true);
-          }
+          for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
+          if ('question_enabled' in b) patch['chat_enabled'] = (b['question_enabled']==='1' || b['question_enabled']===true);
           patch.updated_at=new Date().toISOString();
-          const saved = await db.update('settings',patch,'id=eq.1');
-          if (saved === false) return json(res,500,{ok:false,error:'Could not persist settings to the database.'});
+          await db.update('settings',patch,'id=eq.1');
         } catch {}
         logAudit(clientIp, 'SETTINGS_UPDATE', 'Updated administrative pricing or feature flag settings', 'SUCCESS');
         return json(res,200,{ok:true});
