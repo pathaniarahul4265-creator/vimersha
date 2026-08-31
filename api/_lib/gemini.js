@@ -218,17 +218,17 @@ async function validatePremiumSession(sessionToken, vipToken) {
   return true; // Bypass for now so AI can generate reports
 }
 
-export function sanitizeModelName(modelName, defaultModel = 'gemini-3.6-flash') {
+export function sanitizeModelName(modelName, defaultModel = 'gemini-3.7-flash') {
   if (!modelName) return defaultModel;
   const m = String(modelName).trim().replace(/^models\//, '');
   // If legacy non-existent names or deprecated models are passed, sanitize to defaultModel
-  if (/^(gemini-1\.5|gemini-2\.0|gemini-2\.5|gemini-3\.1$|gemini-pro$)/i.test(m)) {
+  if (/^(gemini-1\.5|gemini-2\.0|gemini-2\.5|gemini-3\.5|gemini-3\.6|gemini-pro$)/i.test(m)) {
     return defaultModel;
   }
   return m;
 }
 
-export function normalizeModel(m, defaultModel = 'gemini-3.6-flash') {
+export function normalizeModel(m, defaultModel = 'gemini-3.7-flash') {
   return sanitizeModelName(m, defaultModel);
 }
 
@@ -252,8 +252,8 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   }
 
   const requestedModel = model ? sanitizeModelName(model) : null;
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.6-flash');
-  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.5-flash-lite');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
@@ -264,8 +264,10 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   };
   if (requestedModel) addCandidate(requestedModel);
   addCandidate(primaryModel);
-  addCandidate('gemini-3.6-flash');
-  addCandidate('gemini-3.5-flash-lite');
+  addCandidate('gemini-3.7-flash');
+  addCandidate('gemini-3.1-flash-lite');
+  addCandidate('gemini-3.1-pro-preview');
+  addCandidate('gemini-flash-latest');
   addCandidate(fallbackModel);
 
   let lastErr = null;
@@ -382,8 +384,8 @@ export async function aiStream({systemText, userText, maxTokens, sessionToken, v
   }
 
   const requestedModel = model ? sanitizeModelName(model) : null;
-  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.6-flash');
-  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.5-flash-lite');
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.7-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.1-flash-lite');
 
   const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
 
@@ -393,8 +395,10 @@ export async function aiStream({systemText, userText, maxTokens, sessionToken, v
   };
   if (requestedModel) addCandidate(requestedModel);
   addCandidate(primaryModel);
-  addCandidate('gemini-3.6-flash');
-  addCandidate('gemini-3.5-flash-lite');
+  addCandidate('gemini-3.7-flash');
+  addCandidate('gemini-3.1-flash-lite');
+  addCandidate('gemini-3.1-pro-preview');
+  addCandidate('gemini-flash-latest');
   addCandidate(fallbackModel);
 
   for (const modelToTry of candidateModels) {

@@ -145,6 +145,42 @@ window.applyPricingToUI = function(cfg) {
     window.pendingPricingConfig = cfg;
   }
 };
+window.openDailyHoroscopeModal = function(signKey) {
+  if (typeof window.doOpenDailyHoroscopeModal === "function") {
+    window.doOpenDailyHoroscopeModal(signKey);
+  } else {
+    window.pendingDailyHoroscopeSign = signKey || 'aries';
+    const m = document.getElementById('dailyHoroscopeModal');
+    if (m) {
+      m.classList.add('open');
+      m.setAttribute('aria-hidden', 'false');
+    }
+  }
+};
+window.closeDailyHoroscopeModal = function() {
+  if (typeof window.doCloseDailyHoroscopeModal === "function") {
+    window.doCloseDailyHoroscopeModal();
+  } else {
+    const m = document.getElementById('dailyHoroscopeModal');
+    if (m) {
+      m.classList.remove('open');
+      m.setAttribute('aria-hidden', 'true');
+    }
+  }
+};
+window.toggleVedicLanguage = function() {
+  if (typeof window.doToggleVedicLanguage === "function") {
+    window.doToggleVedicLanguage();
+  } else {
+    const cur = window.currentVedicLang || 'en';
+    const next = cur === 'hi' ? 'en' : 'hi';
+    if (typeof window.setVedicLanguage === 'function') {
+      window.setVedicLanguage(next);
+    } else {
+      window.currentVedicLang = next;
+    }
+  }
+};
 })();
 </script>
 
@@ -6827,6 +6863,172 @@ p,
   padding: 20px 24px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
+
+/* Minimal Floating Vertical Scroll Navigation Dots */
+.vertical-scroll-nav,
+.sacred-scroll-dots {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9990;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 5px;
+  background: rgba(6, 12, 24, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 30px;
+  border: 1px solid rgba(216, 160, 76, 0.22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 16px rgba(216, 160, 76, 0.08);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .vertical-scroll-nav,
+  .sacred-scroll-dots {
+    right: 6px;
+    padding: 8px 4px;
+    gap: 10px;
+    border-radius: 24px;
+    background: rgba(6, 12, 24, 0.65);
+  }
+}
+
+.nav-dot-btn,
+.sacred-nav-star,
+.sacred-nav-dot {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  outline: none;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-dot-btn:focus-visible,
+.sacred-nav-star:focus-visible,
+.sacred-nav-dot:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.85);
+  outline-offset: 3px;
+}
+
+.nav-dot-btn .nav-dot-core,
+.sacred-nav-dot .dot-core {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(216, 160, 76, 0.42);
+  box-shadow: 0 0 4px rgba(216, 160, 76, 0.2);
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-dot-btn:hover .nav-dot-core,
+.sacred-nav-dot:hover .dot-core {
+  background: #fce7b0;
+  transform: scale(1.35);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 18px rgba(216, 160, 76, 0.5);
+}
+
+.nav-dot-btn.active .nav-dot-core,
+.sacred-nav-dot.active .dot-core {
+  width: 8px;
+  height: 18px;
+  border-radius: 6px;
+  background: #fce7b0;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.95), 0 0 22px rgba(216, 160, 76, 0.7);
+}
+
+.nav-dot-btn .star-pulse-ring,
+.sacred-nav-dot .dot-ring {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.nav-dot-btn.active .star-pulse-ring,
+.sacred-nav-dot.active .dot-ring {
+  border-color: rgba(245, 158, 11, 0.75);
+  animation: pulseNavDotRing 2.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pulseNavDotRing {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 0.15; }
+}
+
+/* Minimal Hover Tooltip */
+.nav-dot-tooltip,
+.dot-tooltip {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+  background: rgba(6, 11, 24, 0.96);
+  color: #fce7b0;
+  border: 1px solid rgba(216, 160, 76, 0.45);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(216, 160, 76, 0.2);
+}
+
+.nav-dot-tooltip::after,
+.dot-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: transparent transparent transparent rgba(216, 160, 76, 0.45);
+}
+
+.nav-dot-btn:hover .nav-dot-tooltip,
+.nav-dot-btn:focus-visible .nav-dot-tooltip,
+.sacred-nav-dot:hover .dot-tooltip,
+.sacred-nav-dot:focus-visible .dot-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vertical-scroll-nav,
+  .sacred-scroll-dots,
+  .nav-dot-btn,
+  .nav-dot-core,
+  .nav-dot-tooltip,
+  .dot-tooltip {
+    transition: none !important;
+    animation: none !important;
+  }
+}
 </style>
 
 <style id="glossary-justification-and-search-styles">
@@ -7059,11 +7261,6 @@ p,
 
 </head>
 <body>
-
-<!-- Dot Navigation -->
-<div class="dot-nav-container" id="dotNavContainer">
-  <div class="dot-nav-line"></div>
-</div>
 
 <canvas id="stardustCanvas" class="stardust-canvas"></canvas>
 <div class="cosmic-bg"></div>
@@ -7566,7 +7763,7 @@ p,
   <div style="text-align:center;margin-top:14px;margin-bottom:10px;">
     <div id="promoSection" style="display:flex; gap:8px; justify-content: center; align-items: stretch; max-width: 480px; margin: 0 auto;">
       <input id="promoInput" placeholder="Enter Promo Code or Access Key" class="admin-input" style="flex:1; min-width:180px; padding:10px 14px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.05); color:var(--ivory); font-family:inherit; font-size:13.5px;">
-      <button id="applyPromoBtn" type="button" style="padding:10px 20px; border-radius:8px; cursor:pointer; background:var(--gold-soft); color:var(--cosmic); font-weight:600; border:1px solid rgba(216,160,76,0.4); font-size:13.5px; transition:all .2s ease;">Apply</button>
+      <button id="applyPromoBtn" type="button" style="padding:0 20px; height:38px; border-radius:8px; cursor:pointer; background-color:#df8e41; color:#0a0a0a; font-weight:600; border:1px solid rgba(216,160,76,0.4); font-size:13.5px; transition:all .2s ease; display:inline-flex; align-items:center; justify-content:center;">Apply</button>
     </div>
     <div id="promoStatus" class="coord-status" style="display:none; margin-top:8px;"></div>
   </div>
@@ -8805,5 +9002,50 @@ var __async = (__this, __arguments, generator) => {
 })();
 
 </script>
+<!-- Minimal Floating Vertical Scroll Navigation Indicator -->
+<nav class="vertical-scroll-nav" id="sacredScrollDots" aria-label="Page Sections Navigation">
+  <button type="button" class="nav-dot-btn active" data-target="topHeaderBrand" data-title="Observatory & Panchang" data-title-hi="वेधशाला व पंचांग" aria-label="Navigate to Observatory and Panchang" aria-current="true">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Observatory &amp; Panchang</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="currentSkyCard" data-title="Live Ephemeris & Gochara" data-title-hi="ग्रह गोचर व नक्षत्र" aria-label="Navigate to Live Planetary Ephemeris">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Live Ephemeris</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="dailyRashifalSection" data-title="Daily Horoscope (Rashifal)" data-title-hi="दैनिक राशिफल (12 राशियां)" aria-label="Navigate to Daily Horoscope">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Daily Horoscope</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="readingModes" data-title="Birth Details & Kundli Form" data-title-hi="जन्म विवरण प्रपत्र" aria-label="Navigate to Birth Details Form">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Birth Details Form</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="astroFactsCard" data-title="Sacred Astro Wisdom" data-title-hi="वैदिक ज्योतिष रहस्य" aria-label="Navigate to Sacred Astro Wisdom">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Astro Wisdom</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="reportCard" data-title="Sacred Kundli Reading" data-title-hi="पवित्र जन्म कुंडली फलकथन" aria-label="Navigate to Sacred Kundli Reading">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Kundli Reading</span>
+  </button>
+
+  <button type="button" class="nav-dot-btn" data-target="chatCard" data-title="Ask the Chart (Consultation)" data-title-hi="ज्योतिषीय परामर्श" aria-label="Navigate to Astrological Consultation">
+    <span class="nav-dot-core"></span>
+    <span class="star-pulse-ring"></span>
+    <span class="nav-dot-tooltip">Ask the Chart</span>
+  </button>
+</nav>
+
 <script src="/vedic-engine.js"></script>
 <script src="/script.js"></script></body></html>
