@@ -1483,8 +1483,7 @@ export default async function handler(req,res){
         try {
           const patch={};
           for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
-          if ('question_enabled' in b) patch['chat_enabled'] = (b['question_enabled']==='1' || b['question_enabled']===true);
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
         } catch {}

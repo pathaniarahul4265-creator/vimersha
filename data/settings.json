@@ -1,1 +1,9 @@
-{"reveal_price": "88", "match_price": "199"}
+{
+  "reveal_price": "59",
+  "match_price": "99",
+  "reveal_enabled": "1",
+  "match_enabled": "1",
+  "offer_enabled": "0",
+  "offer_percent": "0",
+  "offer_label": ""
+}
