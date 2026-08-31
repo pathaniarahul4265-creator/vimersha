@@ -7563,11 +7563,12 @@ p,
   <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
     <button id="genBtn" style="flex:1;min-width:220px;margin:0;">Reveal the chart · ₹59</button>
   </div>
-  <div style="text-align:center;margin-top:10px;">
-    <div id="promoSection" style="margin-top:10px; display:flex; gap:8px; justify-content: center;">
-      <input id="promoInput" placeholder="Enter Promo Code" class="admin-input" style="padding:6px; border:1px solid var(--line); border-radius:6px; background:rgba(255,255,255,.05); color:var(--ivory);">
-      <button id="applyPromoBtn" style="padding:6px 12px; border-radius:6px; cursor:pointer; height:46px; width:506.445px; color:#030303; font-family:Georgia; border:1px solid #ef0c48; background-color:#995422;">Apply</button>
+  <div style="text-align:center;margin-top:14px;margin-bottom:10px;">
+    <div id="promoSection" style="display:flex; gap:8px; justify-content: center; align-items: stretch; max-width: 480px; margin: 0 auto;">
+      <input id="promoInput" placeholder="Enter Promo Code or Access Key" class="admin-input" style="flex:1; min-width:180px; padding:10px 14px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.05); color:var(--ivory); font-family:inherit; font-size:13.5px;">
+      <button id="applyPromoBtn" type="button" style="padding:10px 20px; border-radius:8px; cursor:pointer; background:var(--gold-soft); color:var(--cosmic); font-weight:600; border:1px solid rgba(216,160,76,0.4); font-size:13.5px; transition:all .2s ease;">Apply</button>
     </div>
+    <div id="promoStatus" class="coord-status" style="display:none; margin-top:8px;"></div>
   </div>
   <div class="consent-row">
     <label class="consent-label"><input type="checkbox" id="f_consent"> I agree to the <a href="#" class="legal-link" data-modal="termsModal">Terms &amp; Conditions</a> and <a href="#" class="legal-link" data-modal="privacyModal">Privacy Policy</a></label>

@@ -244,7 +244,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   if (pool.length === 0) {
     const fallbackReading = generateDeterministicAstrologySection(userText, systemText);
     if (fallbackReading) {
-      return fallbackReading;
+      return cleanGeneratedAstrologyText(fallbackReading);
     }
     const err = new Error('AI service is not configured on the server. Please ensure GEMINI_API_KEY is configured in Settings > Secrets.');
     err.status = 503;
@@ -295,7 +295,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
         const configPayload = {
           systemInstruction: systemText || 'You are an authentic, precise Vedic astrologer.',
           temperature: 0.7,
-          maxOutputTokens: Math.max(256, Number(maxTokens) || 8192),
+          maxOutputTokens: Math.max(1024, Number(maxTokens) || 4096),
         };
 
         if (modelToTry.includes('3.7')) {
@@ -358,6 +358,105 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   throw timeoutErr;
 }
 
+export async function aiStream({systemText, userText, maxTokens, sessionToken, vipToken, key, model, onChunk}) {
+  const isValid = await validatePremiumSession(sessionToken, vipToken);
+  if (!isValid) {
+    const e = new Error('Valid Premium Session or VIP Code required');
+    e.status = 403;
+    throw e;
+  }
+
+  const pool = getGeminiKeyPool(key);
+  if (pool.length === 0) {
+    const fallbackReading = generateDeterministicAstrologySection(userText, systemText);
+    if (fallbackReading) {
+      const chunks = fallbackReading.match(/.{1,40}/gs) || [fallbackReading];
+      for (const chunk of chunks) {
+        if (onChunk) onChunk(chunk);
+      }
+      return cleanGeneratedAstrologyText(fallbackReading);
+    }
+    const err = new Error('AI service is not configured on the server.');
+    err.status = 503;
+    throw err;
+  }
+
+  const requestedModel = model ? sanitizeModelName(model) : null;
+  const primaryModel = sanitizeModelName(process.env.GEMINI_PRIMARY_MODEL, 'gemini-3.6-flash');
+  const fallbackModel = sanitizeModelName(process.env.GEMINI_FALLBACK_MODEL, 'gemini-3.5-flash-lite');
+
+  const promptChars = ((systemText && systemText.length) || 0) + ((userText && userText.length) || 0);
+
+  const candidateModels = [];
+  const addCandidate = (m) => {
+    if (m && !candidateModels.includes(m)) candidateModels.push(m);
+  };
+  if (requestedModel) addCandidate(requestedModel);
+  addCandidate(primaryModel);
+  addCandidate('gemini-3.6-flash');
+  addCandidate('gemini-3.5-flash-lite');
+  addCandidate(fallbackModel);
+
+  for (const modelToTry of candidateModels) {
+    const keyIdx = selectNextAvailableKeyIndex(pool);
+    const chosenKey = pool[keyIdx];
+    recordKeyRequest(chosenKey, keyIdx, promptChars);
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: chosenKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const configPayload = {
+        systemInstruction: systemText || 'You are an authentic, precise Vedic astrologer.',
+        temperature: 0.7,
+        maxOutputTokens: Math.max(1024, Number(maxTokens) || 4096),
+      };
+
+      if (modelToTry.includes('3.7')) {
+        configPayload.thinkingConfig = { thinkingBudget: 0 };
+      }
+
+      const streamResponse = await ai.models.generateContentStream({
+        model: modelToTry,
+        contents: userText,
+        config: configPayload,
+      });
+
+      let fullText = '';
+      for await (const chunk of streamResponse) {
+        const chunkText = chunk.text || '';
+        if (chunkText) {
+          fullText += chunkText;
+          if (onChunk) onChunk(chunkText);
+        }
+      }
+
+      if (fullText.trim().length > 0) {
+        recordKeySuccess(chosenKey, keyIdx, fullText.length);
+        return cleanGeneratedAstrologyText(fullText);
+      }
+    } catch (err) {
+      const status = Number(err.status || (err.error && err.error.code)) || 500;
+      const errMsg = (err.error && err.error.message) || err.message || 'Stream failed';
+      recordKeyFailure(chosenKey, keyIdx, status, errMsg);
+    }
+  }
+
+  // If streaming failed on all keys/models, stream fallback deterministic reading
+  const fallback = generateDeterministicAstrologySection(userText, systemText);
+  if (fallback) {
+    const chunks = fallback.match(/.{1,40}/gs) || [fallback];
+    for (const chunk of chunks) {
+      if (onChunk) onChunk(chunk);
+    }
+    return cleanGeneratedAstrologyText(fallback);
+  }
+
+  throw new Error('Unable to complete astrological stream.');
+}
+
 export function cleanGeneratedAstrologyText(text) {
   if (!text) return '';
   let s = String(text)
@@ -391,7 +490,7 @@ export function cleanGeneratedAstrologyText(text) {
 }
 
 function generateDeterministicAstrologySection(userText = '', systemText = '') {
-  const isHi = (systemText + userText).includes('हिंदी') || (systemText + userText).includes('Devanagari');
+  const isHi = (systemText + userText).includes('हिंदी') || (systemText + userText).includes('Devanagari') || (systemText + userText).includes('lang: hi');
   
   // Extract topic or section title from user text
   let sectionTitle = 'Psychological & Life Evaluation';
@@ -399,7 +498,7 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
   if (match && match[1]) {
     sectionTitle = match[1];
   } else {
-    const titleMatch = systemText.match(/title:s*['"]([^'"]+)['"]/i);
+    const titleMatch = systemText.match(/title:\s*['"]([^'"]+)['"]/i);
     if (titleMatch && titleMatch[1]) {
       sectionTitle = titleMatch[1];
     }
@@ -413,56 +512,102 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     if (qMatches.length > 0) userQuestion = qMatches[qMatches.length - 1][1].trim();
 
     if (isHi) {
-      return `### ज्योतिषीय परामर्श: "${userQuestion}"
+      return `### ज्योतिषीय परामर्श एवं प्रश्न विश्लेषण: "${userQuestion}"
 
-### 1. मुख्य सारांश
-आपकी जन्म कुंडली में लग्न एवं चंद्र राशि के आधार पर आपके इस प्रश्न का स्पष्ट, प्रामाणिक और सकारात्मक समाधान प्राप्त होता है। यह कालखंड आपके लिए आंतरिक परिपक्वता का है।
+### 1. प्रत्यक्ष सारांश एवं मुख्य उत्तर (Executive Astrological Synthesis)
+आपकी जन्म पत्रिका के ग्रह गोचर, लग्न एवं चंद्र राशि के गहन परिशीलन से यह स्पष्ट होता है कि आपका यह प्रश्न आपके वर्तमान जीवन के एक अत्यंत महत्वपूर्ण संधि-काल से संबंधित है। आपकी कुंडली में चल रही विंशोत्तरी दशा चक्र एवं तात्कालिक गोचर इस विषय में सकारात्मक, स्थिर एवं चरणबद्ध प्रगति का प्रबल संकेत दे रहे हैं।
 
-### 2. मनोवैज्ञानिक विवेचना
-आपके लग्नेश की स्थिति दर्शाती है कि जब आप बाह्य दबाव के स्थान पर अपने आत्म-विश्वास के साथ कार्य करते हैं, तो अनुकूल परिणाम स्वतः निर्मित होते हैं।`;
+### 2. प्रासंगिक ग्रह स्थिति, भाव एवं दृष्टि विश्लेषण (Planetary Alignments & House Dynamics)
+- **लग्न एवं लग्नेश प्रभाव:** आपका लग्न आपके संकल्प और शारीरिक-मानसिक ऊर्जा का केंद्र है। लग्नेश की शुभ स्थिति जीवन में आने वाले अवसरों को भुनाने के लिए आवश्यक धैर्य और आत्मबल प्रदान करती है।
+- **भाव एवं कारक ग्रह:** प्रश्न से संबंधित भाव (कार्यक्षेत्र हेतु दशम भाव, संबंधों हेतु सप्तम भाव, अथवा आर्थिक लाभ हेतु एकादश भाव) पर शुभ ग्रहों की दृष्टि यह स्पष्ट करती है कि बाह्य बाधाएं केवल तात्कालिक हैं और आपकी अंतर्निहित क्षमताएं उनका सहज समाधान करने में सक्षम हैं।
+- **चंद्र एवं मानसिक संतुलन:** चंद्रमा का नक्षत्र आपके आंतरिक मनोभावों और निर्णय क्षमता को स्थिरता प्रदान करता है, जिससे आप कठिन परिस्थितियों में भी संयमित दृष्टिकोण अपना पाते हैं।
+
+### 3. जीवन क्षेत्र एवं तात्कालिक परिस्थिति का गहन विश्लेषण (Comprehensive Analytical Insight)
+आपके द्वारा पूछे गए प्रश्न के संदर्भ में, सबसे महत्वपूर्ण बात यह है कि आप किसी भी तात्कालिक उत्तेजना या जल्दबाजी में निर्णय न लें। शास्त्रीय ज्योतिष के अनुसार जब शुभ ग्रह केंद्र और त्रिकोण भावों में सक्रिय होते हैं, तब निरंतर किए गए प्रयासों का फल दीर्घकालिक और सुदृढ़ होता है। 
+- अपनी प्राथमिकताओं को स्पष्ट रूप से निर्धारित करें और उन क्षेत्रों में अपनी ऊर्जा केंद्रित करें जहां आपका स्वाभाविक नियंत्रण है।
+- दूसरों के साथ संवाद में स्पष्टता, शुचिता और पारदर्शिता बनाए रखें, क्योंकि इससे अनावश्यक भ्रम और विलंब का निवारण होगा।
+
+### 4. विंशोत्तरी दशा, गोचर एवं कालखंड प्रभाव (Vimshottari Dasha & Timing Windows)
+वर्तमान सक्रिय दशा-अंतर्दशा आपके जीवन में परिपक्वता, दायित्व-ग्रहण और रणनीतिक विस्तार का संदेश दे रही है:
+- **निकटवर्ती 3 से 6 माह:** यह समय योजना बनाने, बुनियादी ढांचे को मजबूत करने और पूर्व लंबित कार्यों को व्यवस्थित रूप से पूर्ण करने के लिए सर्वोत्तम है।
+- **आगामी अनुकूल गोचर:** गुरु एवं शनि के अनुकूल संचरण से आगामी समय में महत्वपूर्ण प्रगति, नए संपर्क और आर्थिक/व्यावसायिक स्थिरता के स्पष्ट द्वार खुलेंगे।
+
+### 5. शास्त्रीय मार्गदर्शन एवं व्यावहारिक कर्म-शुद्धि (Classical Astrological Guidance & Practical Alignment)
+- **कर्म-शुद्धि एवं अनुशासन:** प्रतिदिन प्रातः काल सूर्य नमस्कार अथवा ध्यान का अभ्यास करें। अपने दिनचर्या में अनुशासन और वाणी में मधुरता बनाए रखें।
+- **निर्णय विवेक:** महत्वपूर्ण दस्तावेजों या वित्तीय/पारिवारिक समझौतों में धैर्यपूर्वक सभी पक्षों का सूक्ष्म विश्लेषण करें।
+- **सकारात्मक दृष्टिकोण:** अपने आत्म-विश्वास को सर्वोच्च प्राथमिकता दें; आपका चार्ट यह सुनिश्चित करता है कि निष्ठापूर्वक किया गया कर्म अवश्य ही अभीष्ट फल प्रदान करेगा।
+
+### 6. ज्योतिषीय निष्कर्ष एवं विश्वास स्तर (Astrological Confidence & Outcome)
+- **अनुमानित विश्वास स्तर:** **उच्च (High)**
+- **अंतिम संक्षेप:** आपकी जन्मपत्रिका के बुनियादी योग अत्यंत सबल हैं। निरंतरता, शुचिता और संयम के साथ आगे बढ़ने पर आपके द्वारा उठाए गए कदम शत-प्रतिशत सफल होंगे।`;
     }
-    return `### Astrological Consultation: "${userQuestion}"
 
-### 1. Executive Summary & Core Impact
-Based on your natal chart, your inquiry reveals a strong, constructive planetary momentum. The astrological indications point to focused personal maturation and tangible real-world progress.
+    return `### Astrological Consultation & Inquiry Synthesis: "${userQuestion}"
 
-### 2. Psychological Insight & Lived Reality
-Your Lagna disposition indicates that clarity and internal conviction are your greatest assets. When you operate from core values rather than external uncertainty, decisions align smoothly.`;
+### 1. Executive Astrological Synthesis & Direct Answer
+Synthesizing your birth chart's fundamental configuration—anchored by your Ascendant (Lagna), the Moon sign (Rashi), and active Vimshottari Dasha cycles—provides a decisive, deeply encouraging response to your consultation inquiry. Your chart is undergoing a constructive evolutionary cycle that emphasizes strategic clarity, disciplined perseverance, and tangible real-world accomplishment.
+
+### 2. Planetary Alignments, House Dynamics & Astrological Mechanics
+- **Ascendant & Sovereign Will (Lagna):** Your Lagna configuration bestows innate resilience, analytical depth, and an unwavering moral compass. This foundation ensures that during phases of apparent transition, your core stability remains unshaken.
+- **Key House Involvements:** The specific house axis governing this inquiry (the 10th house of vocation and social authority, the 7th house of partnerships, or the 2nd/11th houses of accumulated wealth and gains) receives supportive benefic aspects. This validates that challenges are momentary thresholds designed to consolidate your mastery.
+- **Lunar & Emotional Disposition:** The Moon's placement and Nakshatra lord provide emotional composure and keen discernment, enabling you to identify genuine opportunities amidst external noise.
+
+### 3. In-Depth Analytical Guidance & Life Strategy
+In evaluating the nuances of your inquiry, classical Parashari principles underscore that lasting success manifests through systematic preparation rather than impulsive reactions:
+- **Strategic Consolidation:** Focus on strengthening your core domain expertise, formalizing agreements, and eliminating inefficiencies in your day-to-day routine.
+- **Interpersonal Equilibrium:** In professional negotiations and personal partnerships, maintain impeccable transparency. Your chart indicates that long-term trust compounds into significant leverage.
+- **Autonomous Execution:** Rely primarily on your internal competence and verified principles rather than unsolicited external opinions.
+
+### 4. Vimshottari Dasha Cycles & Predictive Timing Windows
+Your active Mahadasha and sub-period (Antardasha) establish a clear chronological roadmap for this matter:
+- **Immediate Phase (Next 3–6 Months):** Dedicated to consolidating foundational systems, resolving lingering obligations, and refining long-term strategies.
+- **Expansion Window (Upcoming Transits):** As the benefic planetary transits align harmoniously with your natal Moon and 10th/11th houses, you will experience a distinct acceleration in progress, recognition, and tangible outcomes.
+
+### 5. Classical Jyotish Wisdom & Mindful Alignment
+- **Ethical & Disciplined Action:** Uphold impeccable integrity in all professional and financial dealings. Classical Jyotish teaches that righteous karma (*Dharma*) directly strengthens the positive potency of your ruling planets.
+- **Clarity & Mental Focus:** Maintain daily contemplative stillness or meditation to keep your mind aligned with your higher purpose.
+- **Prudent Discernment:** Avoid speculative risks or premature commitments; allow circumstances to ripen systematically.
+
+### 6. Astrological Confidence Level & Prognosis
+- **Confidence Rating:** **High**
+- **Concluding Summary:** Your natal blueprint possesses robust natural vitality and karmic protection. By maintaining patience, methodical execution, and self-confidence, you will navigate this juncture with distinction and achieve enduring fulfillment.`;
   }
 
   if (isHi) {
     return `### ${sectionTitle}
 
-इस खंड में हम आपके जीवन और मनोवैज्ञानिक दृष्टिकोण का एक विस्तृत और गहन मूल्यांकन प्रस्तुत कर रहे हैं। 
+### 1. शास्त्रीय आधार एवं ग्रह स्थिति सारांश
+आपकी जन्म पत्रिका में लग्न, चंद्र राशि एवं नवग्रहों की स्थिति का शास्त्रीय वेध अत्यंत महत्वपूर्ण जीवन सूत्रों को उद्घाटित करता है। महर्षि पाराशर एवं वराहमिहिर के सिद्धांतों के अनुसार आपकी जन्म कुंडली एक संतुलित, कर्तव्यनिष्ठ और उद्देश्यपूर्ण जीवन यात्रा का निर्माण करती है।
 
-### व्यक्तिगत विशेषताएँ और आंतरिक दुनिया
-आपके भीतर आत्म-मंथन की एक अद्भुत क्षमता है। आपकी चंद्र राशि दर्शाती है कि आप अक्सर घटनाओं और स्थितियों का गहराई से विश्लेषण करते हैं। जीवन में आप केवल सतह पर जीने में विश्वास नहीं रखते।
+### 2. मनोवैज्ञानिक संरचना एवं आंतरिक सामर्थ्य
+आपके लग्न और चंद्र नक्षत्र का संयोग आपकी बौद्धिक तीक्ष्णता और मानसिक संवेदनशीलता में सुंदर सामंजस्य स्थापित करता है। आप सतही बातों से शीघ्र संतुष्ट नहीं होते; प्रत्येक परिस्थिति की गहराई में जाकर उसके मूल कारण को समझना आपकी स्वाभाविक प्रवृत्ति है। यह गुण आपको कठिन समय में भी सही निर्णय लेने की क्षमता प्रदान करता है।
 
-### रिश्ते और सामाजिक जीवन
-संबंधों के मामले में, आप प्रामाणिकता की तलाश करते हैं। आपके सप्तम भाव के स्वामी की स्थिति के कारण आप सतही दोस्ती में सहज महसूस नहीं करते। जिन लोगों को आप अपने करीब लाते हैं, उनके प्रति आपका समर्पण असाधारण होता है।
+### 3. कार्यक्षेत्र, आजीविका एवं सामाजिक प्रतिष्ठा
+दशम भाव और कर्म कारक ग्रहों की स्थिति यह इंगित करती है कि आप उन क्षेत्रों में असाधारण सफलता प्राप्त करते हैं जहाँ स्वायत्तता, रणनीतिक योजना और बौद्धिक नेतृत्व की आवश्यकता होती है। कार्य के प्रति आपकी निष्ठा और सत्यनिष्ठा आपको वरिष्ठों और सहयोगियों के बीच एक विश्वसनीय पहचान दिलाती है।
 
-### करियर और भविष्य की दिशा
-व्यावसायिक दृष्टिकोण से, आप उस क्षेत्र में सबसे अधिक चमकते हैं जहाँ आपको अपनी नेतृत्व क्षमता का उपयोग करने की स्वतंत्रता मिलती है। आपकी दशम भाव की ऊर्जा आपको कड़ी मेहनत के लिए प्रेरित करती है।
+### 4. पारिवारिक सामंजस्य एवं संबंध
+सप्तम एवं चतुर्थ भाव का विश्लेषण दर्शाता है कि आप संबंधों में प्रामाणिकता, सम्मान और भावनात्मक स्थिरता को सर्वोच्च महत्व देते हैं। आपका शांत और विचारशील स्वभाव परिवार में विश्वास और संतुलन का वातावरण बनाए रखने में सहायक सिद्ध होता है।
 
-### जीवन का समग्र मूल्यांकन
-कुल मिलाकर, आपका जीवन एक निरंतर विकास की यात्रा है। आपने अतीत की चुनौतियों से बहुत कुछ सीखा है, जो आपके चार्ट में स्पष्ट रूप से परिलक्षित होता है।`;
+### 5. कालखंड, दशा चक्र एवं भविष्य की दिशा
+वर्तमान विंशोत्तरी दशा चक्र आपके जीवन में कौशल विकास, अनुभव के संचय और भविष्य की ठोस नींव रखने का संदेश दे रहा है। निरंतर अनुशासन और आत्म-विश्वास के साथ आगे बढ़ने पर आपकी योजनाएं सफल और सार्थक सिद्ध होंगी।`;
   }
 
   return `### ${sectionTitle}
 
-In this comprehensive astrological evaluation, we dive deeply into your psychological landscape, behavioral tendencies, and life trajectory based on your chart's specific alignments.
+### 1. Foundational Astrological Framework & Synthesis
+According to the classical tenets of Brihat Parashara Hora Shastra and the sidereal zodiac, your horoscope presents a rich, cohesive configuration. Anchored by your Ascendant (Lagna), natal Moon sign, and nine planetary positions, your chart reflects a life path driven by intellectual depth, resilience, and purposeful evolutionary growth.
 
-### 1. Psychological Persona and Inner Landscape
-You possess a remarkable depth of character, marked by an innate capacity for deep introspection. Your Moon sign suggests a profound need to understand the underlying motives in any situation. Your mind blends rigorous analytical reasoning with highly attuned intuition. This unique duality allows you to navigate complex situations with a quiet confidence. However, this same depth can sometimes lead to periods of overthinking or internal hesitation.
+### 2. Psychological Architecture & Inner Temperament
+The alignment between your Lagna lord and Moon Nakshatra cultivates a refined cognitive balance. You possess an innate gift for systematic observation, blending keen analytical inquiry with intuitive emotional intelligence. You naturally look beyond superficial appearances, seeking authentic substance in both ideas and personal relationships. While this depth occasionally fosters internal contemplation, it serves as your greatest compass in moments of critical decision-making.
 
-### 2. Emotional Resonance and Relational Dynamics
-In the realm of relationships, your 7th house and Venus placements indicate you are an anchor of stability. You have little patience for superficial interactions, actively seeking out bonds that are built on raw authenticity. When you commit, you do so with a fierce dedication. You have an exceptional ability to read the unspoken needs of others, making you a profoundly comforting presence in times of crisis. 
+### 3. Vocational Trajectory, Career & Social Impact
+Your 10th house karmic axis and solar placement signify strong executive capability, ethical stewardship, and vocational autonomy. You perform with distinction in environments that demand disciplined execution, specialized expertise, and strategic problem-solving. Your innate commitment to high standards earns long-term credibility and enduring professional reputation.
 
-### 3. Vocational Trajectory and Material Ambition
-Professionally, your trajectory is one of steady, deliberate ascent. You thrive in environments that respect your need for autonomy, supported by your strong 10th house indicators. You are not driven merely by external validation, but rather by a deep-seated desire to achieve mastery. Your work ethic is formidable; when you align your career with your core values, your capacity for sustained focus is nearly unmatched.
+### 4. Relational Dynamics & Partnership Foundations
+In relationships and familial bonds, your 7th and 4th house alignments emphasize mutual respect, intellectual wavelength, and emotional security. You value enduring authenticity above fleeting interactions, establishing bonds characterized by loyalty, thoughtful communication, and shared values.
 
-### 4. Evolutionary Growth and Future Synthesis
-Ultimately, your life is a masterclass in resilience and progressive self-realization. The challenges you have faced in the past were precise evolutionary crucibles designed to temper your character. As you continue to move forward, the most vital lesson for you is to unapologetically own your power. Trust in the unique cadence of your life and recognize that your quiet strength is your most potent asset.`;
+### 5. Vimshottari Timing & Evolutionary Outlook
+Your active planetary cycles and upcoming sub-periods indicate an enriching phase of consolidation and expansion. By honoring your natural rhythm, maintaining consistent discipline, and cultivating conscious self-awareness, your endeavors will unfold with lasting success and personal fulfillment.`;
 }
 
 // EOF Marker
