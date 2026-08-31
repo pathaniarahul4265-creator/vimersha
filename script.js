@@ -24,13 +24,6 @@
     for(const [alias, target] of Object.entries(aliases)){ if(s.includes(alias)) return target; }
     return 'aries';
   };
-  window.getZodiacImageUrl = function(signStr){
-    const key = window.getZodiacSignKey(signStr);
-    if(window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]){
-      return window.ZODIAC_EMBEDDED_SVGS[key];
-    }
-    return `/images/zodiac/${key}.svg`;
-  };
   window.getZodiacSvgUrl = function(signStr){
     const key = window.getZodiacSignKey(signStr);
     if(window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[key]){
@@ -254,7 +247,7 @@ window.applyPricingToUI = function(cfg) {
     ring.innerHTML = ZODIAC.map((glyph, i) => {
       const angle = (i / ZODIAC.length) * 360;
       const img = imgNames[i];
-      const imgSrc = (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[img]) || `/images/zodiac/${img}.svg`;
+      const imgSrc = ZODIAC_IMAGE_MAP[img] || `/images/zodiac/${img}.png`;
       const name = zNames[i];
       return `<div class="hero-z-node" style="transform:rotate(${angle}deg) translate(var(--ring-r, 252px)) rotate(${-angle}deg);" title="${name} · Click to view Daily Horoscope & Astrological Analysis" onclick="openSpecificZodiacModal('${img}'); selectRashifalSign('${img}'); event.stopPropagation();" role="button" tabindex="0">
         <div class="hero-z-node-inner">
@@ -292,8 +285,8 @@ window.applyPricingToUI = function(cfg) {
     e.stopPropagation();
     signs.forEach(s=>s.classList.remove('is-active')); el.classList.add('is-active');
     const d=data[i]; const img = imgNames[i];
-    const imgSrc = (window.ZODIAC_EMBEDDED_SVGS && window.ZODIAC_EMBEDDED_SVGS[img]) || `/images/zodiac/${img}.svg`;
-    detail.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;"><img src="${imgSrc}" onerror="handleZodiacImgError(this, '${img}')" style="width:52px;height:52px;border-radius:50%;border:2px solid #f2d792;box-shadow:0 0 18px rgba(242,215,146,0.7), 0 0 35px rgba(127,197,192,0.45);" alt="${d[1]}" referrerPolicy="no-referrer" /><div><b style="font-size:16px;margin:0;color:#fce7b0;text-shadow:0 0 8px rgba(224,198,116,0.6);">${d[0]} · ${d[1]}</b><small style="color:#e0c674;font-weight:600;margin-top:2px;display:block;">${d[2]} Element • ${d[3]}</small></div></div><small style="text-align:center !important;display:block;color:#d6c3a0;">Ruler: <strong style="color:#f2d792">${d[4]}</strong> — ${d[5]}</small>`; detail.classList.add('open');
+    const imgSrc = `/images/zodiac/${img}.png`;
+    detail.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;"><img src="${imgSrc}" style="width:52px;height:52px;border-radius:50%;border:2px solid #f2d792;box-shadow:0 0 18px rgba(242,215,146,0.7), 0 0 35px rgba(127,197,192,0.45);" alt="${d[1]}" referrerPolicy="no-referrer" /><div><b style="font-size:16px;margin:0;color:#fce7b0;text-shadow:0 0 8px rgba(224,198,116,0.6);">${d[0]} · ${d[1]}</b><small style="color:#e0c674;font-weight:600;margin-top:2px;display:block;">${d[2]} Element • ${d[3]}</small></div></div><small style="text-align:center !important;display:block;color:#d6c3a0;">Ruler: <strong style="color:#f2d792">${d[4]}</strong> — ${d[5]}</small>`; detail.classList.add('open');
   }));
   document.addEventListener('click',e=>{if(!e.target.closest('.z-sign')&&!e.target.closest('.rashi-detail')){detail.classList.remove('open');signs.forEach(s=>s.classList.remove('is-active'));}});
 })();
@@ -1176,46 +1169,19 @@ function renderDailyPanchang(targetDate = currentPanchangDate) {
     if (pSun) pSun.textContent = `${data.sun.sunrise} / ${data.sun.sunset} (${data.sun.dayLength})`;
 
     if (pEvents) {
-      const allEvs = [...data.activeEvents.map(e => ({ ...e, isActive: true })), ...data.upcomingEvents.map(e => ({ ...e, isActive: false }))];
-      let eventsHtml = `
-        <div class="panchang-events-header">
-          <div class="sym-line"></div>
-          <span class="event-label">✦ TODAY &amp; NEXT 30 DAYS EVENTS (CLICK ANY FOR BRIEF) ✦</span>
-          <div class="sym-line"></div>
-        </div>
-      `;
-
-      if (allEvs.length === 0) {
-        eventsHtml += `
-          <div style="text-align:center; font-size:12px; color:rgba(252,232,189,0.7); padding:8px;">
-            No major calendar festivals recorded in the next 30 days.
-          </div>
-        `;
-      } else {
-        const mid = Math.ceil(allEvs.length / 2);
-        const colLeft = allEvs.slice(0, mid);
-        const colRight = allEvs.slice(mid);
-
-        const renderPill = (ev) => {
+      let eventsHtml = `<div class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK ANY FOR BRIEF):</div>`;
+      if (data.activeEvents.length > 0) {
+        data.activeEvents.forEach(ev => {
           const escName = encodeURIComponent(ev.name);
-          if (ev.isActive) {
-            return `<div class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="pulse-dot"></span> <b>${ev.icon} Active Today:</b> ${ev.name}</span><span style="font-size:10.5px; opacity:0.9; text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">LIVE</span></div>`;
-          } else {
-            const daysText = ev.daysAway === 1 ? 'Tomorrow' : `in ${ev.daysAway} days`;
-            return `<div class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="event-icon">${ev.icon}</span> <b>${ev.name}</b></span><span style="font-size:11px; opacity:0.85; font-weight:600; color:#fce8bd;">${daysText}</span></div>`;
-          }
-        };
-
-        eventsHtml += `
-          <div class="panchang-events-symmetrical-grid">
-            <div class="panchang-events-col left-col">
-              ${colLeft.map(renderPill).join('')}
-            </div>
-            <div class="panchang-events-col right-col">
-              ${colRight.map(renderPill).join('')}
-            </div>
-          </div>
-        `;
+          eventsHtml += `<span class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="pulse-dot"></span> ${ev.icon} <b>Active:</b> ${ev.name}</span>`;
+        });
+      }
+      if (data.upcomingEvents.length > 0) {
+        data.upcomingEvents.forEach(ev => {
+          const escName = encodeURIComponent(ev.name);
+          const daysText = ev.daysAway === 1 ? 'Tomorrow' : `in ${ev.daysAway} days`;
+          eventsHtml += `<span class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="event-icon">${ev.icon}</span> <b>${ev.name}</b> — ${daysText}</span>`;
+        });
       }
       pEvents.innerHTML = eventsHtml;
     }
@@ -1552,7 +1518,45 @@ if (document.readyState === 'loading') {
   resetPanchangDateToToday();
 }
 
-
+// --- Report intelligence: create a concise, chart-grounded opening summary ---
+function buildAtAGlance(){
+  const card=document.getElementById('atAGlanceCard'), grid=document.getElementById('glanceGrid'), syn=document.getElementById('glanceSynthesis');
+  if(!card||!fullReportText.trim())return;
+  const t=cleanAstroText(fullReportText);
+  const grab=(heading,nexts)=>{const re=new RegExp('##\\s*'+heading+'\\s*\\n\\n([\\s\\S]*?)(?=\\n\\n##\\s*|$)','i');const m=t.match(re);return m?m[1].replace(/AREA\\s*\\|[\\s\\S]*/i,'').trim():'';};
+  const identity=grab('Identity, temperament and behavioural pattern');
+  const relationships=grab('Love, marriage, family and social life');
+  const career=grab('Career, wealth and material life');
+  const health=grab('Vitality, stress patterns, yogas and doshas');
+  const synthesis=grab('Strengths, purpose and closing synthesis');
+  const short=(x)=>{const p=x.split(/\n\n/).map(v=>v.trim()).filter(Boolean)[0]||'';return p.replace(/^[-•]+\s*/,'').slice(0,330);};
+  const rows=[
+    ['Temperament',short(identity)],
+    ['Relationships',short(relationships)],
+    ['Career & wealth',short(career)],
+    ['Vitality & stress',short(health)],
+    ['Life direction',short(synthesis)],
+    ['Chart foundation',(()=>{
+      const d=extractChartData(t);
+      const lagnaSvg = getZodiacSvgUrl(d.lagna);
+      const moonSvg = getZodiacSvgUrl(d.moonSign);
+      return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(242,215,146,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(242,215,146,0.25);">
+          <img src="${lagnaSvg}" style="width:18px;height:18px;border-radius:50%;border:1px solid #fce7b0;vertical-align:middle;" alt="" />
+          <span>Lagna: <b>${formatRashiNameWithHindi(d.lagna)||'not stated'}</b></span>
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(127,197,192,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(127,197,192,0.25);">
+          <img src="${moonSvg}" style="width:18px;height:18px;border-radius:50%;border:1px solid #7fc5c0;vertical-align:middle;" alt="" />
+          <span>Moon Rashi: <b>${formatRashiNameWithHindi(d.moonSign)||'not stated'}</b></span>
+        </span>
+        <small style="color:var(--muted);">(${Object.keys(d.placements).length} planetary house placements)</small>
+      </div>`;
+    })()]
+  ];
+  grid.innerHTML=rows.map(r=>`<div class="glance-item"><b>${r[0]}</b><span>${r[1]||'The report is still assembling this part of the interpretation.'}</span></div>`).join('');
+  syn.textContent=short(synthesis)||'The reading will build toward a chart-specific synthesis of temperament, relationships, work, timing and the life patterns emphasized by the chart.';
+  card.style.display='block';
+}
 
 // --- Premium celestial theme selector ---
 (function(){
@@ -1872,22 +1876,10 @@ function debounce(fn, wait){
 }
 
 async function searchPlaces(query){
-  if (!query || query.trim().length === 0) return [];
-  
-  // 1. First try our instant server-side /api/places lookup (includes top 80+ cities & proxy)
-  try {
-    const res = await fetch(`/api/places?q=${encodeURIComponent(query)}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-    }
-  } catch (err) {
-    // Continue to direct fallback
-  }
-
-  // 2. Direct Nominatim fallback
+  // Plain GET, no custom headers — a custom Accept header forces a CORS
+  // preflight (OPTIONS) request, which is a common cause of "failed to
+  // fetch" on networks/browsers that block preflights. format=jsonv2 in
+  // the query string already tells Nominatim to return JSON.
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`;
   let res;
   try{
@@ -2196,7 +2188,6 @@ if (document.readyState === 'loading') {
 }
 window.getZodiacSignKey = getZodiacSignKey;
 window.getZodiacSvgUrl = getZodiacSvgUrl;
-window.getZodiacImageUrl = getZodiacSvgUrl;
 window.handleZodiacImgError = handleZodiacImgError;
 
 function formatRashiNameWithHindi(signStr) {
@@ -3176,21 +3167,10 @@ function renderPanchangReportCard(){
         <div><small>☀️ SUNRISE / SUNSET</small><b>${pData.sun.sunrise} / ${pData.sun.sunset} (${pData.sun.dayLength})</b></div>
       </div>
       ${pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0 ? `
-        <div class="panchang-events" style="margin-top:14px; border-top:1px solid rgba(223,186,109,0.22); padding-top:12px;">
-          <div class="panchang-events-header">
-            <div class="sym-line"></div>
-            <span class="event-label">✦ TODAY &amp; NEXT 30 DAYS EVENTS (CLICK ANY FOR BRIEF) ✦</span>
-            <div class="sym-line"></div>
-          </div>
-          <div class="panchang-events-symmetrical-grid" style="margin-top:10px;">
-            <div class="panchang-events-col left-col">
-              ${pData.activeEvents.map(e => `<div class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="pulse-dot"></span> <b>${e.icon} Active Today:</b> ${e.name}</span><span style="font-size:10.5px;opacity:0.9;font-weight:700;">LIVE</span></div>`).join('')}
-              ${pData.upcomingEvents.slice(0, Math.ceil(pData.upcomingEvents.length / 2)).map(e => `<div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="event-icon">${e.icon}</span> <b>${e.name}</b></span><span style="font-size:11px;color:#fce8bd;">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span></div>`).join('')}
-            </div>
-            <div class="panchang-events-col right-col">
-              ${pData.upcomingEvents.slice(Math.ceil(pData.upcomingEvents.length / 2)).map(e => `<div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="event-icon">${e.icon}</span> <b>${e.name}</b></span><span style="font-size:11px;color:#fce8bd;">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span></div>`).join('')}
-            </div>
-          </div>
+        <div class="panchang-report-events">
+          <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF):</span>
+          ${pData.activeEvents.map(e => `<span class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="pulse-dot"></span> ${e.icon} <b>Active:</b> ${e.name}</span>`).join(' ')}
+          ${pData.upcomingEvents.map(e => `<span class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="event-icon">${e.icon}</span> <b>${e.name}</b> (${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'})</span>`).join(' ')}
         </div>
       ` : ''}
     </div>
@@ -3506,15 +3486,8 @@ Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. D
         }
       };
 
-      let rawText = '';
-      try {
-        rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
-      } catch (streamErr) {
-        console.warn('callGeminiStream failed, trying callGemini fallback...', streamErr);
-        rawText = await callGemini(activeRules, userText, 3200);
-      }
-
-      const combinedFinal = generatedText + (rawText || '');
+      const rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
+      const combinedFinal = generatedText + rawText;
       const cleaned = cleanAstroText(combinedFinal);
       
       if(!cleaned || cleaned.length < 80){
@@ -3530,21 +3503,12 @@ Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. D
       console.warn(`AI generation error for ${section.title}. Retry ${retryCount}/${maxRetries}. Error:`, err.message);
       retryCount++;
       if (retryCount > maxRetries) {
-        console.warn(`Synthesizing section ${section.title} using verified chart placements.`);
-        const lagnaSign = verifiedChart?.ascendant?.sign || 'Aries';
-        const moonSign = verifiedChart?.planets?.find(p => p.name === 'Moon')?.sign || 'Taurus';
-        const nakshatra = verifiedChart?.planets?.find(p => p.name === 'Moon')?.nakshatra || 'Rohini';
-        
-        generatedText = isHi
-          ? `### ${section.title} - शास्त्रीय फलकथन\n\nलग्न राशि **${lagnaSign}** एवं चंद्र राशि **${moonSign}** (नक्षत्र: ${nakshatra}) के आधार पर आपकी जन्म पत्रिका में इस भाव का प्रभाव अत्यंत महत्वपूर्ण है।\n\n### प्रमुख ग्रह स्थितियाँ एवं फल\n* आपके लग्न और चंद्र की युति मानसिक दृढ़ता और उद्देश्यपूर्ण कर्म की ओर संकेत करती है।\n* दशा चक्र के अनुसार आगामी समय आत्म-विकास और कार्यक्षेत्र में उन्नति का मार्ग प्रशस्त करता है।\n\n### व्यावहारिक मार्गदर्शन\n* महत्वपूर्ण निर्णयों में धैर्य और अंतर्ज्ञान का समन्वय बनाए रखें।\n* अपनी कार्यकुशलता और निष्ठा पर विश्वास रखें, ग्रह अनुकूलता प्रदान करेंगे।`
-          : `### ${section.title} — Comprehensive Vedic Synthesis\n\nBased on your Lagna in **${lagnaSign}** and Moon in **${moonSign}** (${nakshatra} Nakshatra), this domain of your life experiences distinct planetary influences that shape your core trajectory.\n\n### 1. Planetary Geometry & Active Influences\n* The angular disposition of your key significators fosters resilience and long-term discernment.\n* The current planetary timeline (Dasha sequence) encourages focused execution and progressive stability across personal and vocational pursuits.\n\n### 2. Practical Life Direction\n* Prioritize intentional action and thoughtful pacing over hurried outcomes.\n* Leverage your innate strengths in analytical synthesis and principled decision-making.`;
-        
-        window.chapterPartialStates[section.id] = generatedText;
-        isComplete = true;
-        break;
+        progressErrorEl.innerHTML = `<span style="color:var(--danger);">Failed to generate ${section.title} after multiple attempts. Please refresh and try again.</span>`;
+        // Hard stop, don't continue to next chapter
+        throw new Error(`Failed to generate chapter ${section.title}`);
       }
       // Wait before retrying
-      await sleep(1500 * retryCount);
+      await sleep(2000 * retryCount);
     }
   }
 

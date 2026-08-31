@@ -35,34 +35,22 @@ app.all(/^\/api(\/.*)?$/, async (req, res, next) => {
   }
 });
 
-// Direct handler for logo and zodiac images
-app.get(['/images/jyotish_vimarsha_logo.png', '/public/images/jyotish_vimarsha_logo.png', '/images/jyotish_vimarsha_logo.svg', '/public/images/jyotish_vimarsha_logo.svg'], (req, res) => {
-  const mandalaPath = path.join(process.cwd(), 'public', 'images', 'celestial_zodiac_mandala.svg');
-  if (fs.existsSync(mandalaPath)) {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(mandalaPath);
-  }
-  const favPath = path.join(process.cwd(), 'public', 'favicon.svg');
-  if (fs.existsSync(favPath)) {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(favPath);
-  }
-  res.status(404).end();
-});
+// Serve static assets with explicit mappings
+app.use('/images', express.static(path.join(process.cwd(), 'public', 'images')));
+app.use('/public/images', express.static(path.join(process.cwd(), 'public', 'images')));
+app.use('/public', express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(process.cwd()));
 
-// Direct handler for zodiac images - serve high quality PNG / SVG medallions
+// Direct handler for zodiac images - serve high quality PNG medallions
 app.get(['/images/zodiac/:sign.:ext', '/images/zodiac_gold/:sign.:ext', '/public/images/zodiac/:sign.:ext', '/public/images/zodiac_gold/:sign.:ext', '/images/zodiac/:sign', '/public/images/zodiac/:sign'], (req, res, next) => {
-  const rawSign = (req.params.sign || '').toLowerCase().replace(/[^a-z]/g, '');
-  if (!rawSign) return next();
-
+  const sign = req.params.sign.toLowerCase().replace(/[^a-z]/g, '');
   const candidates = [
-    path.join(process.cwd(), 'public', 'images', 'zodiac', `${rawSign}.png`),
-    path.join(process.cwd(), 'images', 'zodiac', `${rawSign}.png`),
-    path.join(process.cwd(), 'public', 'images', 'zodiac_gold', `${rawSign}.png`),
-    path.join(process.cwd(), 'public', 'images', 'zodiac', `${rawSign}.svg`),
-    path.join(process.cwd(), 'images', 'zodiac', `${rawSign}.svg`)
+    path.join(process.cwd(), 'public', 'images', 'zodiac', `${sign}.png`),
+    path.join(process.cwd(), 'public', 'images', 'zodiac_gold', `${sign}.png`),
+    path.join(process.cwd(), 'images', 'zodiac', `${sign}.png`),
+    path.join(process.cwd(), 'public', 'images', 'zodiac', `${sign}.svg`),
+    path.join(process.cwd(), 'images', 'zodiac', `${sign}.svg`)
   ];
 
   for (const candidate of candidates) {
@@ -75,13 +63,6 @@ app.get(['/images/zodiac/:sign.:ext', '/images/zodiac_gold/:sign.:ext', '/public
   }
   next();
 });
-
-// Serve static assets with explicit mappings
-app.use('/images', express.static(path.join(process.cwd(), 'public', 'images')));
-app.use('/public/images', express.static(path.join(process.cwd(), 'public', 'images')));
-app.use('/public', express.static(path.join(process.cwd(), 'public')));
-app.use(express.static(path.join(process.cwd(), 'public')));
-app.use(express.static(process.cwd()));
 
 // Fallback for API routes that were unmatched
 app.use('/api', (req, res) => {
