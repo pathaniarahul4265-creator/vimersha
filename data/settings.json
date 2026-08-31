@@ -1,13 +1,8 @@
 {
-  "id": 1,
   "reveal_price": "59",
   "match_price": "99",
-  "question_price": "29",
-  "dakshina_price": "251",
   "reveal_enabled": "1",
   "match_enabled": "1",
-  "chat_enabled": "1",
-  "question_enabled": "1",
   "offer_enabled": "0",
   "offer_percent": "0",
   "offer_label": ""

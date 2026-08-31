@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import Razorpay from 'razorpay';
-import { db, getSettings, saveSettings, pricing } from './_lib/supabase.js';
+import { db, getSettings, pricing } from './_lib/supabase.js';
 import { aiCall, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -407,6 +407,111 @@ export default async function handler(req,res){
       });
     }
 
+    if(req.method==='GET'&&path==='/places'){
+      const q = String((req.query && (req.query.q || req.query.input || req.query.query)) || '').trim().toLowerCase();
+      if (!q) return json(res, 200, []);
+
+      const FAMOUS_CITIES = [
+        { display_name: "New Delhi, Delhi, India", lat: 28.6139, lon: 77.2090 },
+        { display_name: "Delhi, India", lat: 28.6139, lon: 77.2090 },
+        { display_name: "Mumbai, Maharashtra, India", lat: 19.0760, lon: 72.8777 },
+        { display_name: "Bengaluru, Karnataka, India", lat: 12.9716, lon: 77.5946 },
+        { display_name: "Hyderabad, Telangana, India", lat: 17.3850, lon: 78.4867 },
+        { display_name: "Chennai, Tamil Nadu, India", lat: 13.0827, lon: 80.2707 },
+        { display_name: "Kolkata, West Bengal, India", lat: 22.5726, lon: 88.3639 },
+        { display_name: "Ahmedabad, Gujarat, India", lat: 23.0225, lon: 72.5714 },
+        { display_name: "Pune, Maharashtra, India", lat: 18.5204, lon: 73.8567 },
+        { display_name: "Jaipur, Rajasthan, India", lat: 26.9124, lon: 75.7873 },
+        { display_name: "Lucknow, Uttar Pradesh, India", lat: 26.8467, lon: 80.9462 },
+        { display_name: "Varanasi, Uttar Pradesh, India", lat: 25.3176, lon: 82.9739 },
+        { display_name: "Chandigarh, India", lat: 30.7333, lon: 76.7794 },
+        { display_name: "Indore, Madhya Pradesh, India", lat: 22.7196, lon: 75.8577 },
+        { display_name: "Bhopal, Madhya Pradesh, India", lat: 23.2599, lon: 77.4126 },
+        { display_name: "Patna, Bihar, India", lat: 25.5941, lon: 85.1376 },
+        { display_name: "Surat, Gujarat, India", lat: 21.1702, lon: 72.8311 },
+        { display_name: "Nagpur, Maharashtra, India", lat: 21.1458, lon: 79.0882 },
+        { display_name: "Kanpur, Uttar Pradesh, India", lat: 26.4499, lon: 80.3319 },
+        { display_name: "Agra, Uttar Pradesh, India", lat: 27.1767, lon: 78.0081 },
+        { display_name: "Amritsar, Punjab, India", lat: 31.6340, lon: 74.8723 },
+        { display_name: "Ludhiana, Punjab, India", lat: 30.9010, lon: 75.8573 },
+        { display_name: "Kochi, Kerala, India", lat: 9.9312, lon: 76.2673 },
+        { display_name: "Thiruvananthapuram, Kerala, India", lat: 8.5241, lon: 76.9366 },
+        { display_name: "Coimbatore, Tamil Nadu, India", lat: 11.0168, lon: 76.9558 },
+        { display_name: "Madurai, Tamil Nadu, India", lat: 9.9252, lon: 78.1198 },
+        { display_name: "Visakhapatnam, Andhra Pradesh, India", lat: 17.6868, lon: 83.2185 },
+        { display_name: "Vijayawada, Andhra Pradesh, India", lat: 16.5062, lon: 80.6480 },
+        { display_name: "Guwahati, Assam, India", lat: 26.1445, lon: 91.7362 },
+        { display_name: "Bhubaneswar, Odisha, India", lat: 20.2961, lon: 85.8245 },
+        { display_name: "Ranchi, Jharkhand, India", lat: 23.3441, lon: 85.3096 },
+        { display_name: "Dehradun, Uttarakhand, India", lat: 30.3165, lon: 78.0322 },
+        { display_name: "Haridwar, Uttarakhand, India", lat: 29.9457, lon: 78.1642 },
+        { display_name: "Rishikesh, Uttarakhand, India", lat: 30.0869, lon: 78.2676 },
+        { display_name: "Ayodhya, Uttar Pradesh, India", lat: 26.7922, lon: 82.1998 },
+        { display_name: "Mathura, Uttar Pradesh, India", lat: 27.4924, lon: 77.6737 },
+        { display_name: "Ujjain, Madhya Pradesh, India", lat: 23.1765, lon: 75.7885 },
+        { display_name: "Jodhpur, Rajasthan, India", lat: 26.2389, lon: 73.0243 },
+        { display_name: "Udaipur, Rajasthan, India", lat: 24.5854, lon: 73.7125 },
+        { display_name: "Shimla, Himachal Pradesh, India", lat: 31.1048, lon: 77.1734 },
+        { display_name: "Srinagar, Jammu & Kashmir, India", lat: 34.0837, lon: 74.7973 },
+        { display_name: "London, Greater London, United Kingdom", lat: 51.5074, lon: -0.1278 },
+        { display_name: "New York City, New York, United States", lat: 40.7128, lon: -74.0060 },
+        { display_name: "San Francisco, California, United States", lat: 37.7749, lon: -122.4194 },
+        { display_name: "Los Angeles, California, United States", lat: 34.0522, lon: -118.2437 },
+        { display_name: "Chicago, Illinois, United States", lat: 41.8781, lon: -87.6298 },
+        { display_name: "Dallas, Texas, United States", lat: 32.7767, lon: -96.7970 },
+        { display_name: "Houston, Texas, United States", lat: 29.7604, lon: -95.3698 },
+        { display_name: "Seattle, Washington, United States", lat: 47.6062, lon: -122.3321 },
+        { display_name: "Toronto, Ontario, Canada", lat: 43.6532, lon: -79.3832 },
+        { display_name: "Vancouver, British Columbia, Canada", lat: 49.2827, lon: -123.1207 },
+        { display_name: "Dubai, United Arab Emirates", lat: 25.2048, lon: 55.2708 },
+        { display_name: "Abu Dhabi, United Arab Emirates", lat: 24.4539, lon: 54.3773 },
+        { display_name: "Singapore, Singapore", lat: 1.3521, lon: 103.8198 },
+        { display_name: "Sydney, New South Wales, Australia", lat: -33.8688, lon: 151.2093 },
+        { display_name: "Melbourne, Victoria, Australia", lat: -37.8136, lon: 144.9631 },
+        { display_name: "Auckland, New Zealand", lat: -36.8485, lon: 174.7633 },
+        { display_name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503 },
+        { display_name: "Paris, France", lat: 48.8566, lon: 2.3522 },
+        { display_name: "Berlin, Germany", lat: 52.5200, lon: 13.4050 },
+        { display_name: "Frankfurt, Germany", lat: 50.1109, lon: 8.6821 }
+      ];
+
+      const localMatches = FAMOUS_CITIES.filter(c => c.display_name.toLowerCase().includes(q));
+      if (localMatches.length >= 4) {
+        return json(res, 200, localMatches.slice(0, 6));
+      }
+
+      try {
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 3500);
+        const nomRes = await fetch(nominatimUrl, {
+          headers: { 'User-Agent': 'JyotishVimarsha/2.1 (contact@jyotishvimarsha.com)' },
+          signal: controller.signal
+        });
+        clearTimeout(t);
+        if (nomRes.ok) {
+          const results = await nomRes.json();
+          if (Array.isArray(results) && results.length > 0) {
+            const combined = [...localMatches];
+            for (const r of results) {
+              if (!combined.some(c => Math.abs(c.lat - parseFloat(r.lat)) < 0.05 && Math.abs(c.lon - parseFloat(r.lon)) < 0.05)) {
+                combined.push({
+                  display_name: r.display_name,
+                  lat: parseFloat(r.lat),
+                  lon: parseFloat(r.lon)
+                });
+              }
+            }
+            return json(res, 200, combined.slice(0, 6));
+          }
+        }
+      } catch (err) {
+        // Fallback gracefully to local matches
+      }
+
+      return json(res, 200, localMatches.slice(0, 6));
+    }
+
     if(req.method==='POST'&&path==='/ai'){
       const b = await readBody(req);
       const systemText = (b && (b.systemText || b.system || b.systemInstruction)) || 'You are an authentic, precise Vedic astrologer.';
@@ -420,6 +525,38 @@ export default async function handler(req,res){
         const status = Number(e.status) || 500;
         return json(res, status, { success: false, error: e.message || 'AI request failed' });
       }
+    }
+
+    if(req.method==='POST'&&path==='/ai-stream'){
+      const b = await readBody(req);
+      const systemText = (b && (b.systemText || b.system || b.systemInstruction)) || 'You are an authentic, precise Vedic astrologer.';
+      const userText = (b && (b.userText || b.user || b.prompt || b.text)) || '';
+      if(!userText) return json(res, 400, { success: false, error: 'AI request is incomplete: missing user prompt or birth context.' });
+
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive'
+      });
+
+      try {
+        const text = await aiCall({ ...(b || {}), systemText, userText });
+        const chunkSize = 80;
+        for (let i = 0; i < text.length; i += chunkSize) {
+          const piece = text.slice(i, i + chunkSize);
+          res.write(`data: ${JSON.stringify({ text: piece })}\n\n`);
+          if (text.length > 600 && i % (chunkSize * 4) === 0) {
+            await new Promise(r => setTimeout(r, 12));
+          }
+        }
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (e) {
+        console.error('[AI Stream Handler Error]', e);
+        res.write(`data: ${JSON.stringify({ error: e.message || 'AI stream generation failed' })}\n\n`);
+        res.end();
+      }
+      return;
     }
 
     
@@ -522,50 +659,41 @@ export default async function handler(req,res){
       try {
         const b = await readBody(req);
         let plan = b.plan ? clean(b.plan, 20) : 'reveal';
+        let amount = b.amount ? Number(b.amount) : 0;
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         const s = await getSettings();
-        const cfg = pricing(s);
         const map = { 
           reveal: ['reveal_price', 'reveal_enabled'], 
           match: ['match_price', 'match_enabled'], 
           question: ['question_price', 'question_enabled'], 
           questions_pack: ['question_price', 'question_enabled'], 
-          dakshina: ['dakshina_price', 'reveal_enabled'],
-          chat_time_3: ['question_price', 'question_enabled'],
-          chat_time_10: ['question_price', 'question_enabled'],
-          chat_time_20: ['question_price', 'question_enabled'],
-          chat_time_30: ['question_price', 'question_enabled']
+          dakshina: ['reveal_price', 'reveal_enabled'] 
         };
 
         if (map[plan] && s[map[plan][1]] === '0') {
           return json(res, 403, { error: 'This feature is currently unavailable.' });
         }
 
-        // Authoritative price calculation based on admin settings
-        let basePriceINR = cfg.prices[plan];
-        if (plan === 'dakshina') {
-          const customPaise = b.amount ? Number(b.amount) : 0;
-          basePriceINR = (customPaise && customPaise >= 100) ? Math.round(customPaise / 100) : (Number(s.dakshina_price) || 251);
-        } else if (!basePriceINR) {
-          basePriceINR = (plan === 'question' ? 29 : plan === 'questions_pack' ? 100 : 59);
-        }
-
-        let baseAmt = basePriceINR * 100;
-        if (b.promoCode && plan !== 'dakshina') {
-          const codeStr = b.promoCode.toUpperCase().trim();
-          let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
-          if (!found) {
-            try { 
-              const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
-              if (data && data[0]) found = data[0];
-            } catch {}
+        if (!amount) {
+          if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
+          const cfg = pricing(s);
+          let baseAmt = (cfg.prices[plan] || (plan === 'question' ? 19 : plan === 'questions_pack' ? 79 : 59)) * 100;
+          if (b.promoCode) {
+            const codeStr = b.promoCode.toUpperCase().trim();
+            let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+            if (!found) {
+              try { 
+                const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
+                if (data && data[0]) found = data[0];
+              } catch {}
+            }
+            if (found && found.discount_percentage > 0) {
+               baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
+            }
           }
-          if (found && found.discount_percentage > 0) {
-             baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
-          }
+          amount = Math.max(100, Math.round(baseAmt));
         }
-        let amount = Math.max(100, Math.round(baseAmt));
 
         if (isNaN(amount) || amount < 100) {
           return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
@@ -1479,29 +1607,25 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{
-            reveal_price:String(settings.reveal_price || '59'),
-            match_price:String(settings.match_price || '99'),
-            question_price:String(settings.question_price || '29'),
-            dakshina_price:String(settings.dakshina_price || '251'),
-            reveal_enabled:settings.reveal_enabled!==false && String(settings.reveal_enabled)!=='0'?'1':'0',
-            match_enabled:settings.match_enabled!==false && String(settings.match_enabled)!=='0'?'1':'0',
-            question_enabled:settings.question_enabled!==false && String(settings.question_enabled)!=='0' && settings.chat_enabled!==false && String(settings.chat_enabled)!=='0'?'1':'0',
-            chat_enabled:settings.chat_enabled!==false && String(settings.chat_enabled)!=='0' && settings.question_enabled!==false && String(settings.question_enabled)!=='0'?'1':'0',
-            offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',
-            offer_percent:String(settings.offer_percent || '0'),
-            offer_label:settings.offer_label || ''
-          }});
+          return json(res,200,{settings:{reveal_price:String(settings.reveal_price || '59'),match_price:String(settings.match_price || '99'),question_price:String(settings.question_price || '19'),reveal_enabled:settings.reveal_enabled!==false && settings.reveal_enabled!=='0'?'1':'0',match_enabled:settings.match_enabled!==false && settings.match_enabled!=='0'?'1':'0',question_enabled:settings.question_enabled!==false && settings.question_enabled!=='0'?'1':'0',offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',offer_percent:String(settings.offer_percent || '0'),offer_label:settings.offer_label || ''}});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        const saved = await saveSettings(b);
-        for(const k in saved) inMemorySettings[k] = saved[k];
-        logAudit(clientIp, 'SETTINGS_UPDATE', `Updated administrative pricing (${saved.reveal_price}/${saved.match_price}/${saved.question_price}) and feature settings`, 'SUCCESS');
-        return json(res,200,{ok:true, settings: saved});
+        for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
+        for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = (b[k] === '1' || b[k] === true) ? '1' : '0';
+        saveJsonFile('settings.json', inMemorySettings);
+        try {
+          const patch={};
+          for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
+          patch.updated_at=new Date().toISOString();
+          await db.update('settings',patch,'id=eq.1');
+        } catch {}
+        logAudit(clientIp, 'SETTINGS_UPDATE', 'Updated administrative pricing or feature flag settings', 'SUCCESS');
+        return json(res,200,{ok:true});
       }
       return json(res,404,{error:'Admin route not found'});
     }
