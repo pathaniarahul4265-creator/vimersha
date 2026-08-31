@@ -1527,46 +1527,6 @@ if (document.readyState === 'loading') {
   resetPanchangDateToToday();
 }
 
-// --- Report intelligence: create a concise, chart-grounded opening summary ---
-function buildAtAGlance(){
-  const card=document.getElementById('atAGlanceCard'), grid=document.getElementById('glanceGrid'), syn=document.getElementById('glanceSynthesis');
-  if(!card||!fullReportText.trim())return;
-  const t=cleanAstroText(fullReportText);
-  const grab=(heading,nexts)=>{const re=new RegExp('##\\s*'+heading+'\\s*\\n\\n([\\s\\S]*?)(?=\\n\\n##\\s*|$)','i');const m=t.match(re);return m?m[1].replace(/AREA\\s*\\|[\\s\\S]*/i,'').trim():'';};
-  const identity=grab('Identity, temperament and behavioural pattern');
-  const relationships=grab('Love, marriage, family and social life');
-  const career=grab('Career, wealth and material life');
-  const health=grab('Vitality, stress patterns, yogas and doshas');
-  const synthesis=grab('Strengths, purpose and closing synthesis');
-  const short=(x)=>{const p=x.split(/\n\n/).map(v=>v.trim()).filter(Boolean)[0]||'';return p.replace(/^[-•]+\s*/,'').slice(0,330);};
-  const rows=[
-    ['Temperament',short(identity)],
-    ['Relationships',short(relationships)],
-    ['Career & wealth',short(career)],
-    ['Vitality & stress',short(health)],
-    ['Life direction',short(synthesis)],
-    ['Chart foundation',(()=>{
-      const d=extractChartData(t);
-      const lagnaSvg = getZodiacSvgUrl(d.lagna);
-      const moonSvg = getZodiacSvgUrl(d.moonSign);
-      return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
-        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(242,215,146,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(242,215,146,0.25);">
-          <img src="${lagnaSvg}" style="width:18px;height:18px;border-radius:50%;border:1px solid #fce7b0;vertical-align:middle;" alt="" />
-          <span>Lagna: <b>${formatRashiNameWithHindi(d.lagna)||'not stated'}</b></span>
-        </span>
-        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(127,197,192,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(127,197,192,0.25);">
-          <img src="${moonSvg}" style="width:18px;height:18px;border-radius:50%;border:1px solid #7fc5c0;vertical-align:middle;" alt="" />
-          <span>Moon Rashi: <b>${formatRashiNameWithHindi(d.moonSign)||'not stated'}</b></span>
-        </span>
-        <small style="color:var(--muted);">(${Object.keys(d.placements).length} planetary house placements)</small>
-      </div>`;
-    })()]
-  ];
-  grid.innerHTML=rows.map(r=>`<div class="glance-item"><b>${r[0]}</b><span>${r[1]||'The report is still assembling this part of the interpretation.'}</span></div>`).join('');
-  syn.textContent=short(synthesis)||'The reading will build toward a chart-specific synthesis of temperament, relationships, work, timing and the life patterns emphasized by the chart.';
-  card.style.display='block';
-}
-
 // --- Premium celestial theme selector ---
 (function(){
   const buttons=document.querySelectorAll('[data-theme-choice]');
