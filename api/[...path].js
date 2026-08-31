@@ -1483,9 +1483,13 @@ export default async function handler(req,res){
         try {
           const patch={};
           for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) {
+            const dbKey = k === 'question_enabled' ? 'chat_enabled' : k;
+            patch[dbKey] = (b[k] === '1' || b[k] === true);
+          }
           patch.updated_at=new Date().toISOString();
-          await db.update('settings',patch,'id=eq.1');
+          const saved = await db.update('settings',patch,'id=eq.1');
+          if (saved === false) return json(res,500,{ok:false,error:'Could not persist settings to the database.'});
         } catch {}
         logAudit(clientIp, 'SETTINGS_UPDATE', 'Updated administrative pricing or feature flag settings', 'SUCCESS');
         return json(res,200,{ok:true});
