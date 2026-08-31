@@ -3,17 +3,19 @@
     "index": 0,
     "label": "Primary (Key 1)",
     "masked": "AQ.Ab8...JShg",
-    "day": "2026-08-31",
-    "requestsToday": 4,
+    "day": "2026-08-26",
+    "requestsToday": 23,
     "recentTimestamps": [
-      1788199349170,
-      1788199378373
+      1787757976196,
+      1787757981791,
+      1787757990274,
+      1787758019370
     ],
-    "estimatedTokensToday": 5191,
-    "totalSuccess": 51,
+    "estimatedTokensToday": 2735,
+    "totalSuccess": 45,
     "totalFailures": 45,
-    "exhaustedUntil": 0,
+    "exhaustedUntil": 1787745030483,
     "exhaustionReason": "",
-    "lastUsed": "2026-08-31T18:02:58.373Z"
+    "lastUsed": "2026-08-26T15:26:59.370Z"
   }
 }

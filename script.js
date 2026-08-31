@@ -1061,159 +1061,6 @@ function openSpecificZodiacModal(signKey) {
   modal.classList.add('open');
 }
 
-function openDailyHoroscopeModal(signKey) {
-  if (signKey) activeRashifalSign = String(signKey).toLowerCase();
-  renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
-  if (typeof window.openModal === 'function') {
-    window.openModal('dailyHoroscopeModal');
-  } else {
-    const m = document.getElementById('dailyHoroscopeModal');
-    if (m) m.classList.add('open');
-  }
-}
-
-function closeDailyHoroscopeModal() {
-  if (typeof window.closeModal === 'function') {
-    window.closeModal('dailyHoroscopeModal');
-  } else {
-    const m = document.getElementById('dailyHoroscopeModal');
-    if (m) m.classList.remove('open');
-  }
-}
-
-function onModalHoroscopeDateChange(dateStr) {
-  if (!dateStr) return;
-  try {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const y = parseInt(parts[0], 10);
-      const m = parseInt(parts[1], 10) - 1;
-      const d = parseInt(parts[2], 10);
-      currentPanchangDate = new Date(y, m, d, 12, 0, 0);
-      renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
-      renderDailyRashifal(currentPanchangDate);
-    }
-  } catch (e) {
-    console.error('Modal date change error:', e);
-  }
-}
-
-function resetModalHoroscopeDate() {
-  currentPanchangDate = new Date();
-  renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
-  renderDailyRashifal(currentPanchangDate);
-}
-
-function renderDailyHoroscopeModal(signKey = activeRashifalSign, targetDate = currentPanchangDate) {
-  const modal = document.getElementById('dailyHoroscopeModal');
-  if (!modal) return;
-
-  const isHi = window.currentVedicLang === 'hi';
-  const d = targetDate instanceof Date ? targetDate : new Date(targetDate);
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = isHi ? d.toLocaleDateString('hi-IN', options) : d.toLocaleDateString('en-IN', options);
-
-  const modalH2 = modal.querySelector('.daily-horoscope-modal-header h2');
-  if (modalH2) modalH2.textContent = isHi ? 'दैनिक राशिफल एवं ग्रह गोचर' : 'Vedic Daily Horoscope & Gochara Transits';
-  const modalSub = modal.querySelector('.daily-horoscope-modal-header div > div');
-  if (modalSub) modalSub.textContent = isHi ? 'आज का ज्योतिषीय फलकथन देखने के लिए किसी भी राशि के प्रतीक पर क्लिक करें' : 'Select any Moon Sign (Chandra Rashi) symbol to view today\'s astrological forecast';
-  const todayBtn = modal.querySelector('.dh-date-picker-wrap button');
-  if (todayBtn) todayBtn.textContent = isHi ? 'आज का दिन' : 'Today';
-
-  const dateInput = document.getElementById('modalHoroscopeDateInput');
-  if (dateInput) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    dateInput.value = `${y}-${m}-${day}`;
-  }
-
-  const signKeys = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
-  const activeKey = signKeys.includes(String(signKey).toLowerCase()) ? String(signKey).toLowerCase() : 'aries';
-  activeRashifalSign = activeKey;
-
-  // Populate 12 symbols grid
-  const grid = document.getElementById('dhSymbolsGrid');
-  if (grid) {
-    grid.innerHTML = signKeys.map(k => {
-      const s = ZODIAC_METADATA[k];
-      const isActive = k === activeKey;
-      const imgSrc = getZodiacSvgUrl(k);
-      return `
-        <div class="dh-symbol-card ${isActive ? 'active' : ''}" role="button" tabindex="0" onclick="openDailyHoroscopeModal('${k}')" onkeydown="if(event.key==='Enter'||event.key===' ')openDailyHoroscopeModal('${k}')" title="${isHi ? s.nameHindi : s.nameFull}">
-          <img src="${imgSrc}" alt="${s.nameFull}" width="48" height="48" onerror="handleZodiacImgError(this, '${k}')" />
-          <span class="dh-sym-hi">${s.nameHindi}</span>
-          <span class="dh-sym-en">${s.nameEnglish}</span>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // Populate active sign content in modal
-  const content = document.getElementById('dhSignContent');
-  if (content) {
-    const sign = ZODIAC_METADATA[activeKey] || ZODIAC_METADATA['aries'];
-    const imgSrc = getZodiacSvgUrl(sign.key);
-    const currIdx = signKeys.indexOf(activeKey);
-    const prevSign = signKeys[(currIdx - 1 + signKeys.length) % signKeys.length];
-    const nextSign = signKeys[(currIdx + 1) % signKeys.length];
-
-    const displayLord = isHi ? sign.lord : sign.lord;
-    const displayElement = isHi ? sign.element : `${sign.element} (${sign.nature})`;
-
-    content.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;border-bottom:1px solid rgba(245,158,11,0.25);padding-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <img src="${imgSrc}" alt="${sign.nameFull}" style="width:68px;height:68px;border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 12px rgba(245,158,11,0.5));" onerror="handleZodiacImgError(this, '${sign.key}')" />
-          <div>
-            <h3 style="font-family:'Bodoni Moda','Cinzel',serif;font-size:22px;color:#fce7b0;margin:0;">${isHi ? `${sign.nameHindi} राशि (${sign.nameEnglish})` : sign.nameFull}</h3>
-            <div style="font-size:13px;color:#7fc5c0;margin-top:2px;">${isHi ? 'राशि स्वामी:' : 'Ruling Lord:'} <b>${displayLord}</b> · ${isHi ? 'तत्व:' : 'Element:'} <b>${displayElement}</b></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button type="button" class="rashifal-quick-btn" onclick="openDailyHoroscopeModal('${prevSign}')" style="padding:6px 12px;font-size:12px;">◀ ${ZODIAC_METADATA[prevSign].nameHindi} (${ZODIAC_METADATA[prevSign].nameEnglish})</button>
-          <button type="button" class="rashifal-quick-btn" onclick="openDailyHoroscopeModal('${nextSign}')" style="padding:6px 12px;font-size:12px;">${ZODIAC_METADATA[nextSign].nameHindi} (${ZODIAC_METADATA[nextSign].nameEnglish}) ▶</button>
-        </div>
-      </div>
-
-      <div class="rashifal-meta-tags" style="margin-bottom:18px;">
-        <span class="rashifal-tag">🎨 ${isHi ? 'शुभ रंग:' : 'Auspicious Color:'} <b>${sign.color}</b></span>
-        <span class="rashifal-tag">🔢 ${isHi ? 'भाग्यशाली अंक:' : 'Lucky Numbers:'} <b>${sign.number}</b></span>
-        <span class="rashifal-tag">🧭 ${isHi ? 'शुभ दिशा:' : 'Favored Direction:'} <b>${sign.direction}</b></span>
-        <span class="rashifal-tag">⏰ ${isHi ? 'शुभ मुहूर्त:' : 'Shubh Muhurta:'} <b>${sign.bestTime}</b></span>
-        <span class="rashifal-tag">🗓️ ${isHi ? 'दिनांक:' : 'Date:'} <b>${formattedDate}</b></span>
-      </div>
-
-      <div class="rashifal-section-card" style="margin-bottom:14px;">
-        <h4 style="margin:0 0 8px;color:#fce7b0;"><span>✦</span> ${isHi ? `दैनिक भविष्यफल अवलोकन (${sign.nameHindi} · ${formattedDate})` : `DAINIK RASHIFAL OVERVIEW (${sign.nameEnglish} · ${formattedDate})`}</h4>
-        <p style="font-size:14px;line-height:1.7;color:#e2e8f0;margin:0;">${sign.overview}</p>
-      </div>
-
-      <div class="rashifal-grid-2" style="margin-bottom:14px;">
-        <div class="rashifal-mini-card">
-          <h5 style="margin:0 0 6px;color:#fce7b0;">💼 ${isHi ? 'करियर एवं व्यावसायिक गति (Career & Work)' : 'Career & Professional Momentum (करियर एवं व्यवसाय)'}</h5>
-          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.career}</p>
-        </div>
-        <div class="rashifal-mini-card">
-          <h5 style="margin:0 0 6px;color:#fce7b0;">💰 ${isHi ? 'धन, आय एवं निवेश (Finance & Wealth)' : 'Finance, Wealth & Gains (धन, आय एवं निवेश)'}</h5>
-          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.finance}</p>
-        </div>
-      </div>
-
-      <div class="rashifal-grid-2">
-        <div class="rashifal-mini-card">
-          <h5 style="margin:0 0 6px;color:#fce7b0;">💖 ${isHi ? 'प्रेम व पारिवारिक जीवन (Love & Relationships)' : 'Love, Family & Relationships (प्रेम व पारिवारिक जीवन)'}</h5>
-          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.love}</p>
-        </div>
-        <div class="rashifal-mini-card">
-          <h5 style="margin:0 0 6px;color:#fce7b0;">🌿 ${isHi ? 'स्वास्थ्य व जीवन ऊर्जा (Health & Vitality)' : 'Health, Vitality & Mindfulness (स्वास्थ्य व ऊर्जा)'}</h5>
-          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.health}</p>
-        </div>
-      </div>
-    `;
-  }
-}
-
 function changeZodiacModalDate(dateVal) {
   if (!dateVal) return;
   try {
@@ -1224,7 +1071,6 @@ function changeZodiacModalDate(dateVal) {
       const d = parseInt(parts[2], 10);
       currentPanchangDate = new Date(y, m, d, 12, 0, 0);
       openSpecificZodiacModal(activeRashifalSign);
-      renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
       if (typeof renderDailyPanchang === 'function') {
         renderDailyPanchang(currentPanchangDate);
       }
@@ -1245,13 +1091,6 @@ window.scrollRashifalRibbon = scrollRashifalRibbon;
 window.navigateRashifalSign = navigateRashifalSign;
 window.openActiveZodiacInModal = openActiveZodiacInModal;
 window.openSpecificZodiacModal = openSpecificZodiacModal;
-window.openDailyHoroscopeModal = openDailyHoroscopeModal;
-window.closeDailyHoroscopeModal = closeDailyHoroscopeModal;
-window.doOpenDailyHoroscopeModal = openDailyHoroscopeModal;
-window.doCloseDailyHoroscopeModal = closeDailyHoroscopeModal;
-window.onModalHoroscopeDateChange = onModalHoroscopeDateChange;
-window.resetModalHoroscopeDate = resetModalHoroscopeDate;
-window.renderDailyHoroscopeModal = renderDailyHoroscopeModal;
 window.changeZodiacModalDate = changeZodiacModalDate;
 window.closeZodiacModal = closeZodiacModal;
 
@@ -1330,55 +1169,21 @@ function renderDailyPanchang(targetDate = currentPanchangDate) {
     if (pSun) pSun.textContent = `${data.sun.sunrise} / ${data.sun.sunset} (${data.sun.dayLength})`;
 
     if (pEvents) {
-      const allEventItems = [];
+      let eventsHtml = `<div class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK ANY FOR BRIEF):</div>`;
       if (data.activeEvents.length > 0) {
         data.activeEvents.forEach(ev => {
           const escName = encodeURIComponent(ev.name);
-          allEventItems.push(`
-            <div class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief">
-              <div class="event-pill-content">
-                <span class="pulse-dot"></span>
-                <span class="event-icon">${ev.icon}</span>
-                <b>Active Today: ${ev.name}</b>
-              </div>
-              <span class="event-pill-badge">Today</span>
-            </div>
-          `);
+          eventsHtml += `<span class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="pulse-dot"></span> ${ev.icon} <b>Active:</b> ${ev.name}</span>`;
         });
       }
       if (data.upcomingEvents.length > 0) {
         data.upcomingEvents.forEach(ev => {
           const escName = encodeURIComponent(ev.name);
           const daysText = ev.daysAway === 1 ? 'Tomorrow' : `in ${ev.daysAway} days`;
-          allEventItems.push(`
-            <div class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief">
-              <div class="event-pill-content">
-                <span class="event-icon">${ev.icon}</span>
-                <b>${ev.name}</b>
-              </div>
-              <span class="event-pill-badge">${daysText}</span>
-            </div>
-          `);
+          eventsHtml += `<span class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="event-icon">${ev.icon}</span> <b>${ev.name}</b> — ${daysText}</span>`;
         });
       }
-      if (allEventItems.length > 0) {
-        const mid = Math.ceil(allEventItems.length / 2);
-        const leftCol = allEventItems.slice(0, mid).join('');
-        const rightCol = allEventItems.slice(mid).join('');
-        pEvents.innerHTML = `
-          <div class="panchang-events-header">
-            <span class="sym-line"></span>
-            <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF) ✦</span>
-            <span class="sym-line"></span>
-          </div>
-          <div class="panchang-events-symmetrical-grid">
-            <div class="panchang-events-col left-col">${leftCol}</div>
-            <div class="panchang-events-col right-col">${rightCol}</div>
-          </div>
-        `;
-      } else {
-        pEvents.innerHTML = '';
-      }
+      pEvents.innerHTML = eventsHtml;
     }
 
     // Refresh active planetary transits on the Mandala wheel & hero orbit
@@ -1714,7 +1519,7 @@ if (document.readyState === 'loading') {
 }
 
 // --- Report intelligence: create a concise, chart-grounded opening summary ---
-function buildAtAGlance_old(){
+function buildAtAGlance(){
   const card=document.getElementById('atAGlanceCard'), grid=document.getElementById('glanceGrid'), syn=document.getElementById('glanceSynthesis');
   if(!card||!fullReportText.trim())return;
   const t=cleanAstroText(fullReportText);
@@ -2182,282 +1987,69 @@ setupPlaceAutocomplete('k1');
 setupPlaceAutocomplete('k2');
 
 const EMBEDDED_KEY = "";
-const PRIMARY_MODEL = "gemini-3.7-flash";
-const FALLBACK_MODEL = "gemini-3.1-flash-lite";
+const PRIMARY_MODEL = "gemini-3.6-flash";
+const FALLBACK_MODEL = "gemini-3.5-flash";
 let activeKey = EMBEDDED_KEY;
 let activeModel = PRIMARY_MODEL;
 
 const SECTIONS = [
-  { id:'panchang', title:'Panchang and foundational placements', titleHindi:'पंचांग एवं आधारभूत ग्रह स्थिति',
-    instruction:`Provide an exhaustive, deeply comprehensive classical exposition (aim for 1200-1500+ words) covering the sacred Panchang and foundational celestial geometry:
-### 1. Panchanga Tattva & Five Limbs of Time
-Analyze the five limbs: Tithi (lunar day and its planetary ruler), Nakshatra (with exact pada, deity, and cosmic shakti), Yoga (cosmic blend and auspiciousness), Karana (half-tithi active influence), and Vara (solar day ruler).
-### 2. Lagna Architecture & Ascendant Lord Dynamics
-Detailed analysis of the rising sign (Lagna), exact degree, Nakshatra of the Lagna, and the dignity, house placement, and aspectual relationships (Drishti) of the Lagna Lord.
-### 3. Chandra Rashi & Solar Core Placement
-Deep exploration of the Moon Sign (Chandra Rashi), lunar phase (Paksha), emotional disposition, and the Sun's placement governing soul authority (Atmakaraka energy) and vitality.
-### 4. Comprehensive Planet-by-House Placements
-Exhaustive breakdown of all nine grahas (Surya, Chandra, Mangala, Budha, Guru, Shukra, Shani, Rahu, Ketu) with exact sidereal signs, Bhavas, combustion status, retrograde motions, and dignities (Uchha, Moolatrikona, Sva-kshetra, Mitra, Shatru, Neecha).
-### 5. Divisional Highlights & Foundational Synthesis
-Examine initial Navamsha (D9) and Bhava Chalit alignments that anchor the entire horoscope.`,
-    instructionHindi:`पवित्र पंचांग एवं आधारभूत खगोलीय ग्रह स्थितियों का 1200 से 1500+ शब्दों में विस्तृत शास्त्रीय विश्लेषण प्रस्तुत करें:
-### 1. पंचांग तत्व एवं काल के पंच अंग (तिथि, नक्षत्र, योग, करण, वार)
-तिथि (एवं उसके स्वामी), नक्षत्र (पाद, देवता एवं शक्ति), योग, करण और वार का विस्तृत फलकथन।
-### 2. लग्न संरचना एवं लग्नेश का प्रभाव
-लग्न राशि, अंश, लग्न नक्षत्र, लग्नेश की स्थिति, उच्च-नीच अवस्था एवं दृष्टि प्रभाव का विश्लेषण।
-### 3. चंद्र राशि एवं सूर्य स्थिति
-चंद्र राशि, पक्ष बल, मानसिक स्थिति एवं सूर्य द्वारा आत्म-कारक प्रभाव।
-### 4. नवग्रह एवं द्वादश भाव स्थिति
-सूर्य, चंद्र, मंगल, बुध, गुरु, शुक्र, शनि, राहु एवं केतु की राशि, भाव, वक्री/अस्त अवस्था व शुभाशुभ फल।
-### 5. नवांश (D9) एवं आधारभूत समन्वय
-नवांश कुंडली एवं ग्रह बल का सूक्ष्म समन्वय व निष्कर्ष।`
-  },
-
-  { id:'identity', title:'Identity, temperament and mind', titleHindi:'व्यक्तित्व, स्वभाव एवं मन-प्रवृत्ति',
-    instruction:`Provide an exhaustive, deeply psychological and philosophical evaluation (aim for 1200-1500+ words):
-### 1. Core Psychological Blueprint & Constitutional Temperament
-In-depth analysis of the Lagna, Lagna lord, and physical/temperamental constitution (Ayurvedic Tridosha balance: Vata, Pitta, Kapha).
-### 2. Cognitive Processing, Intellectual Acumen & Budha (Mercury)
-Examine Mercury's sign, house, aspects, and lordships; analyze learning patterns, communication style, analytical prowess, and decision-making logic.
-### 3. Emotional Sanctuary, Subconscious Patterns & Chandra (Moon)
-Analyze lunar Nakshatra, mind stability (Manas), emotional triggers, intuitive depth, and coping mechanisms during stress.
-### 4. Solar Willpower, Sovereign Purpose & Inner Discipline (Sun & Saturn)
-Explore ego expression, fatherly influences, leadership capacity, and Saturnian patience, resilience, and endurance.
-### 5. Creative Intellect & 5th House Alignment
-Evaluate the 5th house of Purva Punya (past-life merit), higher education, intuitive wisdom, and creative self-expression.`,
-    instructionHindi:`व्यक्तित्व, मानसिक स्वरूप एवं आत्मिक ऊर्जा का 1200 से 1500+ शब्दों में गहन विश्लेषण प्रस्तुत करें:
-### 1. व्यक्तित्व एवं स्वाभाविक शारीरिक प्रकृति (त्रिदोष संतुलन)
-लग्न व लग्नेश के आधार पर वात, पित्त, कफ प्रकृति और स्वाभाविक व्यवहार का विश्लेषण।
-### 2. बुद्धि, विवेक एवं बुध ग्रह की स्थिति
-बुध की स्थिति, निर्णय क्षमता, संवाद कौशल एवं तार्किक प्रतिभा।
-### 3. मनःस्थिति, भावनाएं एवं चंद्र नक्षत्र प्रभाव
-चंद्रमा की स्थिति, जन्म नक्षत्र, मानसिक शांति और भावनात्मक प्रतिक्रियाएं।
-### 4. आत्मबल, नेतृत्व एवं सूर्य-शनि का प्रभाव
-सूर्य का आत्मिक तेज एवं शनि का अनुशासन, धैर्य व कर्मनिष्ठा।
-### 5. पूर्व पुण्य, पंचम भाव एवं रचनात्मक प्रज्ञा
-पंचम भाव, विद्या, विवेक और स्वाभाविक रचनात्मक कौशल।`
-  },
-
-  { id:'relationships', title:'Relationships, marriage and family', titleHindi:'संबंध, वैवाहिक जीवन एवं परिवार',
-    instruction:`Provide an exhaustive, deeply nuanced relationship reading (aim for 1200-1500+ words):
-### 1. Seventh House (Kalatra Bhava) & Partnership Architecture
-Analyze 7th house sign, 7th lord's placement and dignity, planetary occupants, and aspectual currents governing marriage.
-### 2. Venus (Shukra) & Jupiter (Guru) Relational Mechanics
-Examine Venus as the natural karaka of romance and desire, and Jupiter as the karaka of marital wisdom, commitment, and partner characteristics.
-### 3. Marital Harmony, Attachment Dynamics & Navamsha (D9)
-Detailed assessment of mutual emotional safety, conflict-resolution styles, and relational longevity indications.
-### 4. Indicative Marriage Timing & Dasha Windows
-Examine active Vimshottari Mahadashas/Antardashas and major planetary transits (Gochar of Jupiter & Saturn) indicating auspicious windows.
-### 5. Domestic Life, Progeny & Extended Family
-Evaluate 4th house (domestic sanctuary & mother), 5th house (progeny & children), 3rd/11th houses (siblings & friendships), and social network dynamics.`,
-    instructionHindi:`वैवाहिक जीवन, प्रेम संबंध एवं पारिवारिक सुख का 1200 से 1500+ शब्दों में विस्तृत फलकथन प्रस्तुत करें:
-### 1. सप्तम भाव (कलत्र भाव) एवं जीवनसाथी स्वरूप
-सप्तम भाव, सप्तमेश की स्थिति, जीवनसाथी का स्वभाव, गुण एवं वैवाहिक सामंजस्य।
-### 2. शुक्र एवं गुरु ग्रह का वैवाहिक प्रभाव
-प्रेम के कारक शुक्र एवं दांपत्य सुख व ज्ञान के कारक गुरु की स्थिति का विश्लेषण।
-### 3. नवांश कुंडली (D9) एवं वैवाहिक स्थायित्व
-नवांश में सप्तमेश की स्थिति एवं दीर्घकालिक दांपत्य संबंध।
-### 4. विवाह का संभावित काल एवं दशा-गोचर अनुकूलता
-विंशोत्तरी दशा, गुरु व शनि के गोचर अनुसार विवाह के लिए सर्वाधिक अनुकूल समय।
-### 5. गृहस्थ सुख, संतान पक्ष एवं पारिवारिक संबंध
-चतुर्थ भाव (पारिवारिक शांति) एवं पंचम भाव (संतान सुख) का समग्र विश्लेषण।`
-  },
-
-  { id:'career', title:'Career, wealth and material life', titleHindi:'करियर, धन, आजीविका एवं भौतिक संपदा',
-    instruction:`Provide an exhaustive, authoritative vocational and financial exposition (aim for 1200-1500+ words):
-### 1. Tenth House (Karma Bhava) & Executive Vocation
-Analyze the 10th house, 10th lord's dignity, Amatyakaraka, and planetary occupants governing leadership, career path, and industry sectors.
-### 2. Dhana Yogas & Wealth Accumulation Architecture
-Detailed examination of the 2nd house (accumulated wealth, savings, speech) and 11th house (gains, cash flow, highest aspirations), detailing all active Dhana Yogas.
-### 3. Public Status, Enterprise & Independent Authority
-Examine Sun and Mars positions for entrepreneurial vs corporate vs governmental leadership, organizational impact, and professional reputation.
-### 4. Real Estate, Fixed Assets & Vehicles (4th Bhava)
-Analyze 4th house lord, Mars (Bhumi-karaka), and Venus (Vahana-karaka) regarding property acquisition and asset building.
-### 5. Foreign Opportunities, Litigations & Strategic Growth
-Evaluate 9th/12th houses for foreign travel/relocation, and 6th house for overcoming professional competition, debts, and market challenges.`,
-    instructionHindi:`आजीविका, करियर, धन लाभ एवं भौतिक उन्नति का 1200 से 1500+ शब्दों में शास्त्रीय विश्लेषण करें:
-### 1. दशम भाव (कर्म भाव) एवं व्यावसायिक दिशा
-दशमेश की स्थिति, अमात्यकारक एवं कार्यक्षेत्र (नौकरी, स्वतंत्र व्यवसाय या प्रशासनिक पद)।
-### 2. धन भाव (द्वितीय), लाभ भाव (एकादश) एवं सक्रिय धनयोग
-धन संचय, आय के स्रोत, आर्थिक स्थिरता एवं प्रमुख धनयोगों का विस्तृत विवरण।
-### 3. मान-प्रतिष्ठा, पदोन्नति एवं सूर्य-मंगल का प्रभाव
-समाज में मान-सम्मान, नेतृत्व क्षमता एवं अधिकार क्षेत्र का विस्तार।
-### 4. भूमि, भवन, वाहन एवं अचल संपत्ति (चतुर्थ भाव)
-चतुर्थेश, भूमि-कारक मंगल और वाहन-कारक शुक्र की स्थिति।
-### 5. विदेश गमन, प्रतियोगिता में विजय एवं रणनीतिक सफलता
-नवम/द्वादश भाव से विदेश यात्रा तथा षष्ठ भाव से प्रतिस्पर्धियों पर विजय का विश्लेषण।`
-  },
-
-  { id:'health', title:'Health, yogas and doshas', titleHindi:'स्वास्थ्य, शुभ योग एवं दोष विश्लेषण',
-    instruction:`Provide an exhaustive, highly structured classical analysis of yogas, vitality, and doshas (aim for 1200-1500+ words):
-### 1. Vitality, Longevity (Ayur Bhava) & Constitutional Resilience
-Analyze 1st, 6th, 8th, and 12th houses and their lords regarding physical endurance, restorative sleep, and chronic vulnerability zones.
-### 2. Major Auspicious Raja Yogas & Kendra-Trikona Alignments
-Detail every Raja Yoga, Dharma-Karmadhipati Yoga, and Vipreet Raja Yoga present, citing exact grahas, houses, and practical manifestations.
-### 3. Pancha Mahapurusha Yogas & Planetary Dignities
-Identify which of the 5 great planetary yogas (Ruchaka, Bhadra, Hamsa, Malavya, Sasa) are formed, explaining their classical effects.
-### 4. Classical Dosha Assessment (Objective & Factual)
-Objectively assess Mangal (Kuja) Dosha, Kaal Sarpa patterns, Kemadruma, or Grahan conditions, explicitly stating cancellations (Dosha Bhanga) where applicable. (Do NOT prescribe rituals/gemstones).
-### 5. Mind-Body Harmony & Lifestyle Grounding
-Provide supportive Vedic principles on daily rhythms (Dinacharya), mental tranquility, and mindful lifestyle pacing.`,
-    instructionHindi:`शारीरिक ऊर्जा, शुभ राजयोग, पंचमहापुरुष योग एवं दोषों का 1200 से 1500+ शब्दों में विश्लेषण करें:
-### 1. जीवन ऊर्जा, स्वास्थ्य एवं त्रिदोष संतुलन (प्रथम, षष्ठ, अष्टम भाव)
-शारीरिक क्षमता, रोग प्रतिरोधक शक्ति और संवेदनशील अंगों का शास्त्रीय अध्ययन।
-### 2. प्रमुख शुभ राजयोग एवं केंद्र-त्रिकोण संबंध
-कुंडली में उपस्थित राजयोग, धर्म-कर्माधिपति योग एवं विपरीत राजयोग का प्रभाव।
-### 3. पंचमहापुरुष योग एवं उच्च ग्रह स्थिति
-रुचक, भद्र, हंस, मालव्य अथवा शश योग की उपस्थिति का प्रामाणिक फल।
-### 4. मांगलिक दोष व अन्य ग्रह योगों का वस्तुनिष्ठ विश्लेषण
-मांगलिक दोष, कालसर्प स्थिति या ग्रहण योग का तथ्यपरक विश्लेषण एवं दोष भंग के शास्त्रीय नियम।
-### 5. दिनचर्या, मनःशांति एवं जीवनशैली संतुलन
-वैदिक दिनचर्या और सकारात्मक ऊर्जा बनाए रखने हेतु शास्त्रीय सिद्धांत।`
-  },
-
-  { id:'timeline', title:'Dasha timeline and life phases', titleHindi:'विंशोत्तरी दशा कालखंड व जीवन चक्र',
-    instruction:`Provide an exhaustive chronological roadmap across the native's life cycle (aim for 1200-1500+ words):
-### 1. Vimshottari Mahadasha Master Sequence & Balance at Birth
-Detail the full 120-year Vimshottari cycle from birth dasha balance to the entire chronological sequence of planetary rulers.
-### 2. Active Mahadasha & Antardasha Deep-Dive
-Comprehensive breakdown of the currently operating Mahadasha and Antardasha lords, their house placements, lordships, and specific life themes activated.
-### 3. Upcoming Sub-Periods (Next 2 to 3 Antardashas)
-Forecast the upcoming sub-periods within the current Mahadasha, detailing opportunities in career, relationships, relocation, and personal growth.
-### 4. Major Gochara (Transit) Influences & Planetary Shifts
-Analyze current transits of Saturn (Shani), Jupiter (Guru), and Rahu-Ketu relative to the natal Moon and Lagna.
-### 5. Sade Sati & Critical Phase Analysis
-Detailed assessment of Sade Sati, Dhaiya, or Kantaka Shani phases, distinguishing between constructive consolidation windows and temporary testing periods.`,
-    instructionHindi:`विंशोत्तरी दशा एवं जीवन के महत्वपूर्ण कालखंडों का 1200 से 1500+ शब्दों में समय-चक्र विश्लेषण करें:
-### 1. विंशोत्तरी महादशा अनुक्रम एवं जन्म समय दशा शेष
-जन्म के समय नक्षत्र दशा से लेकर 120 वर्षीय दशा चक्र का संपूर्ण प्रारूप।
-### 2. वर्तमान सक्रिय महादशा एवं अंतर्दशा का गहन फल
-वर्तमान में चल रही महादशा और अंतर्दशा के स्वामियों की स्थिति एवं तात्कालिक प्रभाव।
-### 3. आगामी 2 से 3 अंतर्दशाओं का पूर्वानुमान
-निकट भविष्य में आने वाले समय में करियर, संबंध और आर्थिक स्थिति में संभावित मोड़।
-### 4. शनि, गुरु, राहु-केतु का प्रत्यक्ष गोचर प्रभाव
-लग्न व चंद्र राशि से प्रमुख धीमी गति वाले ग्रहों के गोचर का फल।
-### 5. साढ़े साती, ढैय्या एवं विशेष कालखंड
-शनि की साढ़े साती या ढैय्या की वर्तमान स्थिति और उससे निपटने की सकारात्मक दृष्टि।`
-  },
-
-  { id:'synthesis', title:'Strengths, purpose and closing synthesis', titleHindi:'शक्तियां, जीवन उद्देश्य एवं महासंश्लेषण',
-    instruction:`Provide an exhaustive, inspirational grand synthesis and life-purpose exposition (aim for 1200-1500+ words):
-### 1. Holistic Planetary Strength & Dignity Hierarchy (Shadbala Summary)
-Synthesize the most potent planetary forces in the chart, highlighting dominant life energies and areas requiring patient mastery.
-### 2. Core Innate Strengths & Specialized Talents
-Unpack the native's unique gifts, cognitive advantages, and hidden talents indicated by specialized yogas and planetary combinations.
-### 3. Karmic Growth Edges & Life Lessons
-Analyze the nodal axis (Rahu-Ketu), 8th/12th houses, and Saturnian placements representing evolutionary growth edges.
-### 4. Public Legacy, Contribution & Social Standing
-Examine 10th/11th house synergy, solar strength, and reputation markers indicating societal contribution and lasting achievement.
-### 5. Spiritual Alignment (Dharma, Moksha) & Grand Closing Synthesis
-Weave together the entire horoscope into a magnificent, uplifting, cohesive narrative that honors the native's sovereign potential and divine trajectory.`,
-    instructionHindi:`जन्म कुंडली की मौलिक शक्तियों, जीवन उद्देश्य एवं महासंश्लेषण का 1200 से 1500+ शब्दों में विवेचन:
-### 1. समग्र ग्रह बल एवं षड्बल निष्कर्ष
-कुंडली के सर्वाधिक प्रभावशाली ग्रह और जीवन में उनकी सकारात्मक भूमिका।
-### 2. जन्मजात प्रतिभा, विशिष्ट गुण एवं आंतरिक सामर्थ्य
-विशिष्ट योगों द्वारा प्राप्त स्वाभाविक प्रतिभा, तार्किक क्षमता और रचनात्मकता।
-### 3. कार्मिक पाठ एवं राहु-केतु अक्ष का संदेश
-राहु-केतु और अष्टम/द्वादश भाव द्वारा जीवन में आत्मिक विकास का मार्ग।
-### 4. सामाजिक योगदान, प्रतिष्ठा एवं चिरस्थायी प्रभाव
-समाज में आपकी पहचान, कर्म क्षेत्र में प्रतिष्ठा और प्रेरणादायक व्यक्तित्व।
-### 5. आध्यात्मिक उद्देश्य (धर्म-मोक्ष) एवं अंतिम महासंश्लेषण
-संपूर्ण कुंडली का एक प्रेरक, सकारात्मक एवं समग्र सारांश।`
-  }
+  { id:'panchang', title:'Panchang and foundational placements',
+    instruction:`Cover, in devotional but precise language: the five limbs of the birth Panchang — Tithi (lunar day), Nakshatra and its lord and pada, Yoga, Karana, and Vara (weekday) — your best estimate of each from the given date, time, and place, stated as estimates. Then cover the Lagna (ascendant sign and its lord's placement), the Moon sign (Rashi), and a full planet-by-house placement summary for all nine grahas (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) stated plainly — sign, house, and dignity (exalted, own sign, debilitated, or neutral) for each. This section is foundational data the rest of the reading builds on. Do not interpret temperament, career, or relationships here — only lay out the placements clearly and reverently.` },
+  { id:'identity', title:'Identity, temperament and mind',
+    instruction:`Cover, in this order: what the Lagna and Lagna lord's condition (sign, dignity, house, aspects) reveal about the native's essential nature and bodily constitution, the thinking pattern and communication style shown by Mercury (house, sign, dignity, aspects, lordship), learning ability and mental strength (5th house, its lord, and Jupiter's condition), emotional nature (Moon's house, sign, aspects), confidence and inner discipline (Sun and Saturn's placement, dignity, aspects). Ground every claim in a specific placement, sign, lordship, dignity, or aspect, and explain the reasoning, not just the trait. Do not discuss marriage, career, or health in this section.` },
+  { id:'relationships', title:'Relationships, marriage and family',
+    instruction:`Cover: what the 7th house and its lord (sign, dignity, aspects) reveal about marriage prospects and spouse characteristics, what Venus and Jupiter's condition shows about romantic and marital harmony, indicative timing windows for marriage drawn from the relevant Dasha periods and 7th-house transits (state clearly these are indicative, not guarantees), marriage stability indicators (7th, 8th, and 12th house afflictions or benefic support), children (5th house, its lord, Jupiter's condition), parents (4th house for mother, 9th and 10th house for father), siblings (3rd and 11th houses), and friendships and social circle (11th house, its lord, and planets placed there). Ground every claim in a specific placement, lordship, dignity, or aspect. Do not repeat the identity section or discuss career and health here.` },
+  { id:'career', title:'Career, wealth and material life',
+    instruction:`Cover: what the 10th house and its lord (sign, dignity, aspects) reveal about career direction, indications toward government service, private employment, business, or entrepreneurship (10th lord's placement and conjunctions, Saturn and Mars condition), leadership potential (Sun's strength, any Raja Yoga involving angular or trinal lords), foreign career or settlement indications (9th and 12th houses and their lords, Rahu's placement), income sources and the trajectory of earning capacity (2nd and 11th houses and their lords), any Dhana Yogas present (name the exact planets and houses forming them), property and vehicles (4th house and its lord, Mars), and debt or litigation tendencies (6th house and its lord, malefic influence on 2nd or 11th house, Rahu/Ketu involvement). Ground every claim in a specific placement, lordship, dignity, or aspect. Do not repeat earlier sections.` },
+  { id:'health', title:'Health, yogas and doshas',
+    instruction:`Cover: what the 6th, 8th, and 12th houses and their lords reveal about general vitality and chronic-issue tendencies, accident-prone indications if any (Mars or Rahu affliction to the 1st, 3rd, or 8th house), stress and rest patterns (Moon and Saturn's condition, 12th house), all major classical Yogas present in this chart with the exact planets and houses forming each — Raja Yoga, Dhana Yoga, Vipreet Raja Yoga, the Panch Mahapurusha Yogas (Ruchaka, Bhadra, Hamsa, Malavya, Sasa — state plainly which if any are present and why), and Neecha Bhanga Raja Yoga if applicable — and all major Doshas present, stating clearly when a dosha is absent rather than assuming one exists (such as Kaal Sarpa, Mangal/Kuja dosha, Grahan dosha), with the precise planetary configuration behind each finding. Describe each configuration and its classical significations only — never suggest a remedy for any dosha found. Ground every claim in a specific placement, lordship, dignity, or aspect.` },
+  { id:'timeline', title:'Dasha timeline and life phases',
+    instruction:`Cover: the full Vimshottari Mahadasha sequence from birth (each Mahadasha lord with its approximate age range), a detailed account of the current Mahadasha and current Antardasha (their house lordships and placements, and what this period signifies), the next two to three upcoming Antardashas within the current Mahadasha and what each signifies, current major transit influences (Saturn and Jupiter's transit position relative to the natal Moon sign, and what each activates), any Sade Sati or Ashtama Shani period if applicable, and a clear separation of more fortunate periods from more challenging ones with the specific planetary reasoning behind each. Ground every claim in specific dasha lords, houses, and planetary conditions. Do not repeat earlier sections.` },
+  { id:'synthesis', title:'Strengths, purpose and closing synthesis',
+    instruction:`Cover: an overall planetary strength summary (which grahas stand strongest and weakest by dignity, and what that means holistically), the native's core strengths and growth edges as shown by the chart as a whole, any hidden talents suggested by unusual placements or unique yoga combinations not yet discussed, major life lessons and obstacles the chart suggests, public reputation, creativity, and any indication of recognition or wider impact (10th house, Sun, Moon, and any Raja Yogas), the native's natural spiritual inclination if shown by the 9th or 12th house or Ketu's placement (describe the inclination only, never prescribe a practice), and a warm closing synthesis paragraph that weaves the chart's dominant themes into one coherent picture of this life's path. Ground every claim in a specific placement, lordship, dignity, or aspect, and do not introduce new Dasha detail already covered.` }
 ];
 
-const RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer, deeply versed in Brihat Parashara Hora Shastra, Brihat Jataka, Phaladeepika, Saravali, Jaimini Sutras, Uttara Kalamrita, KP Astrology (for timing only), classical Yogas, Dasha systems, divisional charts (Vargas), planetary strengths, and transit analysis. Write with warmth, authority, and reverence for the tradition.
+const RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer, deeply versed in Brihat Parashara Hora Shastra, Brihat Jataka, Phaladeepika, Saravali, Jaimini Sutras, Uttara Kalamrita, KP Astrology (for timing only), classical Yogas, Dasha systems, divisional charts (Vargas), planetary strengths, and transit analysis. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague.
 
 Strict rules you always follow:
-- MANDATORY CHAPTER LENGTH: Provide an exhaustive, deeply comprehensive analysis of 1200 to 1500+ words for each chapter. Never output brief summaries or one-line statements.
-- STRUCTURE: Organize your writing cleanly into 5 to 7 detailed sub-sections using standard "### 1. ...", "### 2. ...", "### 3. ...", etc.
-- DEPTH & REASONING: Every paragraph must reference specific houses, signs, planetary lords, Nakshatras and Padas, degrees, dignity, aspects (Drishti), yogas, or dashas. Every conclusion must explain WHY based on astrological mechanics.
-- BILINGUAL RASHI NAMES: Include both English sign names and Hindi/Sanskrit Rashi names with Devanagari script (e.g. "Aries / Mesha (मेष)", "Taurus / Vrishabha (वृषभ)", "Gemini / Mithuna (मिथुन)", "Cancer / Karka (कर्क)", "Leo / Simha (सिंह)", "Virgo / Kanya (कन्या)", "Libra / Tula (तुला)", "Scorpio / Vrischika (वृश्चिक)", "Sagittarius / Dhanu (धनु)", "Capricorn / Makara (मकर)", "Aquarius / Kumbha (कुंभ)", "Pisces / Meena (मीन)").
-- NO REMEDIES: Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, or remedies. If asked, state that this platform provides pure objective astrological analysis.
-- INTERNAL CONSISTENCY: Planetary positions, degrees, and houses are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Use them as authoritative facts.
-- Do not output a top-level # or ## title for the whole section (the web application renders its own chapter banner), begin directly with "### 1. ...".`;
+- Never give generic motivational filler. Every paragraph must reference specific houses, signs, lords, planetary dignity, planetary strength, yogas, dashas, vargas, or transits by name.
+- Every conclusion must explain WHY, tied to a specific astrological configuration. Never state a trait without the reasoning behind it.
+- Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, temple visits, or any other remedy. Never claim destiny can be changed through remedies. You may describe a dosha or challenging configuration factually and reverently, but never prescribe anything for it.
+- If asked directly for a remedy, respond only with: "This platform is designed exclusively for objective astrological analysis and interpretation. It intentionally does not recommend remedies, rituals, gemstones, or spiritual prescriptions."
+- Never contradict earlier interpretation given for the same birth data in this conversation. Stay internally consistent.
+- Planetary positions, degrees, signs, houses and retrograde status are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Treat those values as authoritative calculation inputs; never recalculate or guess them from memory.
+- Be direct and specific rather than hedging excessively, but never overstate certainty on timing predictions — frame timing as "indicative windows" supported by dasha and transit reasoning, not guarantees.
+- Write in clear, well-organized prose. Do not use markdown headers inside your answer (no # or ##) — the interface adds its own section headers.`;
 
 const KUNDLI_SECTIONS = [
-  { id:'ashtakoot', title:'Ashtakoot Guna Milan (36-Point Compatibility)', titleHindi:'अष्टकूट गुण मिलान (36 गुण विश्लेषण)',
-    instruction:`Write an exhaustive, deeply detailed analysis (aim for 1200-1500+ words) of the deterministic Ashtakoot Guna Milan Result provided in the context:
-### 1. Ashtakoot Compatibility Overview & Total Guna Score
-Analyze the final compatibility score out of 36 gunas and provide an executive synthesis of mutual resonance.
-### 2. Varna & Vashya Kootas (Spiritual Alignment & Mutual Attraction)
-Detailed examination of Varna (work/ego harmony) and Vashya (magnetic draw and mutual support).
-### 3. Tara & Yoni Kootas (Destiny, Vitality & Instinctive Bond)
-Examine Tara (health, well-being) and Yoni (temperamental and physical affinity).
-### 4. Graha Maitri & Gana Kootas (Emotional Friendship & Temperament)
-Examine planetary friendship between Moon lords (Graha Maitri) and cosmic nature (Deva, Manushya, Rakshasa).
-### 5. Bhakoot & Nadi Kootas (Family Prosperity, Longevity & Genetic Harmony)
-Examine Bhakoot (6-8, 9-5, 12-2 alignments) and Nadi (cosmic nervous flow), explaining practical dynamics and any cancellations.`,
-    instructionHindi:`अष्टकूट गुण मिलान (36 गुण) का 1200 से 1500+ शब्दों में विस्तृत विश्लेषण करें:
-### 1. समग्र गुण मिलान प्राप्तांक एवं सामान्य अनुकूलता
-36 में से प्राप्त कुल अंकों का विश्लेषण और वैवाहिक जीवन की सामान्य दिशा।
-### 2. वर्ण एवं वश्य कूट (मानसिक समरसता व आकर्षण)
-कार्यशैली और परस्पर सहयोग की भावना का मूल्यांकन।
-### 3. तारा एवं योनि कूट (भाग्य, स्वास्थ्य व शारीरिक सामंजस्य)
-स्वास्थ्य, कल्याण और स्वाभाविक स्वभाविक आकर्षण का अध्ययन।
-### 4. ग्रह मैत्री एवं गण कूट (भावनात्मक मित्रता व स्वभाव)
-चंद्र राशि स्वामियों की मित्रता (ग्रह मैत्री) और गण (देव, मनुष्य, राक्षस) अनुकूलता।
-### 5. भकूट एवं नाड़ी कूट (पारिवारिक समृद्धि व संतान सुख)
-भकूट (भाव संबंध) और नाड़ी दोष के शास्त्रीय नियम व अपवाद।`
-  },
-
-  { id:'doshas', title:'Mangal Dosha and Compatibility Doshas', titleHindi:'मांगलिक दोष एवं ग्रह सामंजस्य',
-    instruction:`Write an exhaustive analysis (aim for 1200-1500+ words) assessing Mangal Dosha and compatibility doshas:
-### 1. Individual Mangal (Kuja) Dosha Evaluation for Partner 1
-Check Mars's placement from Lagna, Moon, and Venus across 1st, 2nd, 4th, 7th, 8th, and 12th houses.
-### 2. Individual Mangal (Kuja) Dosha Evaluation for Partner 2
-Check Mars's placement and dignity from all reference points for the second partner.
-### 3. Classical Mangal Dosha Cancellations (Dosha Bhanga)
-Evaluate whether classical cancellations apply (mutual placement, sign dignity, planetary aspects).
-### 4. Nadi & Bhakoot Dosha Nuances
-Revisit any Nadi or Bhakoot frictions and identify classical exception rules.
-### 5. Practical Harmony, Conflict Resolution & Shared Growth
-Explain how their dynamic will unfold in real-world communication and domestic partnership.`,
-    instructionHindi:`मांगलिक दोष एवं वैवाहिक ग्रह सामंजस्य का 1200 से 1500+ शब्दों में परीक्षण:
-### 1. प्रथम पक्ष की कुंडली में मांगलिक (कुज) दोष की स्थिति
-लग्न, चंद्र एवं शुक्र से 1, 2, 4, 7, 8, 12वें भाव में मंगल की स्थिति।
-### 2. द्वितीय पक्ष की कुंडली में मांगलिक दोष का परीक्षण
-दूसरे साथी की कुंडली में मंगल की स्थिति और उसका प्रभाव।
-### 3. मांगलिक दोष शमन एवं परिहार के शास्त्रीय नियम
-परस्पर स्थिति, उच्च-नीच राशि अथवा शुभ दृष्टियों से दोष निवारण।
-### 4. नाड़ी एवं भकूट दोष की स्थिति
-नाड़ी या भकूट संबंधी किसी प्रभाव का वस्तुनिष्ठ विश्लेषण।
-### 5. व्यावहारिक संवाद, समझ एवं सुखद दांपत्य की राह
-दैनिक जीवन में सकारात्मक संवाद और परस्पर सम्मान बनाए रखने की समझ।`
-  },
-
-  { id:'synthesis', title:'Compatibility Outlook and Synthesis', titleHindi:'वैवाहिक भविष्यफल एवं समग्र निष्कर्ष',
-    instruction:`Write an exhaustive, deeply reflective synastry synthesis (aim for 1200-1500+ words):
-### 1. Emotional, Lunar & Temperamental Affinity
-Compare Moon signs, Nakshatras, and subconscious bonding patterns.
-### 2. Intellectual Rapport & Communication (Mercury Dynamics)
-Analyze communication harmony, shared interests, and problem-solving styles.
-### 3. Domestic Foundation & Long-Term Stability (4th & 7th Bhavas)
-Evaluate domestic harmony, shared values, and long-term commitment.
-### 4. Dasha Alignment & Shared Evolutionary Timing
-Compare their current active Mahadasha cycles and upcoming life milestones.
-### 5. Grand Relationship Synthesis & Balanced Outlook
-Weave both charts into a harmonious, balanced, and inspiring closing narrative.`,
-    instructionHindi:`वैवाहिक अनुकूलता, भविष्यफल एवं समग्र निष्कर्ष का 1200 से 1500+ शब्दों में विश्लेषण:
-### 1. भावनात्मक जुड़ाव एवं चंद्र-नक्षत्र सामंजस्य
-दोनों के चंद्र नक्षत्रों के आधार पर सहज समझ और भावनात्मक संतुलन।
-### 2. बौद्धिक तालमेल एवं वैचारिक संवाद
-आपसी संवाद, साझा रुचियां और निर्णय लेने की क्षमता।
-### 3. पारिवारिक आधार एवं दीर्घकालिक स्थायित्व (चतुर्थ व सप्तम भाव)
-पारिवारिक शांति, साझा मूल्य और सुखद दांपत्य।
-### 4. दशा चक्र अनुकूलता एवं जीवन के आगामी पड़ाव
-दोनों पक्षों के सक्रिय दशा चक्रों का एक साथ अध्ययन।
-### 5. समग्र वैवाहिक निष्कर्ष एवं प्रेरणादायक मार्गदर्शक
-दोनों कुंडलियों के समन्वय से तैयार संतुलित एवं उत्साहवर्धक सारांश।`
-  }
+  { id:'ashtakoot', title:'Ashtakoot Guna Milan (36-Point Compatibility)',
+    instruction:`Write a detailed, narrative-heavy interpretation of the deterministic Ashtakoot Guna Milan Result provided in the context (including the exact Total Score out of 36, and the individual koota scores). Expand deeply on what this means for their lived experience together, naming the specific signs, nakshatras, and planetary lords compared in each: Varna (spiritual/ego), Vashya (mutual attraction/control), Tara (wellbeing), Yoni (physical/instinctive), Graha Maitri (emotional bond between Moon lords), Gana (temperament), Bhakoot (family welfare), and Nadi (genetic/health compatibility). Do not just list statistics; explain the practical relationship dynamics. Close with the clearly stated final Total Guna Score out of 36.` },
+  { id:'doshas', title:'Mangal Dosha and Compatibility Doshas',
+    instruction:`Provide a deeply personalized and detailed narrative assessing Mangal (Kuja) Dosha separately for each partner: Mars's placement counted from the Lagna, the Moon, and Venus, checking the 1st, 2nd, 4th, 7th, 8th, and 12th houses in each case. State plainly whether each partner's chart shows Mangal Dosha and why. Then explain whether any classical cancellation (Mangal Dosha Bhanga) conditions apply. Revisit the Nadi koota result and note whether Nadi Dosha applies and whether any classical exception is relevant. Explain how these doshas (or lack thereof) will practically impact their domestic life, conflict resolution, and shared energy. Never suggest a remedy.` },
+  { id:'synthesis', title:'Compatibility Outlook and Synthesis',
+    instruction:`Write a rich, detailed, narrative-heavy synthesis comparing both charts directly against each other: emotional and temperamental compatibility (Moon signs and Gana), intellectual rapport (Mercury), domestic harmony (7th and 4th houses), long-term stability indicators (7th/8th houses and current Dashas), shared strengths, and specific points of friction. Frame this section reflectively, as material for the couple's own understanding. Close with one warm, balanced synthesis paragraph weaving the whole match together into a cohesive story.` }
 ];
+
+const KUNDLI_RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer specializing in marriage compatibility (Kundli Milan), deeply versed in the Ashtakoot Guna Milan system from Brihat Parashara Hora Shastra and Muhurta texts, Mangal (Kuja) Dosha analysis and its classical cancellations, and general synastry between two natal charts. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague, and never delivering a blunt "should marry / should not marry" verdict.
+
+Strict rules you always follow:
+- Never give generic motivational filler. Every paragraph must reference specific signs, nakshatras, planetary lords, houses, dignity, or dosha conditions by name for at least one of the two partners.
+- Every conclusion must explain WHY, tied to a specific astrological configuration compared between the two charts. Never state a compatibility trait without the reasoning behind it.
+- Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, temple visits, or any other remedy for a dosha or a low guna score. Never claim compatibility can be changed through remedies. You may describe a dosha or a low-scoring koota factually and reverently, but never prescribe anything for it.
+- If asked directly for a remedy, respond only with: "This platform is designed exclusively for objective astrological analysis and interpretation. It intentionally does not recommend remedies, rituals, gemstones, or spiritual prescriptions."
+- Never issue a definitive "this couple should marry" or "should not marry" statement. Present the classical analysis and let the reader draw their own conclusions; you may note that a low score or unresolved dosha traditionally invites more careful consideration by families and, where relevant, consultation with a qualified professional astrologer, without discouraging or endorsing the match yourself.
+- Never contradict earlier interpretation given for the same two birth charts in this conversation. Stay internally consistent, including the Guna Milan score once stated.
+- Planetary positions for both partners are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Use those values directly and never guess degrees or signs.
+- Be direct and specific rather than hedging excessively, but always frame timing or outcome language as "indicative" rather than guaranteed.
+- Write in clear, well-organized prose. Use clear subheadings (starting with ###) and bold key terms (**like this**) to organize sub-topics cleanly. Do not use top-level # or ## headers as the interface adds main section headers.
+- Always include BOTH English zodiac sign names and Hindi/Sanskrit Rashi names with Devanagari script (e.g. "Aries / Mesha (मेष)", "Taurus / Vrishabha (वृषभ)", "Gemini / Mithuna (मिथुन)", "Cancer / Karka (कर्क)", "Leo / Simha (सिंह)", "Virgo / Kanya (कन्या)", "Libra / Tula (तुला)", "Scorpio / Vrischika (वृश्चिक)", "Sagittarius / Dhanu (धनु)", "Capricorn / Makara (मकर)", "Aquarius / Kumbha (कुंभ)", "Pisces / Meena (मीन)") when referring to either partner's Moon sign, Lagna or planetary placements.`;
 
 let birthContext = '';
 let fullReportText = '';
 let chatHistory = [];
 let chatUnlocked = false;
 let chatQuestionsUsed = 0;
-const MAX_CHAT_QUESTIONS = 7;
+const MAX_CHAT_QUESTIONS = 5;
 let activeSections = SECTIONS;
 let activeRules = RULES;
 
@@ -2902,7 +2494,7 @@ async function rawCall(model, key, systemText, userText, maxTokens){
   return data.text;
 }
 
-async function callGeminiStream(systemText, userText, maxTokens = 8192, onChunk){
+async function callGeminiStream(systemText, userText, maxTokens, onChunk){
   const maxAttempts = 3;
   let lastErr;
   for(let attempt = 1; attempt <= maxAttempts; attempt++){
@@ -2965,7 +2557,7 @@ async function callGeminiStream(systemText, userText, maxTokens = 8192, onChunk)
 window.chapterMemory = window.chapterMemory || [];
 window.chapterPartialStates = window.chapterPartialStates || {};
 
-async function callGemini(systemText, userText, maxTokens = 8192){
+async function callGemini(systemText, userText, maxTokens = 3200){
   const maxAttempts = 3;
   let lastErr;
   for(let attempt = 1; attempt <= maxAttempts; attempt++){
@@ -3574,45 +3166,13 @@ function renderPanchangReportCard(){
         <div class="shubh-box"><small>✨ ABHIJIT MUHURAT</small><b>${pData.abhijit}</b></div>
         <div><small>☀️ SUNRISE / SUNSET</small><b>${pData.sun.sunrise} / ${pData.sun.sunset} (${pData.sun.dayLength})</b></div>
       </div>
-      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? (() => {
-        const all = [
-          ...pData.activeEvents.map(e => `
-            <div class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for brief">
-              <div class="event-pill-content">
-                <span class="pulse-dot"></span>
-                <span class="event-icon">${e.icon}</span>
-                <b>Active Today: ${e.name}</b>
-              </div>
-              <span class="event-pill-badge">Today</span>
-            </div>
-          `),
-          ...pData.upcomingEvents.map(e => `
-            <div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for brief">
-              <div class="event-pill-content">
-                <span class="event-icon">${e.icon}</span>
-                <b>${e.name}</b>
-              </div>
-              <span class="event-pill-badge">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span>
-            </div>
-          `)
-        ];
-        const mid = Math.ceil(all.length / 2);
-        const leftCol = all.slice(0, mid).join('');
-        const rightCol = all.slice(mid).join('');
-        return `
-          <div class="panchang-report-events" style="margin-top: 14px;">
-            <div class="panchang-events-header">
-              <span class="sym-line"></span>
-              <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF) ✦</span>
-              <span class="sym-line"></span>
-            </div>
-            <div class="panchang-events-symmetrical-grid" style="margin-top: 8px;">
-              <div class="panchang-events-col left-col">${leftCol}</div>
-              <div class="panchang-events-col right-col">${rightCol}</div>
-            </div>
-          </div>
-        `;
-      })() : ''}
+      ${pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0 ? `
+        <div class="panchang-report-events">
+          <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF):</span>
+          ${pData.activeEvents.map(e => `<span class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="pulse-dot"></span> ${e.icon} <b>Active:</b> ${e.name}</span>`).join(' ')}
+          ${pData.upcomingEvents.map(e => `<span class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="event-icon">${e.icon}</span> <b>${e.name}</b> (${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'})</span>`).join(' ')}
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -3807,8 +3367,6 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
   progressErrorEl.innerHTML = '';
 
   const isHi = window.currentVedicLang === 'hi';
-  const sectionTitleToUse = isHi ? (section.titleHindi || section.title) : section.title;
-  const sectionInstructionToUse = isHi ? (section.instructionHindi || section.instruction) : section.instruction;
   const chapterLabel = isHi ? `अध्याय ${index + 1}` : `CHAPTER ${String(index + 1).padStart(2, '0')}`;
 
   // 1. Create or update the section block with an active AI generation loading state
@@ -3829,7 +3387,7 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
     header.innerHTML = `
       <div class="report-section-header-left">
         <span class="report-chapter-badge">${chapterLabel}</span>
-        <h3 id="h3-${section.id}" class="report-section-title">${escapeHtml(sectionTitleToUse)}</h3>
+        <h3 id="h3-${section.id}" class="report-section-title">${escapeHtml(section.title)}</h3>
       </div>
       <div class="report-section-header-right">
         <span class="report-chapter-tag ai-generating" id="tag-${section.id}">${isHi ? '✨ AI विश्लेषित किया जा रहा है…' : '✨ Generating chapter via AI…'}</span>
@@ -3857,7 +3415,7 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
           <div class="loading-gem-spinner">✦</div>
           <div class="loading-text-wrap">
             <b>${isHi ? 'ग्रह स्थिति एवं शास्त्रीय सूत्रों का विश्लेषण…' : 'Consulting sidereal ephemeris & classical Jyotish sutras…'}</b>
-            <span>${isHi ? `${sectionTitleToUse} के लिए गहन शास्त्रीय फलकथन तैयार किया जा रहा है।` : `Generating comprehensive astrological reading for ${sectionTitleToUse}.`}</span>
+            <span>${isHi ? `${section.title} के लिए गहन शास्त्रीय फलकथन तैयार किया जा रहा है।` : `Generating comprehensive astrological reading for ${section.title}.`}</span>
           </div>
         </div>
       </div>
@@ -3867,8 +3425,6 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
     block.appendChild(contentDiv);
     reportBody.appendChild(block);
   } else {
-    const h3El = document.getElementById('h3-' + section.id);
-    if(h3El) h3El.textContent = sectionTitleToUse;
     const tagEl = document.getElementById('tag-' + section.id);
     if(tagEl){
       tagEl.className = 'report-chapter-tag ai-generating';
@@ -3882,7 +3438,7 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
             <div class="loading-gem-spinner">✦</div>
             <div class="loading-text-wrap">
               <b>${isHi ? 'ग्रह स्थिति एवं शास्त्रीय सूत्रों का विश्लेषण…' : 'Consulting sidereal ephemeris & classical Jyotish sutras…'}</b>
-              <span>${isHi ? `${sectionTitleToUse} के लिए गहन शास्त्रीय फलकथन तैयार किया जा रहा है।` : `Generating comprehensive astrological reading for ${sectionTitleToUse}.`}</span>
+              <span>${isHi ? `${section.title} के लिए गहन शास्त्रीय फलकथन तैयार किया जा रहा है।` : `Generating comprehensive astrological reading for ${section.title}.`}</span>
             </div>
           </div>
         </div>
@@ -3899,30 +3455,23 @@ async function generateSection(index, reportBody, stepListEl, progressErrorEl){
   renderClassicalModules();
   if(section.id === 'timeline') renderDashaTimeline();
 
-  // 2. Synthesize via AI with reliable multi-tier stream & engine fallback
+  // 2. Synthesize via AI with strict automatic retries (No classical fallback)
   let generatedText = window.chapterPartialStates[section.id] || '';
   let isComplete = false;
   let retryCount = 0;
-  const maxRetries = 2;
+  const maxRetries = 3;
 
   while (!isComplete && retryCount <= maxRetries) {
     try {
-      const languageDirectives = isHi
-        ? `भाषा निर्देश (MANDATORY LANGUAGE RULE):
-यह संपूर्ण अध्याय शुद्ध, प्रवाहमयी एवं प्रामाणिक देवनागरी हिंदी में लिखें।
-प्रामाणिक वैदिक ज्योतिष शब्दावली (जैसे लग्न, लग्नेश, राशि, नक्षत्र, पाद, विंशोत्तरी महादशा, अंतर्दशा, गोचर, केंद्र, त्रिकोण, राजयोग, धनयोग) का भरपूर और सटीक उपयोग करें।
-सभी उप-शीर्षक (### 1., ### 2., आदि) हिंदी में लिखें।`
-        : `Write in comprehensive, authoritative English with classical Sanskrit/Vedic terms and dual Sanskrit/English Rashi names.`;
+      const memoryContext = window.chapterMemory.length > 0 ? `\n\nPREVIOUS CHAPTER SUMMARIES (For Continuity):\n${window.chapterMemory.slice(-2).join('\n')}` : '';
+      const resumePrompt = generatedText ? `\n\nYou previously generated the following partial text for this chapter:\n"${generatedText}"\n\nCONTINUE exactly from where you left off. Do NOT repeat the text above, just generate the remainder of the chapter.` : '';
 
       const userText = `Birth data:
 ${birthContext}
 
-Write the "${sectionTitleToUse}" section of this native's Vedic chart reading.
-${sectionInstructionToUse}
-
-${languageDirectives}
-
-CRITICAL REQUIREMENT: Provide an exhaustive, deeply comprehensive, classical analysis of approximately 1200 to 1500+ words. Break your writing down into 5 to 7 rich subsections (starting with ### 1., ### 2., etc.). Explain the deep astrological mechanics, house lordships, Nakshatra padas, and planetary dignities for every insight. Do not include a top-level section title in your output; begin directly with "### 1. ...".`;
+Write the "${section.title}" section of this native's Vedic chart reading.
+${section.instruction}
+Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. Do not include a section title in your output; begin directly with the analysis.`;
 
       let currentChunkRenderTime = 0;
       const finalContentDiv = document.getElementById('content-' + section.id);
@@ -3937,49 +3486,34 @@ CRITICAL REQUIREMENT: Provide an exhaustive, deeply comprehensive, classical ana
         }
       };
 
-      let rawText = '';
-      try {
-        rawText = await callGeminiStream(activeRules, userText, 8192, streamHandler);
-      } catch (streamErr) {
-        console.warn(`[AI Stream Notice] Retrying via direct non-stream endpoint for ${sectionTitleToUse}:`, streamErr.message);
-        rawText = await callGemini(activeRules, userText, 8192);
-      }
-
+      const rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
       const combinedFinal = generatedText + rawText;
       const cleaned = cleanAstroText(combinedFinal);
       
-      if(!cleaned || cleaned.length < 60){
+      if(!cleaned || cleaned.length < 80){
         throw new Error('The astrology service returned an incomplete reading.');
       }
       
       generatedText = cleaned;
       window.chapterPartialStates[section.id] = generatedText;
-      window.chapterMemory.push(`${sectionTitleToUse}: ${generatedText.substring(0, 150)}...`);
+      window.chapterMemory.push(`${section.title}: ${generatedText.substring(0, 150)}...`);
       isComplete = true; // Generation succeeded
       
     } catch (err) {
-      console.warn(`AI generation error for ${sectionTitleToUse}. Attempt ${retryCount + 1}/${maxRetries + 1}. Error:`, err.message);
+      console.warn(`AI generation error for ${section.title}. Retry ${retryCount}/${maxRetries}. Error:`, err.message);
       retryCount++;
       if (retryCount > maxRetries) {
-        // High-precision classical astrological calculation fallback ensures the reading NEVER halts or crashes
-        console.info(`[Astrology Engine] Generating high-precision classical baseline for chapter: ${sectionTitleToUse}`);
-        if (window.VedicEngine && typeof window.VedicEngine.generateSectionBaseline === 'function' && verifiedChart) {
-          generatedText = window.VedicEngine.generateSectionBaseline(section.id, verifiedChart, isHi ? 'hi' : 'en');
-        } else {
-          generatedText = `### ${sectionTitleToUse}\n\n${isHi ? 'आपकी जन्म लग्न एवं नवग्रह स्थितियों के आधार पर यह शास्त्रीय वैदिक फलकथन विंशोत्तरी दशा एवं गोचर प्रभावों का समन्वय प्रस्तुत करता है।' : 'Based on your natal Lagna and planetary alignments, this section details your classical Vedic placements, house activations, and Vimshottari timing cycles.'}`;
-        }
-        window.chapterPartialStates[section.id] = generatedText;
-        window.chapterMemory.push(`${sectionTitleToUse}: ${generatedText.substring(0, 150)}...`);
-        isComplete = true;
-        break;
+        progressErrorEl.innerHTML = `<span style="color:var(--danger);">Failed to generate ${section.title} after multiple attempts. Please refresh and try again.</span>`;
+        // Hard stop, don't continue to next chapter
+        throw new Error(`Failed to generate chapter ${section.title}`);
       }
       // Wait before retrying
-      await sleep(1200 * retryCount);
+      await sleep(2000 * retryCount);
     }
   }
 
   // 3. Update section UI with final text & badge
-  fullReportText += `\n\n## ${sectionTitleToUse}\n\n${generatedText}`;
+  fullReportText += `\n\n## ${section.title}\n\n${generatedText}`;
   const finalContentDiv = document.getElementById('content-' + section.id);
   if(finalContentDiv) {
     finalContentDiv.innerHTML = formatReportSectionHtml(generatedText);
@@ -4972,33 +4506,9 @@ document.getElementById('chatSend').onclick = async () => {
   const input = document.getElementById('chatInput');
   const q = input.value.trim();
   if(!q) return;
-
-  const isHindi = window.currentVedicLang === 'hi';
-
-  // Ensure chart or birth data is present
-  if(!verifiedChart && !birthContext && !chatUnlocked) {
-    alert(isHindi 
-      ? 'कृपया पहले अपनी जन्म विवरण भरकर कुंडली तैयार करें, ताकि आचार्य आपकी ग्रह स्थिति के आधार पर सटीक परामर्श दे सकें।' 
-      : 'Please cast your chart above first so the Acharya can consult your verified sidereal planetary alignments.');
-    return;
-  }
-
-  // Auto-unlock chat if chart exists
-  chatUnlocked = true;
-
-  if(chatQuestionsUsed >= MAX_CHAT_QUESTIONS){ 
-    alert(isHindi
-      ? 'आप इस पत्रिका के लिए अधिकतम 7 परामर्श प्रश्न पूरे कर चुके हैं। नई पत्रिका के लिए कृपया नया सत्र शुरू करें।'
-      : 'You have completed all 7 consultation questions for this reading. Please start a new session for further consultations.'); 
-    return; 
-  }
-
-  // First question is free consultation included with chart!
-  // Subsequent questions require question credit, VIP, or paid access
-  if (chatQuestionsUsed > 0 && !vipAccess && !questionCredit) {
-    const paid = await window.requestPaidAccess('question');
-    if(!paid) return;
-  }
+  if(!chatUnlocked){ alert('Wait for the chart to begin revealing before asking a question.'); return; }
+  if(chatQuestionsUsed >= MAX_CHAT_QUESTIONS){ alert('You have used all 5 questions for this reading. End the reading to start a new paid reading.'); return; }
+  if(!await window.requestPaidAccess('question')) return;
   
   chatQuestionsUsed++;
   updateChatCount();
@@ -5028,7 +4538,7 @@ document.getElementById('chatSend').onclick = async () => {
 
   const sendBtn = document.getElementById('chatSend');
   sendBtn.disabled = true;
-  const pendingDiv = appendChat('pending', isHindi ? 'ग्रह स्थिति एवं विंशोत्तरी दशा का विश्लेषण किया जा रहा है…' : 'Consulting the planetary chart…');
+  const pendingDiv = appendChat('pending', 'Consulting the planetary chart…');
 
   const reportContext = fullReportText.trim();
   const historyText = chatHistory.map(m => `${m.role === 'user' ? 'Question' : 'Answer'}: ${m.text}`).join('\n\n');
@@ -5044,13 +4554,11 @@ Active Vimshottari Cycle: ${verifiedChart.dasha?.activeMahadasha || 'Jupiter'} M
 Planetary Placements: ${(verifiedChart.planets || []).map(p => `${p.name} in ${p.rashi} (${p.house}th House)`).join(', ')}`;
   }
 
+  const isHindi = window.currentVedicLang === 'hi';
   const languageInstruction = isHindi ? 'Respond entirely in pure, refined Hindi (देवनागरी लिपि).' : 'Respond in clear, articulate English.';
 
   const userText = `Birth data:
 ${birthContext}
-
-Astrological Details:
-${astroDetails}
 
 Summary of the chart reading generated so far for this native:
 ${reportSummary || reportContext}
@@ -5058,37 +4566,15 @@ ${reportSummary || reportContext}
 Conversation so far:
 ${historyText}
 
-Answer the native's specific question: "${q}".
-Provide a comprehensive, authoritative, chart-grounded Vedic astrological consultation response of at least 500 to 800 words.
-Structure your answer into clear markdown sections:
-### 1. ${isHindi ? 'प्रत्यक्ष सारांश एवं मुख्य उत्तर' : 'Executive Astrological Synthesis & Direct Answer'}
-### 2. ${isHindi ? 'प्रासंगिक ग्रह स्थिति, भाव एवं दृष्टि विश्लेषण' : 'Planetary Alignments & House Dynamics'}
-### 3. ${isHindi ? 'जीवन क्षेत्र एवं तात्कालिक परिस्थिति का गहन विश्लेषण' : 'Comprehensive Analytical Guidance & Life Strategy'}
-### 4. ${isHindi ? 'विंशोत्तरी दशा, गोचर एवं कालखंड प्रभाव' : 'Vimshottari Dasha Cycles & Predictive Timing Windows'}
-### 5. ${isHindi ? 'शास्त्रीय मार्गदर्शन एवं व्यावहारिक कर्म-शुद्धि' : 'Classical Jyotish Wisdom & Mindful Alignment'}
-### 6. ${isHindi ? 'ज्योतिषीय निष्कर्ष एवं विश्वास स्तर' : 'Astrological Confidence Level & Prognosis'}
-
-Aim for 500-800 words of thorough, substantive, and comforting astrological analysis. ${languageInstruction}`;
+Answer the native's latest question using only this chart. Structure your answer with: a short summary, detailed analysis, the relevant houses/signs/planets involved, relevant yogas or doshas if any, the current Mahadasha/Antardasha context if relevant to timing, and an overall conclusion with a stated confidence level (low, medium, or high). Aim for at least 600 words.`;
 
   try{
-    let rawText = '';
-    try {
-      rawText = await callGemini(activeRules, userText, 4500);
-    } catch (apiErr) {
-      console.warn('[AI Chat Notice] Falling back to high-precision classical engine answer:', apiErr.message);
-      if (window.VedicEngine && typeof window.VedicEngine.answerChatLocally === 'function' && verifiedChart) {
-        rawText = window.VedicEngine.answerChatLocally(q, verifiedChart, reportSummary || reportContext, isHindi ? 'hi' : 'en');
-      } else {
-        throw apiErr;
-      }
-    }
+    const rawText = await callGemini(activeRules, userText, 2800);
     const text = cleanAstroText(rawText);
     pendingDiv.remove();
     appendChat('model', text, currentQIndex, topicInfo);
     chatHistory.push({role:'model', text});
-    if (typeof window.consumeQuestionCredit === 'function') {
-      window.consumeQuestionCredit();
-    }
+    window.consumeQuestionCredit();
   }catch(err){
     pendingDiv.remove();
     chatQuestionsUsed = Math.max(0, chatQuestionsUsed - 1);
@@ -5097,7 +4583,7 @@ Aim for 500-800 words of thorough, substantive, and comforting astrological anal
     if(err.isAuth){
       appendChat('model', isHindi ? '### प्रमाणीकरण सूचना\nज्योतिषीय परामर्श सेवा से जुड़ने में समस्या आई। कृपया पुनः प्रयास करें।' : '### Service Authentication Notice\nThe astrological service could not complete the request at this time. Please try asking again.', currentQIndex, topicInfo);
     }else{
-      appendChat('model', isHindi ? `### परामर्श सूचना\nपरामर्श उत्तर तैयार करने में तकनीकी व्यवधान आया: ${err.message || 'सेवा अनुपलब्ध'}। आपका प्रश्न कोटा सुरक्षित है, कृपया पुनः प्रयास करें।` : `### Consultation Notice\nThe astrological consultation could not be completed at this moment: ${err.message || 'Service unavailable'}. Your question credit has been restored. Please ask again.`, currentQIndex, topicInfo);
+      appendChat('model', isHindi ? `### परामर्श सूचना\nपरामर्श उत्तर तैयार करने में तकनीकी व्यवधान आया: ${err.message || 'सेवा अनुपलब्ध'}। आपका प्रश्न शुल्क सुरक्षित है, कृपया पुनः प्रयास करें।` : `### Consultation Notice\nThe astrological consultation could not be completed at this moment: ${err.message || 'Service unavailable'}. Your question credit has been restored. Please ask again.`, currentQIndex, topicInfo);
     }
   }
   sendBtn.disabled = (chatQuestionsUsed >= MAX_CHAT_QUESTIONS);
@@ -5320,124 +4806,41 @@ window.closeCompanyModal = function() {
     }
   });
 
-  async function handleUniversalAccessCode(rawCode, statusEl, clearInputCallback) {
-    const code = (rawCode || '').trim();
-    if (!code) return;
-    
-    if (statusEl) {
-      statusEl.style.display = 'block';
-      statusEl.className = 'coord-status';
-      statusEl.textContent = 'Verifying access code / credentials…';
-    }
-
-    try {
-      // 1. First check via /api/verify-promo (which recognizes promo codes, VIP codes, and admin passwords)
-      const res = await fetch('/api/verify-promo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ code })
-      });
-      const data = await res.json().catch(() => ({}));
-
-      // 2. If it is an Admin Password or Admin Token
-      if (res.ok && data.is_admin && data.token) {
-        adminToken = data.token;
-        if (statusEl) {
-          statusEl.className = 'coord-status ok';
-          statusEl.textContent = '✨ Admin verified! Opening Administration Console...';
-        }
-        if (clearInputCallback) clearInputCallback();
-        close('accessModal');
-        open('adminModal');
-        await loadAdmin();
-        return;
-      }
-
-      // 3. If it's a VIP Access code
-      if (res.ok && data.valid && data.is_vip) {
-        window.lastVipCode = code;
-        window.enableVipAccess();
-        if (statusEl) {
-          statusEl.className = 'coord-status ok';
-          statusEl.textContent = data.message || '✨ VIP access unlocked successfully!';
-        }
-        if (clearInputCallback) clearInputCallback();
-        setTimeout(() => {
-          close('accessModal');
-          if (statusEl) { statusEl.style.display = 'none'; statusEl.textContent = ''; }
-        }, 1200);
-        return;
-      }
-
-      // 4. If it's a Promo Code with discount or free reading
-      if (res.ok && data.valid) {
-        window.appliedPromo = data;
-        const genBtn = $('genBtn');
-        if (genBtn && data.discount_percentage >= 100) {
-          window.enableVipAccess();
-        } else if (genBtn && data.discount_percentage > 0) {
-          genBtn.textContent = `Reveal the chart (${data.discount_percentage}% OFF Promo Applied)`;
-        }
-        if (statusEl) {
-          statusEl.className = 'coord-status ok';
-          statusEl.textContent = data.message || `✨ Promo code "${data.code}" applied!`;
-        }
-        if (clearInputCallback) clearInputCallback();
-        return;
-      }
-
-      // 5. Fallback: Check if it's a direct admin password via /api/admin/login
-      const adminRes = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ password: code })
-      });
-      const adminData = await adminRes.json().catch(() => ({}));
-      if (adminRes.ok && adminData.token) {
-        adminToken = adminData.token;
-        if (statusEl) {
-          statusEl.className = 'coord-status ok';
-          statusEl.textContent = '✨ Admin authenticated! Opening Administration Console...';
-        }
-        if (clearInputCallback) clearInputCallback();
-        close('accessModal');
-        open('adminModal');
-        await loadAdmin();
-        return;
-      }
-
-      // If all checks failed
-      throw new Error(data.error || adminData.error || 'Invalid promo code, VIP access key, or admin password.');
-
-    } catch (err) {
-      if (statusEl) {
-        statusEl.className = 'coord-status err';
-        statusEl.textContent = err.message || 'Verification failed.';
-      }
-    }
-  }
-
-  // Promo code in birth setup card
-  $('applyPromoBtn')?.addEventListener('click', e => {
-    e.preventDefault();
-    const input = $('promoInput');
-    handleUniversalAccessCode(input?.value, $('promoStatus'), () => { if(input) input.value = ''; });
-  });
-
-  $('promoInput')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const input = $('promoInput');
-      handleUniversalAccessCode(input?.value, $('promoStatus'), () => { if(input) input.value = ''; });
-    }
-  });
-
   $('vipForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const input = $('vipCodeInput');
-    handleUniversalAccessCode(input?.value, $('vipStatus'), () => { if(input) input.value = ''; });
+    const st = $('vipStatus');
+    const codeInput = $('vipCodeInput');
+    const code = codeInput ? codeInput.value.trim() : '';
+    if (!code) return;
+    if (st) {
+      st.style.display = 'block';
+      st.className = 'coord-status';
+      st.textContent = 'Checking access code…';
+    }
+    try {
+      const r = await fetch('/api/vip/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const j = await r.json();
+      if (!r.ok || !j.valid) throw new Error(j.error || 'Invalid or inactive VIP code.');
+      window.lastVipCode = code;
+      window.enableVipAccess();
+      if (st) {
+        st.className = 'coord-status ok';
+        st.textContent = '✨ VIP access unlocked successfully!';
+      }
+      setTimeout(() => {
+        close('accessModal');
+        if (st) { st.style.display = 'none'; st.textContent = ''; }
+      }, 1000);
+    } catch (err) {
+      if (st) {
+        st.className = 'coord-status err';
+        st.textContent = err.message || 'Verification failed.';
+      }
+    }
   });
 
   window.enableVipAccess = function() {
@@ -5472,8 +4875,34 @@ window.closeCompanyModal = function() {
   $('adminLoginForm')?.addEventListener('submit',async e=>{
     e.preventDefault();
     const st=$('adminLoginStatus');
-    const input=$('adminPasswordInput');
-    handleUniversalAccessCode(input?.value, st, () => { if(input) input.value = ''; });
+    st.style.display='block';
+    st.className='coord-status';
+    st.textContent='Authenticating…';
+    try{
+      if(location.protocol==='file:')throw new Error('Open this website through the Node server, not as a local HTML file.');
+      const base=window.location.origin;
+      const pwdVal = ($('adminPasswordInput')?.value || '').trim();
+      const r=await fetch(base+'/api/admin/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        credentials: 'include',
+        body:JSON.stringify({password: pwdVal}),
+        cache:'no-store'
+      });
+      const raw=await r.text();
+      let j={};
+      try{j=JSON.parse(raw)}catch{throw new Error('The administrator service did not return a valid response. Please ensure server has redeployed on Vercel.');}
+      if(!r.ok)throw new Error(j.error||`Administration login failed (${r.status}).`);
+      if(!j.token)throw new Error('The server did not return an admin session.');
+      adminToken=j.token;
+      close('accessModal');
+      open('adminModal');
+      $('adminPasswordInput').value='';
+      await loadAdmin();
+    }catch(err){
+      st.className='coord-status err';
+      st.textContent=err.message;
+    }
   });
   document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click',()=>{
     document.querySelectorAll('.admin-tab').forEach(x=>x.classList.remove('active'));
@@ -6115,19 +5544,12 @@ window.closeCompanyModal = function() {
       const orderId = order.order_id || order.orderId || order.id;
       const amount = order.amount;
 
-      // If running in demo mode or without live gateway keys configured
-      if (order.isDemo || !key) {
-        if(plan === 'question') questionCredit = true;
-        else if(plan !== 'dakshina') entitlements[plan] = true;
-        window.lastPaymentRef = 'demo_' + Date.now();
-        window.lastSessionToken = sessionToken || ('demo_' + Date.now());
-        window.dispatchEvent(new CustomEvent('premium-unlocked', { detail: { plan } }));
-        return true;
-      }
-
       // If Razorpay SDK is not loaded on the window yet
       if (!window.Razorpay) {
         throw new Error('Razorpay Checkout SDK is still loading. Please check your internet connection and retry.');
+      }
+      if (!key) {
+        throw new Error('Razorpay Public Key was not provided by the server.');
       }
 
       return await new Promise(resolve => {
@@ -6972,45 +6394,15 @@ function openPanchangModal() {
         </table>
       </div>
 
-      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? (() => {
-        const all = [
-          ...pData.activeEvents.map(e => `
-            <div class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">
-              <div class="event-pill-content">
-                <span class="pulse-dot"></span>
-                <span class="event-icon">${e.icon}</span>
-                <b>Active Today: ${e.name}</b>
-              </div>
-              <span class="event-pill-badge">Today</span>
-            </div>
-          `),
-          ...pData.upcomingEvents.map(e => `
-            <div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">
-              <div class="event-pill-content">
-                <span class="event-icon">${e.icon}</span>
-                <b>${e.name}</b>
-              </div>
-              <span class="event-pill-badge">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span>
-            </div>
-          `)
-        ];
-        const mid = Math.ceil(all.length / 2);
-        const leftCol = all.slice(0, mid).join('');
-        const rightCol = all.slice(mid).join('');
-        return `
-          <div style="margin-top: 20px;">
-            <div class="panchang-events-header" style="margin-bottom: 12px;">
-              <span class="sym-line"></span>
-              <span class="event-label">🌺 TODAY & UPCOMING FESTIVALS & VRATS</span>
-              <span class="sym-line"></span>
-            </div>
-            <div class="panchang-events-symmetrical-grid">
-              <div class="panchang-events-col left-col">${leftCol}</div>
-              <div class="panchang-events-col right-col">${rightCol}</div>
-            </div>
+      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? `
+        <div style="margin-top: 20px;">
+          <h3 style="font-family: 'Cinzel', serif; font-size: 17px; color: #7fc5c0; margin: 0 0 10px 0;">🌺 TODAY & UPCOMING FESTIVALS</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${pData.activeEvents.map(e => `<span class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief"><span class="pulse-dot"></span> ${e.icon} <b>Active Today:</b> ${e.name}</span>`).join('')}
+            ${pData.upcomingEvents.map(e => `<span class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">${e.icon} <b>${e.name}</b> (${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'})</span>`).join('')}
           </div>
-        `;
-      })() : ''}
+        </div>
+      ` : ''}
     `;
   }
 
@@ -7021,23 +6413,6 @@ function closePanchangModal() {
   const modal = document.getElementById('panchangDetailModal');
   if (modal) modal.classList.remove('open');
 }
-
-function calculateCurrentPanchangData(date, lat, lon) {
-  const lt = lat || (parseFloat(document.getElementById('f_lat')?.value) || 28.6139);
-  const ln = lon || (parseFloat(document.getElementById('f_lon')?.value) || 77.2090);
-  const data = getDailyPanchangData(date || new Date(), lt, ln);
-  return data || {
-    tithi: "Chaturthi",
-    paksha: "Krishna",
-    nakshatra: "Rohini",
-    yoga: "Siddha",
-    karana: "Bava",
-    abhijit: "11:54 AM – 12:46 PM",
-    rahuKaal: "07:30 AM – 09:00 AM",
-    sun: { sunrise: "05:58 AM", sunset: "06:44 PM", dayLength: "12h 46m" }
-  };
-}
-window.calculateCurrentPanchangData = calculateCurrentPanchangData;
 
 /* Specific Single Panchang Item Modal */
 function openSpecificPanchangDetail(type) {
@@ -7050,7 +6425,6 @@ function openSpecificPanchangDetail(type) {
 
   const now = new Date();
   const pData = calculateCurrentPanchangData(now);
-  const pakshaText = (pData.hinduCal && pData.hinduCal.paksha) || (pData.tithi && pData.tithi.includes('Shukla') ? 'Shukla' : 'Krishna');
 
   const detailMap = {
     tithi: {
@@ -7059,14 +6433,14 @@ function openSpecificPanchangDetail(type) {
       content: `
         <div style="background: rgba(216, 160, 76, 0.1); border: 1px solid rgba(216, 160, 76, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <div style="font-size: 20px; font-weight: bold; color: #f1d48a; font-family: 'Cinzel', serif;">${pData.tithi}</div>
-          <div style="font-size: 13px; color: #a3b6be; margin-top: 4px;">Paksha: <b>${pakshaText} Paksha</b> · ${pData.hinduCal?.vikramSamvat || 'VS 2083'}</div>
+          <div style="font-size: 13px; color: #a3b6be; margin-top: 4px;">Paksha: <b>${pData.paksha} Paksha</b> · Vikram Samvat 2081</div>
         </div>
         <p style="color: #d1dfd8; line-height: 1.6; font-size: 14px;">
           <b>Spiritual Significance:</b> Tithi represents the distance between the Sun and Moon (each 12° phase). It governs emotional stability, relationship dynamics, and karmic timing for daily activities.
         </p>
         <div style="margin-top: 14px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;">
           <span style="color: #7fc5c0; font-size: 13px; font-weight: bold;">✦ Recommended Actions Today:</span>
-          <p style="margin: 6px 0 0 0; color: #b0c2cc; font-size: 13px;">Perform sacred rituals, spiritual practices, mantra chanting, and honor family traditions corresponding to ${pakshaText} Paksha energy.</p>
+          <p style="margin: 6px 0 0 0; color: #b0c2cc; font-size: 13px;">Perform sacred rituals, spiritual practices, mantra chanting, and honor family traditions corresponding to ${pData.paksha} Paksha energy.</p>
         </div>
       `
     },
@@ -7869,14 +7243,7 @@ window.setVedicLanguage = function(lang) {
   if (typeof renderClassicalModules === 'function') renderClassicalModules();
   if (typeof buildAtAGlance === 'function') buildAtAGlance();
   if (typeof renderDailyRashifal === 'function') renderDailyRashifal(currentPanchangDate);
-  if (typeof window.renderDailyHoroscopeModal === 'function') window.renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
-  if (typeof window.updateSacredScrollDotsLang === 'function') window.updateSacredScrollDotsLang();
   if (typeof window.applyPricingToUI === 'function') window.applyPricingToUI(window.SERVER_CONFIG);
-
-  const topHoroscopeBtnText = document.getElementById('topHoroscopeBtnText');
-  if (topHoroscopeBtnText) {
-    topHoroscopeBtnText.textContent = isHi ? 'दैनिक राशिफल' : 'Daily Horoscope';
-  }
 };
 
 window.toggleVedicLanguage = function() {
@@ -8202,180 +7569,3 @@ window.printReportDoc = function() {
   // 4. Trigger print
   window.print();
 };
-
-/* =========================================================
-   MINIMAL FLOATING VERTICAL SCROLL NAVIGATION (INTERSECTION OBSERVER)
-   ========================================================= */
-window.updateSacredScrollDotsLang = function() {
-  const isHi = window.currentVedicLang === 'hi';
-  const dots = document.querySelectorAll('.vertical-scroll-nav .nav-dot-btn, .sacred-scroll-dots .nav-dot-btn, .sacred-scroll-dots .sacred-nav-dot');
-  dots.forEach(dot => {
-    const titleEn = dot.getAttribute('data-title') || '';
-    const titleHi = dot.getAttribute('data-title-hi') || titleEn;
-    const tooltip = dot.querySelector('.nav-dot-tooltip, .dot-tooltip');
-    if (tooltip) {
-      tooltip.textContent = isHi ? titleHi : titleEn;
-    }
-    dot.setAttribute('aria-label', isHi ? `नेविगेट करें: ${titleHi}` : `Navigate to: ${titleEn}`);
-  });
-};
-
-window.initSacredScrollDots = function() {
-  const navContainer = document.getElementById('sacredScrollDots');
-  if (!navContainer) return;
-
-  const dots = Array.from(navContainer.querySelectorAll('.nav-dot-btn, .sacred-nav-dot'));
-  if (!dots.length) return;
-
-  const isReducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Resolve target element safely (with smart fallbacks for dynamic sections)
-  function resolveTarget(targetId) {
-    let el = targetId ? document.getElementById(targetId) : null;
-    if (!el || el.offsetParent === null) {
-      if (targetId === 'topHeaderBrand') el = document.querySelector('.top-header-brand') || document.body;
-      else if (targetId === 'currentSkyCard') el = document.getElementById('currentSkyCard') || document.querySelector('.current-sky-card');
-      else if (targetId === 'dailyRashifalSection') el = document.getElementById('dailyRashifalSection') || document.querySelector('.daily-rashifal-section');
-      else if (targetId === 'readingModes') el = document.getElementById('readingModes') || document.getElementById('setupCard') || document.querySelector('.mode-tabs');
-      else if (targetId === 'astroFactsCard') el = document.getElementById('astroFactsCard') || document.querySelector('.astro-facts-section');
-      else if (targetId === 'reportCard') el = document.getElementById('reportCard') || document.getElementById('progressCard') || document.getElementById('setupCard');
-      else if (targetId === 'chatCard') el = document.getElementById('chatCard') || document.getElementById('reportCard') || document.getElementById('setupCard');
-    }
-    return el;
-  }
-
-  // Set active state on a dot
-  function setActiveDot(activeDot) {
-    dots.forEach(d => {
-      const isActive = d === activeDot;
-      d.classList.toggle('active', isActive);
-      if (isActive) {
-        d.setAttribute('aria-current', 'true');
-      } else {
-        d.removeAttribute('aria-current');
-      }
-    });
-  }
-
-  // Setup click & keyboard navigation
-  dots.forEach(dot => {
-    const handleNav = (e) => {
-      e.preventDefault();
-      const targetId = dot.getAttribute('data-target');
-      const targetEl = resolveTarget(targetId);
-
-      setActiveDot(dot);
-
-      if (targetEl) {
-        targetEl.scrollIntoView({
-          behavior: isReducedMotion() ? 'auto' : 'smooth',
-          block: 'start'
-        });
-      } else {
-        window.scrollTo({
-          top: 0,
-          behavior: isReducedMotion() ? 'auto' : 'smooth'
-        });
-      }
-    };
-
-    dot.addEventListener('click', handleNav);
-    dot.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        handleNav(e);
-      }
-    });
-  });
-
-  // Track sections using IntersectionObserver for optimal performance
-  const targetMap = new Map();
-  dots.forEach(dot => {
-    const targetId = dot.getAttribute('data-target');
-    const el = document.getElementById(targetId) || resolveTarget(targetId);
-    if (el) targetMap.set(el, dot);
-  });
-
-  let observer = null;
-  const initObserver = () => {
-    if (observer) observer.disconnect();
-    targetMap.clear();
-
-    const visibleElements = [];
-    dots.forEach(dot => {
-      const targetId = dot.getAttribute('data-target');
-      const el = resolveTarget(targetId);
-      if (el) {
-        targetMap.set(el, dot);
-        visibleElements.push(el);
-      }
-    });
-
-    if ('IntersectionObserver' in window) {
-      observer = new IntersectionObserver((entries) => {
-        // Filter visible intersecting elements
-        const intersecting = entries.filter(entry => entry.isIntersecting);
-        if (intersecting.length > 0) {
-          // Sort by intersection ratio or bounding box top
-          intersecting.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-          const topEntry = intersecting[0];
-          const matchingDot = targetMap.get(topEntry.target);
-          if (matchingDot) {
-            setActiveDot(matchingDot);
-          }
-        }
-      }, {
-        root: null,
-        rootMargin: '-15% 0px -45% 0px',
-        threshold: [0, 0.15, 0.5, 0.8]
-      });
-
-      visibleElements.forEach(el => observer.observe(el));
-    }
-  };
-
-  initObserver();
-
-  // Re-observe if dynamic cards (reportCard, chatCard) toggle visibility
-  const dynamicObserver = new MutationObserver(() => {
-    initObserver();
-  });
-  dynamicObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
-
-  // Fallback scroll-spy check on scroll
-  let scrollDebounce = null;
-  const onFallbackScroll = () => {
-    const scrollPos = window.scrollY + 180;
-    let found = false;
-
-    for (let i = dots.length - 1; i >= 0; i--) {
-      const dot = dots[i];
-      const targetId = dot.getAttribute('data-target');
-      const el = resolveTarget(targetId);
-      if (el && el.offsetParent !== null && el.offsetTop <= scrollPos) {
-        setActiveDot(dot);
-        found = true;
-        break;
-      }
-    }
-    if (!found && dots.length > 0 && window.scrollY < 200) {
-      setActiveDot(dots[0]);
-    }
-  };
-
-  window.addEventListener('scroll', () => {
-    if (scrollDebounce) cancelAnimationFrame(scrollDebounce);
-    scrollDebounce = requestAnimationFrame(onFallbackScroll);
-  }, { passive: true });
-
-  // Initial language update & position check
-  window.updateSacredScrollDotsLang();
-  onFallbackScroll();
-};
-
-// Initialize navigation when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', window.initSacredScrollDots);
-} else {
-  window.initSacredScrollDots();
-}
-

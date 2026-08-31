@@ -2,12 +2,11 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import Razorpay from 'razorpay';
 import { db, getSettings, pricing } from './_lib/supabase.js';
-import { aiCall, aiStream, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
+import { aiCall, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
 
-const DATA_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'jyotish_data') : path.join(process.cwd(), 'data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -155,8 +154,6 @@ const inMemorySettings = loadJsonFile('settings.json', {
   match_price: '99',
   reveal_enabled: '1',
   match_enabled: '1',
-  question_enabled: '1',
-  question_price: '19',
   offer_enabled: '0',
   offer_percent: '0',
   offer_label: ''
@@ -205,14 +202,7 @@ async function createOrder(amount, plan, receiptCustom){
 export default async function handler(req,res){
   let rawPath = req.path || (req.url ? req.url.split('?')[0] : '');
   rawPath = rawPath.replace(/^\/api\/?/, '').replace(/^\/+/, '');
-  let pathParts = [];
-  if (Array.isArray(req.query?.path)) {
-    pathParts = req.query.path;
-  } else if (typeof req.query?.path === 'string') {
-    pathParts = req.query.path.split('/').filter(Boolean);
-  } else if (rawPath && rawPath !== '[...path].js' && rawPath !== '[...path]') {
-    pathParts = rawPath.split('/').filter(Boolean);
-  }
+  const pathParts = Array.isArray((req.query && req.query.path)) ? req.query.path : (rawPath ? rawPath.split('/').filter(Boolean) : []);
   const path = '/' + pathParts.join('/');
   try{
     if(req.method==='GET'&&path==='/health') return json(res,200,{ok:true,service:'jyotish-vimarsha',time:new Date().toISOString()});
@@ -432,36 +422,7 @@ export default async function handler(req,res){
       }
     }
 
-    if(req.method==='POST' && (path==='/ai-stream' || path==='/ai/stream')){
-      const b = await readBody(req);
-      const systemText = (b && (b.systemText || b.system || b.systemInstruction)) || 'You are an authentic, precise Vedic astrologer.';
-      const userText = (b && (b.userText || b.user || b.prompt || b.text)) || '';
-      if(!userText) return json(res, 400, { success: false, error: 'AI stream request is incomplete: missing prompt.' });
-      
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-      
-      try {
-        await aiStream({
-          ...(b || {}),
-          systemText,
-          userText,
-          onChunk: (chunk) => {
-            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
-          }
-        });
-        res.write('data: [DONE]\n\n');
-        res.end();
-      } catch (err) {
-        console.error('[AI Stream Handler Error]', err);
-        res.write(`data: ${JSON.stringify({ error: err.message || 'Stream error' })}\n\n`);
-        res.write('data: [DONE]\n\n');
-        res.end();
-      }
-      return;
-    }
-
+    
     if(req.method==='GET'&&path==='/admin/promos'){
       let dbCodes = [];
       try { dbCodes = await db.select('promo_codes','select=*&order=created_at.desc&limit=500'); } catch {}
@@ -502,34 +463,6 @@ export default async function handler(req,res){
        const codeStr = (b.code || '').trim();
        const upperCode = codeStr.toUpperCase();
        
-       // 0. Check if code matches Admin Password to open Admin Panel seamlessly
-       const envPassRaw = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET || 'jyotishadmin';
-       const envPassTrimmed = envPassRaw.trim();
-       const envPassUnquoted = envPassTrimmed.replace(/^["']|["']$/g, '');
-       const allowedAdminPasses = new Set([
-         envPassRaw,
-         envPassTrimmed,
-         envPassUnquoted,
-         'jyotishadmin',
-         'admin123',
-         'admin',
-         'jyotish2025',
-         'jyotish2026'
-       ]);
-       
-       if (allowedAdminPasses.has(codeStr) || allowedAdminPasses.has(codeStr.trim())) {
-         const token = makeAdminToken();
-         res.setHeader('Set-Cookie', `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=14400`);
-         return json(res, 200, {
-           valid: true,
-           is_admin: true,
-           token,
-           discount_percentage: 100,
-           is_vip: true,
-           message: "✨ Administrator authentication verified! Opening Administration Console..."
-         });
-       }
-
        // 1. Try finding as active promo code
        let found = inMemoryPromoCodes.find(x => x.code === upperCode && x.active);
        if (!found) {
@@ -980,7 +913,10 @@ export default async function handler(req,res){
       const inputTrimmed = inputPass.trim();
       const inputUnquoted = inputTrimmed.replace(/^["']|["']$/g, '');
 
-      const envPassRaw = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET || 'jyotishadmin';
+      const envPassRaw = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET;
+      if (!envPassRaw || !envPassRaw.trim()) {
+        return json(res, 500, { error: 'Admin authentication is not configured on the server. Please configure ADMIN_PASSWORD in environment settings.' });
+      }
       const envPassTrimmed = envPassRaw.trim();
       const envPassUnquoted = envPassTrimmed.replace(/^["']|["']$/g, '');
 
@@ -988,11 +924,6 @@ export default async function handler(req,res){
       allowedPasswords.add(envPassRaw);
       allowedPasswords.add(envPassTrimmed);
       allowedPasswords.add(envPassUnquoted);
-      allowedPasswords.add('jyotishadmin');
-      allowedPasswords.add('admin123');
-      allowedPasswords.add('admin');
-      allowedPasswords.add('jyotish2025');
-      allowedPasswords.add('jyotish2026');
 
       const isMatch = allowedPasswords.has(inputPass) || 
                       allowedPasswords.has(inputTrimmed) || 
@@ -1552,7 +1483,7 @@ export default async function handler(req,res){
         try {
           const patch={};
           for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true) ? '1' : '0';
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
         } catch {}

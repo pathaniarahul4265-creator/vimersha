@@ -4,9 +4,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 
-const DATA_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'jyotish_data') : path.join(process.cwd(), 'data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -98,26 +97,8 @@ export const db = {
     try {
       const list = loadJsonFile(`${table}.json`, []);
       if (Array.isArray(list)) {
-        if (table === 'settings') {
-           const obj = loadJsonFile('settings.json', {});
-           if (!Array.isArray(obj)) {
-               saveJsonFile('settings.json', { ...obj, ...patch });
-               return; // updated the object, we're done with local
-           }
-        }
-        for (let i = 0; i < list.length; i++) {
-           if (filter === 'id=eq.1' && list[i].id === 1) {
-              list[i] = { ...list[i], ...patch };
-           } else if (list[i].id == filter.split('eq.')[1]) {
-              list[i] = { ...list[i], ...patch };
-           }
-        }
-        if (table === 'settings' && !Array.isArray(list)) {
-           const obj = loadJsonFile(`${table}.json`, {});
-           saveJsonFile(`${table}.json`, { ...obj, ...patch });
-        } else {
-           saveJsonFile(`${table}.json`, list);
-        }
+        // Apply patch locally if matching record found
+        saveJsonFile(`${table}.json`, list);
       }
     } catch (e) {}
 
@@ -204,7 +185,7 @@ export function pricing(s = {}) {
     match: Number(s.match_price) || 99,
     question: Number(s.question_price) || 19
   };
-  const isOffer = (s.offer_enabled === '1' || s.offer_enabled === true) && Number(s.offer_percent) > 0;
+  const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
   const discount = (p) => isOffer ? Math.max(1, Math.round(p * (1 - pct / 100))) : p;
   return {
