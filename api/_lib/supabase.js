@@ -4,8 +4,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'jyotish_data') : path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });

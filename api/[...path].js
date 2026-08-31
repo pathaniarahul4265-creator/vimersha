@@ -2,11 +2,12 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import Razorpay from 'razorpay';
 import { db, getSettings, pricing } from './_lib/supabase.js';
 import { aiCall, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) ? path.join(os.tmpdir(), 'jyotish_data') : path.join(process.cwd(), 'data');
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -204,7 +205,14 @@ async function createOrder(amount, plan, receiptCustom){
 export default async function handler(req,res){
   let rawPath = req.path || (req.url ? req.url.split('?')[0] : '');
   rawPath = rawPath.replace(/^\/api\/?/, '').replace(/^\/+/, '');
-  const pathParts = Array.isArray((req.query && req.query.path)) ? req.query.path : (rawPath ? rawPath.split('/').filter(Boolean) : []);
+  let pathParts = [];
+  if (Array.isArray(req.query?.path)) {
+    pathParts = req.query.path;
+  } else if (typeof req.query?.path === 'string') {
+    pathParts = req.query.path.split('/').filter(Boolean);
+  } else if (rawPath && rawPath !== '[...path].js' && rawPath !== '[...path]') {
+    pathParts = rawPath.split('/').filter(Boolean);
+  }
   const path = '/' + pathParts.join('/');
   try{
     if(req.method==='GET'&&path==='/health') return json(res,200,{ok:true,service:'jyotish-vimarsha',time:new Date().toISOString()});
