@@ -134,6 +134,15 @@ window.applyPricingToUI = function(cfg) {
     }
   });
 
+  // Update Match Compatibility Unlock card if present
+  const gunaCard = document.getElementById('gunaUnlockCard');
+  if (gunaCard) {
+    const titleEl = gunaCard.querySelector('.guna-unlock-title');
+    if (titleEl) titleEl.textContent = `Unlock Detailed Kundli Compatibility Report — ₹${pMatch}`;
+    const btnEl = gunaCard.querySelector('.guna-unlock-btn');
+    if (btnEl) btnEl.innerHTML = `<span>✦</span> Unlock Complete Compatibility Report · ₹${pMatch}`;
+  }
+
   // Re-sync Proceed button if payment modal is open
   if (typeof window.selectPaymentPlan === 'function') {
     window.selectPaymentPlan(window.activePaymentPlan || 'reveal');
@@ -4079,7 +4088,7 @@ function renderGunaMilanResultCard(milanResult) {
     <!-- Unlock Detailed 18-Page Astrological Report CTA Card -->
     <div class="guna-unlock-card" id="gunaUnlockCard">
       <div style="font-size:28px;margin-bottom:6px;">📜 ✨</div>
-      <h3 class="guna-unlock-title">Unlock Detailed Kundli Compatibility Report — ₹99</h3>
+      <h3 class="guna-unlock-title">Unlock Detailed Kundli Compatibility Report — ₹${(window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.match) || 99}</h3>
       <p class="guna-unlock-desc">
         While the 36 Guna score provides the initial lunar baseline, a complete Vedic relationship verdict requires analyzing Mangal (Manglik) Dosha, Navamsha (D9) synastry, dual Vimshottari Dasha overlays, and planetary dignity.
       </p>
@@ -4093,7 +4102,7 @@ function renderGunaMilanResultCard(milanResult) {
       </div>
 
       <button type="button" class="guna-unlock-btn" onclick="window.unlockDetailedKundliReport()">
-        <span>✦</span> Unlock Complete Compatibility Report · ₹99
+        <span>✦</span> Unlock Complete Compatibility Report · ₹${(window.SERVER_CONFIG && window.SERVER_CONFIG.prices && window.SERVER_CONFIG.prices.match) || 99}
       </button>
     </div>
   `;
@@ -4103,7 +4112,7 @@ function renderGunaMilanResultCard(milanResult) {
 
 window.unlockDetailedKundliReport = async function() {
   if (window.matchDetailedUnlocked) return;
-  const payOk = await window.requestPaidAccess('match', 99);
+  const payOk = await window.requestPaidAccess('match');
   if (!payOk) return;
   window.matchDetailedUnlocked = true;
 

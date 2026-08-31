@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import Razorpay from 'razorpay';
-import { db, getSettings, pricing } from './_lib/supabase.js';
+import { db, getSettings, saveSettings, pricing } from './_lib/supabase.js';
 import { aiCall, getGeminiKeyPool, getKeyStats, maskApiKey, normalizeModel } from './_lib/gemini.js';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -522,41 +522,50 @@ export default async function handler(req,res){
       try {
         const b = await readBody(req);
         let plan = b.plan ? clean(b.plan, 20) : 'reveal';
-        let amount = b.amount ? Number(b.amount) : 0;
         const receipt = b.receipt ? clean(b.receipt, 40) : '';
 
         const s = await getSettings();
+        const cfg = pricing(s);
         const map = { 
           reveal: ['reveal_price', 'reveal_enabled'], 
           match: ['match_price', 'match_enabled'], 
           question: ['question_price', 'question_enabled'], 
           questions_pack: ['question_price', 'question_enabled'], 
-          dakshina: ['reveal_price', 'reveal_enabled'] 
+          dakshina: ['dakshina_price', 'reveal_enabled'],
+          chat_time_3: ['question_price', 'question_enabled'],
+          chat_time_10: ['question_price', 'question_enabled'],
+          chat_time_20: ['question_price', 'question_enabled'],
+          chat_time_30: ['question_price', 'question_enabled']
         };
 
         if (map[plan] && s[map[plan][1]] === '0') {
           return json(res, 403, { error: 'This feature is currently unavailable.' });
         }
 
-        if (!amount) {
-          if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
-          const cfg = pricing(s);
-          let baseAmt = (cfg.prices[plan] || (plan === 'question' ? 19 : plan === 'questions_pack' ? 79 : 59)) * 100;
-          if (b.promoCode) {
-            const codeStr = b.promoCode.toUpperCase().trim();
-            let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
-            if (!found) {
-              try { 
-                const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
-                if (data && data[0]) found = data[0];
-              } catch {}
-            }
-            if (found && found.discount_percentage > 0) {
-               baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
-            }
-          }
-          amount = Math.max(100, Math.round(baseAmt));
+        // Authoritative price calculation based on admin settings
+        let basePriceINR = cfg.prices[plan];
+        if (plan === 'dakshina') {
+          const customPaise = b.amount ? Number(b.amount) : 0;
+          basePriceINR = (customPaise && customPaise >= 100) ? Math.round(customPaise / 100) : (Number(s.dakshina_price) || 251);
+        } else if (!basePriceINR) {
+          basePriceINR = (plan === 'question' ? 29 : plan === 'questions_pack' ? 100 : 59);
         }
+
+        let baseAmt = basePriceINR * 100;
+        if (b.promoCode && plan !== 'dakshina') {
+          const codeStr = b.promoCode.toUpperCase().trim();
+          let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+          if (!found) {
+            try { 
+              const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
+              if (data && data[0]) found = data[0];
+            } catch {}
+          }
+          if (found && found.discount_percentage > 0) {
+             baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
+          }
+        }
+        let amount = Math.max(100, Math.round(baseAmt));
 
         if (isNaN(amount) || amount < 100) {
           return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
@@ -1470,25 +1479,29 @@ export default async function handler(req,res){
       if(req.method==='GET'&&path==='/admin/settings'){
         try {
           const settings=await getSettings();
-          return json(res,200,{settings:{reveal_price:String(settings.reveal_price || '59'),match_price:String(settings.match_price || '99'),question_price:String(settings.question_price || '19'),reveal_enabled:settings.reveal_enabled!==false && settings.reveal_enabled!=='0'?'1':'0',match_enabled:settings.match_enabled!==false && settings.match_enabled!=='0'?'1':'0',question_enabled:settings.question_enabled!==false && settings.question_enabled!=='0'?'1':'0',offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',offer_percent:String(settings.offer_percent || '0'),offer_label:settings.offer_label || ''}});
+          return json(res,200,{settings:{
+            reveal_price:String(settings.reveal_price || '59'),
+            match_price:String(settings.match_price || '99'),
+            question_price:String(settings.question_price || '29'),
+            dakshina_price:String(settings.dakshina_price || '251'),
+            reveal_enabled:settings.reveal_enabled!==false && String(settings.reveal_enabled)!=='0'?'1':'0',
+            match_enabled:settings.match_enabled!==false && String(settings.match_enabled)!=='0'?'1':'0',
+            question_enabled:settings.question_enabled!==false && String(settings.question_enabled)!=='0' && settings.chat_enabled!==false && String(settings.chat_enabled)!=='0'?'1':'0',
+            chat_enabled:settings.chat_enabled!==false && String(settings.chat_enabled)!=='0' && settings.question_enabled!==false && String(settings.question_enabled)!=='0'?'1':'0',
+            offer_enabled:settings.offer_enabled==='1'||settings.offer_enabled===true?'1':'0',
+            offer_percent:String(settings.offer_percent || '0'),
+            offer_label:settings.offer_label || ''
+          }});
         } catch {
           return json(res,200,{settings:inMemorySettings});
         }
       }
       if(req.method==='POST'&&path==='/admin/settings'){
         const b=await readBody(req);
-        for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) inMemorySettings[k] = String(b[k]);
-        for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) inMemorySettings[k] = (b[k] === '1' || b[k] === true) ? '1' : '0';
-        saveJsonFile('settings.json', inMemorySettings);
-        try {
-          const patch={};
-          for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
-          patch.updated_at=new Date().toISOString();
-          await db.update('settings',patch,'id=eq.1');
-        } catch {}
-        logAudit(clientIp, 'SETTINGS_UPDATE', 'Updated administrative pricing or feature flag settings', 'SUCCESS');
-        return json(res,200,{ok:true});
+        const saved = await saveSettings(b);
+        for(const k in saved) inMemorySettings[k] = saved[k];
+        logAudit(clientIp, 'SETTINGS_UPDATE', `Updated administrative pricing (${saved.reveal_price}/${saved.match_price}/${saved.question_price}) and feature settings`, 'SUCCESS');
+        return json(res,200,{ok:true, settings: saved});
       }
       return json(res,404,{error:'Admin route not found'});
     }
