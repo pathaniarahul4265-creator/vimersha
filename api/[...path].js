@@ -1485,7 +1485,7 @@ export default async function handler(req,res){
         try {
           const patch={};
           for(const k of ['reveal_price','match_price','question_price','offer_percent','offer_label']) if(k in b) patch[k]=k==='offer_label'?clean(b[k],200):Number(b[k]);
-          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true);
+          for(const k of ['reveal_enabled','match_enabled','question_enabled','offer_enabled']) if(k in b) patch[k]= (b[k]==='1' || b[k]===true) ? '1' : '0';
           patch.updated_at=new Date().toISOString();
           await db.update('settings',patch,'id=eq.1');
         } catch {}

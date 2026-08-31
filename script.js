@@ -1169,21 +1169,55 @@ function renderDailyPanchang(targetDate = currentPanchangDate) {
     if (pSun) pSun.textContent = `${data.sun.sunrise} / ${data.sun.sunset} (${data.sun.dayLength})`;
 
     if (pEvents) {
-      let eventsHtml = `<div class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK ANY FOR BRIEF):</div>`;
+      const allEventItems = [];
       if (data.activeEvents.length > 0) {
         data.activeEvents.forEach(ev => {
           const escName = encodeURIComponent(ev.name);
-          eventsHtml += `<span class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="pulse-dot"></span> ${ev.icon} <b>Active:</b> ${ev.name}</span>`;
+          allEventItems.push(`
+            <div class="event-pill active-event" onclick="openEventDetails('${escName}')" title="Click to view event brief">
+              <div class="event-pill-content">
+                <span class="pulse-dot"></span>
+                <span class="event-icon">${ev.icon}</span>
+                <b>Active Today: ${ev.name}</b>
+              </div>
+              <span class="event-pill-badge">Today</span>
+            </div>
+          `);
         });
       }
       if (data.upcomingEvents.length > 0) {
         data.upcomingEvents.forEach(ev => {
           const escName = encodeURIComponent(ev.name);
           const daysText = ev.daysAway === 1 ? 'Tomorrow' : `in ${ev.daysAway} days`;
-          eventsHtml += `<span class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief"><span class="event-icon">${ev.icon}</span> <b>${ev.name}</b> — ${daysText}</span>`;
+          allEventItems.push(`
+            <div class="event-pill" onclick="openEventDetails('${escName}')" title="Click to view event brief">
+              <div class="event-pill-content">
+                <span class="event-icon">${ev.icon}</span>
+                <b>${ev.name}</b>
+              </div>
+              <span class="event-pill-badge">${daysText}</span>
+            </div>
+          `);
         });
       }
-      pEvents.innerHTML = eventsHtml;
+      if (allEventItems.length > 0) {
+        const mid = Math.ceil(allEventItems.length / 2);
+        const leftCol = allEventItems.slice(0, mid).join('');
+        const rightCol = allEventItems.slice(mid).join('');
+        pEvents.innerHTML = `
+          <div class="panchang-events-header">
+            <span class="sym-line"></span>
+            <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF) ✦</span>
+            <span class="sym-line"></span>
+          </div>
+          <div class="panchang-events-symmetrical-grid">
+            <div class="panchang-events-col left-col">${leftCol}</div>
+            <div class="panchang-events-col right-col">${rightCol}</div>
+          </div>
+        `;
+      } else {
+        pEvents.innerHTML = '';
+      }
     }
 
     // Refresh active planetary transits on the Mandala wheel & hero orbit
@@ -1519,7 +1553,7 @@ if (document.readyState === 'loading') {
 }
 
 // --- Report intelligence: create a concise, chart-grounded opening summary ---
-function buildAtAGlance(){
+function buildAtAGlance_old(){
   const card=document.getElementById('atAGlanceCard'), grid=document.getElementById('glanceGrid'), syn=document.getElementById('glanceSynthesis');
   if(!card||!fullReportText.trim())return;
   const t=cleanAstroText(fullReportText);
@@ -3166,13 +3200,45 @@ function renderPanchangReportCard(){
         <div class="shubh-box"><small>✨ ABHIJIT MUHURAT</small><b>${pData.abhijit}</b></div>
         <div><small>☀️ SUNRISE / SUNSET</small><b>${pData.sun.sunrise} / ${pData.sun.sunset} (${pData.sun.dayLength})</b></div>
       </div>
-      ${pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0 ? `
-        <div class="panchang-report-events">
-          <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF):</span>
-          ${pData.activeEvents.map(e => `<span class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="pulse-dot"></span> ${e.icon} <b>Active:</b> ${e.name}</span>`).join(' ')}
-          ${pData.upcomingEvents.map(e => `<span class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')"><span class="event-icon">${e.icon}</span> <b>${e.name}</b> (${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'})</span>`).join(' ')}
-        </div>
-      ` : ''}
+      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? (() => {
+        const all = [
+          ...pData.activeEvents.map(e => `
+            <div class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for brief">
+              <div class="event-pill-content">
+                <span class="pulse-dot"></span>
+                <span class="event-icon">${e.icon}</span>
+                <b>Active Today: ${e.name}</b>
+              </div>
+              <span class="event-pill-badge">Today</span>
+            </div>
+          `),
+          ...pData.upcomingEvents.map(e => `
+            <div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for brief">
+              <div class="event-pill-content">
+                <span class="event-icon">${e.icon}</span>
+                <b>${e.name}</b>
+              </div>
+              <span class="event-pill-badge">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span>
+            </div>
+          `)
+        ];
+        const mid = Math.ceil(all.length / 2);
+        const leftCol = all.slice(0, mid).join('');
+        const rightCol = all.slice(mid).join('');
+        return `
+          <div class="panchang-report-events" style="margin-top: 14px;">
+            <div class="panchang-events-header">
+              <span class="sym-line"></span>
+              <span class="event-label">✦ TODAY & NEXT 30 DAYS EVENTS (CLICK FOR BRIEF) ✦</span>
+              <span class="sym-line"></span>
+            </div>
+            <div class="panchang-events-symmetrical-grid" style="margin-top: 8px;">
+              <div class="panchang-events-col left-col">${leftCol}</div>
+              <div class="panchang-events-col right-col">${rightCol}</div>
+            </div>
+          </div>
+        `;
+      })() : ''}
     </div>
   `;
 }
@@ -6394,15 +6460,45 @@ function openPanchangModal() {
         </table>
       </div>
 
-      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? `
-        <div style="margin-top: 20px;">
-          <h3 style="font-family: 'Cinzel', serif; font-size: 17px; color: #7fc5c0; margin: 0 0 10px 0;">🌺 TODAY & UPCOMING FESTIVALS</h3>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            ${pData.activeEvents.map(e => `<span class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief"><span class="pulse-dot"></span> ${e.icon} <b>Active Today:</b> ${e.name}</span>`).join('')}
-            ${pData.upcomingEvents.map(e => `<span class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">${e.icon} <b>${e.name}</b> (${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'})</span>`).join('')}
+      ${(pData.activeEvents.length > 0 || pData.upcomingEvents.length > 0) ? (() => {
+        const all = [
+          ...pData.activeEvents.map(e => `
+            <div class="event-pill active-event" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">
+              <div class="event-pill-content">
+                <span class="pulse-dot"></span>
+                <span class="event-icon">${e.icon}</span>
+                <b>Active Today: ${e.name}</b>
+              </div>
+              <span class="event-pill-badge">Today</span>
+            </div>
+          `),
+          ...pData.upcomingEvents.map(e => `
+            <div class="event-pill" onclick="openEventDetails('${encodeURIComponent(e.name)}')" title="Click for event brief">
+              <div class="event-pill-content">
+                <span class="event-icon">${e.icon}</span>
+                <b>${e.name}</b>
+              </div>
+              <span class="event-pill-badge">${e.daysAway === 1 ? 'Tomorrow' : 'in ' + e.daysAway + ' days'}</span>
+            </div>
+          `)
+        ];
+        const mid = Math.ceil(all.length / 2);
+        const leftCol = all.slice(0, mid).join('');
+        const rightCol = all.slice(mid).join('');
+        return `
+          <div style="margin-top: 20px;">
+            <div class="panchang-events-header" style="margin-bottom: 12px;">
+              <span class="sym-line"></span>
+              <span class="event-label">🌺 TODAY & UPCOMING FESTIVALS & VRATS</span>
+              <span class="sym-line"></span>
+            </div>
+            <div class="panchang-events-symmetrical-grid">
+              <div class="panchang-events-col left-col">${leftCol}</div>
+              <div class="panchang-events-col right-col">${rightCol}</div>
+            </div>
           </div>
-        </div>
-      ` : ''}
+        `;
+      })() : ''}
     `;
   }
 
@@ -6413,6 +6509,23 @@ function closePanchangModal() {
   const modal = document.getElementById('panchangDetailModal');
   if (modal) modal.classList.remove('open');
 }
+
+function calculateCurrentPanchangData(date, lat, lon) {
+  const lt = lat || (parseFloat(document.getElementById('f_lat')?.value) || 28.6139);
+  const ln = lon || (parseFloat(document.getElementById('f_lon')?.value) || 77.2090);
+  const data = getDailyPanchangData(date || new Date(), lt, ln);
+  return data || {
+    tithi: "Chaturthi",
+    paksha: "Krishna",
+    nakshatra: "Rohini",
+    yoga: "Siddha",
+    karana: "Bava",
+    abhijit: "11:54 AM – 12:46 PM",
+    rahuKaal: "07:30 AM – 09:00 AM",
+    sun: { sunrise: "05:58 AM", sunset: "06:44 PM", dayLength: "12h 46m" }
+  };
+}
+window.calculateCurrentPanchangData = calculateCurrentPanchangData;
 
 /* Specific Single Panchang Item Modal */
 function openSpecificPanchangDetail(type) {
@@ -6425,6 +6538,7 @@ function openSpecificPanchangDetail(type) {
 
   const now = new Date();
   const pData = calculateCurrentPanchangData(now);
+  const pakshaText = (pData.hinduCal && pData.hinduCal.paksha) || (pData.tithi && pData.tithi.includes('Shukla') ? 'Shukla' : 'Krishna');
 
   const detailMap = {
     tithi: {
@@ -6433,14 +6547,14 @@ function openSpecificPanchangDetail(type) {
       content: `
         <div style="background: rgba(216, 160, 76, 0.1); border: 1px solid rgba(216, 160, 76, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <div style="font-size: 20px; font-weight: bold; color: #f1d48a; font-family: 'Cinzel', serif;">${pData.tithi}</div>
-          <div style="font-size: 13px; color: #a3b6be; margin-top: 4px;">Paksha: <b>${pData.paksha} Paksha</b> · Vikram Samvat 2081</div>
+          <div style="font-size: 13px; color: #a3b6be; margin-top: 4px;">Paksha: <b>${pakshaText} Paksha</b> · ${pData.hinduCal?.vikramSamvat || 'VS 2083'}</div>
         </div>
         <p style="color: #d1dfd8; line-height: 1.6; font-size: 14px;">
           <b>Spiritual Significance:</b> Tithi represents the distance between the Sun and Moon (each 12° phase). It governs emotional stability, relationship dynamics, and karmic timing for daily activities.
         </p>
         <div style="margin-top: 14px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;">
           <span style="color: #7fc5c0; font-size: 13px; font-weight: bold;">✦ Recommended Actions Today:</span>
-          <p style="margin: 6px 0 0 0; color: #b0c2cc; font-size: 13px;">Perform sacred rituals, spiritual practices, mantra chanting, and honor family traditions corresponding to ${pData.paksha} Paksha energy.</p>
+          <p style="margin: 6px 0 0 0; color: #b0c2cc; font-size: 13px;">Perform sacred rituals, spiritual practices, mantra chanting, and honor family traditions corresponding to ${pakshaText} Paksha energy.</p>
         </div>
       `
     },
