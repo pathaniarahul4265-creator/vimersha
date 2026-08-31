@@ -7,9 +7,7 @@ import path from 'node:path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 function ensureDataDir() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  } catch (e) {}
+  try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 }
 ensureDataDir();
 
@@ -17,31 +15,21 @@ function loadJsonFile(filename, defaultValue) {
   try {
     ensureDataDir();
     const filePath = path.join(DATA_DIR, filename);
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    }
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {}
   return defaultValue;
 }
-
 function saveJsonFile(filename, data) {
   try {
     ensureDataDir();
-    const filePath = path.join(DATA_DIR, filename);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {}
+    fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) { console.warn('[Data Storage] Failed to write', filename, e.message); }
 }
 
 const inMemorySettings = loadJsonFile('settings.json', {
-  reveal_price: '59',
-  match_price: '99',
-  question_price: '19',
-  reveal_enabled: '1',
-  match_enabled: '1',
-  question_enabled: '1',
-  offer_enabled: '0',
-  offer_percent: '0',
-  offer_label: ''
+  reveal_price: '59', match_price: '99', question_price: '19',
+  reveal_enabled: '1', match_enabled: '1', question_enabled: '1',
+  offer_enabled: '0', offer_percent: '0', offer_label: ''
 });
 
 export const db = {
@@ -50,10 +38,8 @@ export const db = {
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return loadJsonFile(`${table}.json`, []);
     try {
-      const endpoint = `${url}/rest/v1/${table}${queryParams ? `?${queryParams}` : ''}`;
-      const res = await fetch(endpoint, {
-        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` },
-        signal: AbortSignal.timeout(2000)
+      const res = await fetch(`${url}/rest/v1/${table}${queryParams ? `?${queryParams}` : ''}`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000)
       });
       if (res.ok) return await res.json();
     } catch (e) {}
@@ -62,45 +48,45 @@ export const db = {
 
   async insert(table, record) {
     try {
-      const list = loadJsonFile(`${table}.json`, []);
-      list.unshift(record);
-      saveJsonFile(`${table}.json`, list);
+      const list = loadJsonFile(`${table}.json`, []); list.unshift(record); saveJsonFile(`${table}.json`, list);
     } catch (e) {}
-
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return record;
-    
     try {
-      const endpoint = `${url}/rest/v1/${table}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(record),
-        signal: AbortSignal.timeout(2000)
+      const res = await fetch(`${url}/rest/v1/${table}`, {
+        method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(record), signal: AbortSignal.timeout(2000)
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.warn(`Supabase insert note ${res.status}: ${errText}`);
-      }
-    } catch (e) {
-      console.warn('Supabase insert skipped, saved to disk', e.message);
-    }
+      if (!res.ok) console.warn(`Supabase insert note ${res.status}: ${await res.text()}`);
+    } catch (e) { console.warn('Supabase insert skipped:', e.message); }
     return record;
   },
+
   async update(table, patch, filter) {
+    // Keep the local fallback in sync. settings.json is an object, while other
+    // tables use arrays; the old implementation only handled arrays and never
+    // actually applied the settings patch.
     try {
-      const list = loadJsonFile(`${table}.json`, []);
-      if (Array.isArray(list)) {
-        // Apply patch locally if matching record found
-        saveJsonFile(`${table}.json`, list);
+      const filename = `${table}.json`;
+      const current = loadJsonFile(filename, table === 'settings' ? {} : []);
+      if (table === 'settings') {
+        const merged = { ...(current && !Array.isArray(current) ? current : {}), ...patch };
+        if (!merged.id) merged.id = 1;
+        saveJsonFile(filename, merged);
+      } else if (Array.isArray(current)) {
+        const match = String(filter || '').match(/^id=eq\.(.+)$/);
+        if (match) {
+          const id = decodeURIComponent(match[1]);
+          let changed = false;
+          const next = current.map(row => {
+            if (String(row?.id) === id) { changed = true; return { ...row, ...patch }; }
+            return row;
+          });
+          if (changed) saveJsonFile(filename, next);
+        }
       }
-    } catch (e) {}
+    } catch (e) { console.warn('[Local update]', e.message); }
 
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -108,66 +94,45 @@ export const db = {
     try {
       const endpoint = `${url}/rest/v1/${table}?${filter}`;
       const res = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(patch),
-        signal: AbortSignal.timeout(2000)
+        method: 'PATCH', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch), signal: AbortSignal.timeout(2000)
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.warn(`Supabase update note ${res.status}: ${errText}`);
+      if (res.ok) return;
+      const errText = await res.text();
+      console.warn(`Supabase update note ${res.status}: ${errText}`);
+
+      // If settings row id=1 does not exist, create it instead of silently
+      // losing the admin change.
+      if (table === 'settings' && filter === 'id=eq.1') {
+        const upsert = { id: 1, ...patch };
+        const insertRes = await fetch(`${url}/rest/v1/settings`, {
+          method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
+          body: JSON.stringify(upsert), signal: AbortSignal.timeout(2000)
+        });
+        if (!insertRes.ok) console.warn(`Supabase settings upsert note ${insertRes.status}: ${await insertRes.text()}`);
       }
-    } catch (e) {
-      console.warn('Supabase update note:', e.message);
-    }
+    } catch (e) { console.warn('Supabase update note:', e.message); }
   },
+
   async delete(table, filter) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
     try {
-      const endpoint = `${url}/rest/v1/${table}?${filter}`;
-      const res = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: { 'apikey': key, 'Authorization': `Bearer ${key}` },
-        signal: AbortSignal.timeout(2000)
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.warn(`Supabase delete note ${res.status}: ${errText}`);
-      }
-    } catch (e) {
-      console.warn('Supabase delete note:', e.message);
-    }
+      const res = await fetch(`${url}/rest/v1/${table}?${filter}`, { method: 'DELETE', headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) });
+      if (!res.ok) console.warn(`Supabase delete note ${res.status}: ${await res.text()}`);
+    } catch (e) { console.warn('Supabase delete note:', e.message); }
   },
+
   async rpc(funcName, params) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return null;
     try {
-      const endpoint = `${url}/rest/v1/rpc/${funcName}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(params),
-        signal: AbortSignal.timeout(2000)
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Supabase RPC error ${res.status}: ${errText}`);
-      }
+      const res = await fetch(`${url}/rest/v1/rpc/${funcName}`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(params), signal: AbortSignal.timeout(2000) });
+      if (!res.ok) throw new Error(`Supabase RPC error ${res.status}: ${await res.text()}`);
       return await res.json();
-    } catch (e) {
-      throw e;
-    }
+    } catch (e) { throw e; }
   }
 };
 
@@ -187,25 +152,14 @@ export function pricing(s = {}) {
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
   const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
-  const discount = (p) => isOffer ? Math.max(1, Math.round(p * (1 - pct / 100))) : p;
+  const discount = p => isOffer ? Math.max(1, Math.round(p * (1 - pct / 100))) : p;
   return {
-    prices: {
-      reveal: discount(basePrices.reveal),
-      match: discount(basePrices.match),
-      question: discount(basePrices.question)
-    },
+    prices: { reveal: discount(basePrices.reveal), match: discount(basePrices.match), question: discount(basePrices.question) },
     basePrices,
-    offer: {
-      enabled: isOffer,
-      percent: pct,
-      label: s.offer_label || ''
-    },
+    offer: { enabled: isOffer, percent: pct, label: s.offer_label || '' },
     features: {
-      reveal: s.reveal_enabled !== '0',
-      match: s.match_enabled !== '0',
-      question: s.question_enabled !== '0',
-      chat: s.question_enabled !== '0',
-      question_enabled: s.question_enabled !== '0'
+      reveal: s.reveal_enabled !== '0', match: s.match_enabled !== '0', question: s.question_enabled !== '0',
+      chat: s.question_enabled !== '0', question_enabled: s.question_enabled !== '0'
     }
   };
 }
