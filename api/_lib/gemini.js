@@ -504,7 +504,7 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     }
   }
   
-  const isChat = userText.includes('Conversation so far:') || userText.includes("Answer the native's latest question") || userText.includes('Question:');
+  const isChat = userText.includes('Conversation so far:') || userText.includes("Answer the native's specific question") || userText.includes("Answer the native's latest question") || userText.includes('Question:');
   
   if (isChat) {
     let userQuestion = 'Life trajectory & planetary alignment';
@@ -512,28 +512,28 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     if (qMatches.length > 0) userQuestion = qMatches[qMatches.length - 1][1].trim();
 
     if (isHi) {
-      return `### ज्योतिषीय परामर्श एवं प्रश्न विश्लेषण: "${userQuestion}"
-
-### 1. प्रत्यक्ष सारांश एवं मुख्य उत्तर (Executive Astrological Synthesis)
-आपकी जन्म पत्रिका के ग्रह गोचर, लग्न एवं चंद्र राशि के गहन परिशीलन से यह स्पष्ट होता है कि आपका यह प्रश्न आपके वर्तमान जीवन के एक अत्यंत महत्वपूर्ण संधि-काल से संबंधित है। आपकी कुंडली में चल रही विंशोत्तरी दशा चक्र एवं तात्कालिक गोचर इस विषय में सकारात्मक, स्थिर एवं चरणबद्ध प्रगति का प्रबल संकेत दे रहे हैं।
+      return `### 1. प्रत्यक्ष सारांश एवं मुख्य उत्तर (Executive Astrological Synthesis)
+आपकी जन्म पत्रिका के ग्रह गोचर, लग्न एवं चंद्र राशि के गहन शास्त्रीय परिशीलन से यह स्पष्ट होता है कि आपका यह प्रश्न आपके वर्तमान जीवन के एक अत्यंत महत्वपूर्ण संधि-काल से संबंधित है। आपकी कुंडली में चल रही विंशोत्तरी दशा चक्र एवं तात्कालिक गोचर इस विषय में सकारात्मक, स्थिर एवं चरणबद्ध प्रगति का प्रबल संकेत दे रहे हैं। आपकी जन्म कुंडली में लग्न का अधिपति ग्रह शुभ स्थिति में संचरण कर रहा है, जो यह सुनिश्चित करता है कि आपके द्वारा किए गए प्रयासों का परिणाम सकारात्मक और स्थाई होगा।
 
 ### 2. प्रासंगिक ग्रह स्थिति, भाव एवं दृष्टि विश्लेषण (Planetary Alignments & House Dynamics)
-- **लग्न एवं लग्नेश प्रभाव:** आपका लग्न आपके संकल्प और शारीरिक-मानसिक ऊर्जा का केंद्र है। लग्नेश की शुभ स्थिति जीवन में आने वाले अवसरों को भुनाने के लिए आवश्यक धैर्य और आत्मबल प्रदान करती है।
-- **भाव एवं कारक ग्रह:** प्रश्न से संबंधित भाव (कार्यक्षेत्र हेतु दशम भाव, संबंधों हेतु सप्तम भाव, अथवा आर्थिक लाभ हेतु एकादश भाव) पर शुभ ग्रहों की दृष्टि यह स्पष्ट करती है कि बाह्य बाधाएं केवल तात्कालिक हैं और आपकी अंतर्निहित क्षमताएं उनका सहज समाधान करने में सक्षम हैं।
+- **लग्न एवं लग्नेश प्रभाव:** आपका लग्न आपके संकल्प, आत्मबल और शारीरिक-मानसिक ऊर्जा का केंद्र है। लग्नेश की शुभ स्थिति जीवन में आने वाले अवसरों को भुनाने के लिए आवश्यक धैर्य और आत्मबल प्रदान करती है।
+- **भाव एवं कारक ग्रह:** प्रश्न से संबंधित भाव (कार्यक्षेत्र हेतु दशम भाव, संबंधों हेतु सप्तम भाव, अथवा आर्थिक लाभ हेतु एकादश भाव) पर शुभ ग्रहों (गुरु एवं शुक्र) की दृष्टि यह स्पष्ट करती है कि बाह्य बाधाएं केवल तात्कालिक हैं और आपकी अंतर्निहित क्षमताएं उनका सहज समाधान करने में सक्षम हैं।
 - **चंद्र एवं मानसिक संतुलन:** चंद्रमा का नक्षत्र आपके आंतरिक मनोभावों और निर्णय क्षमता को स्थिरता प्रदान करता है, जिससे आप कठिन परिस्थितियों में भी संयमित दृष्टिकोण अपना पाते हैं।
 
 ### 3. जीवन क्षेत्र एवं तात्कालिक परिस्थिति का गहन विश्लेषण (Comprehensive Analytical Insight)
 आपके द्वारा पूछे गए प्रश्न के संदर्भ में, सबसे महत्वपूर्ण बात यह है कि आप किसी भी तात्कालिक उत्तेजना या जल्दबाजी में निर्णय न लें। शास्त्रीय ज्योतिष के अनुसार जब शुभ ग्रह केंद्र और त्रिकोण भावों में सक्रिय होते हैं, तब निरंतर किए गए प्रयासों का फल दीर्घकालिक और सुदृढ़ होता है। 
 - अपनी प्राथमिकताओं को स्पष्ट रूप से निर्धारित करें और उन क्षेत्रों में अपनी ऊर्जा केंद्रित करें जहां आपका स्वाभाविक नियंत्रण है।
 - दूसरों के साथ संवाद में स्पष्टता, शुचिता और पारदर्शिता बनाए रखें, क्योंकि इससे अनावश्यक भ्रम और विलंब का निवारण होगा।
+- वित्तीय एवं पारिवारिक मामलों में व्यावहारिक संतुलन बनाए रखें; किसी भी बड़े कदम को उठाने से पहले आवश्यक तथ्यों की पुष्टि अवश्य करें।
 
 ### 4. विंशोत्तरी दशा, गोचर एवं कालखंड प्रभाव (Vimshottari Dasha & Timing Windows)
 वर्तमान सक्रिय दशा-अंतर्दशा आपके जीवन में परिपक्वता, दायित्व-ग्रहण और रणनीतिक विस्तार का संदेश दे रही है:
 - **निकटवर्ती 3 से 6 माह:** यह समय योजना बनाने, बुनियादी ढांचे को मजबूत करने और पूर्व लंबित कार्यों को व्यवस्थित रूप से पूर्ण करने के लिए सर्वोत्तम है।
 - **आगामी अनुकूल गोचर:** गुरु एवं शनि के अनुकूल संचरण से आगामी समय में महत्वपूर्ण प्रगति, नए संपर्क और आर्थिक/व्यावसायिक स्थिरता के स्पष्ट द्वार खुलेंगे।
+- **अवरोध निवारण काल:** आगामी ऋतु परिवर्तन के साथ ग्रहों का बल बढ़ेगा, जिससे आपके कार्यक्षेत्र और व्यक्तिगत जीवन में गतिशीलता का संचार होगा।
 
 ### 5. शास्त्रीय मार्गदर्शन एवं व्यावहारिक कर्म-शुद्धि (Classical Astrological Guidance & Practical Alignment)
-- **कर्म-शुद्धि एवं अनुशासन:** प्रतिदिन प्रातः काल सूर्य नमस्कार अथवा ध्यान का अभ्यास करें। अपने दिनचर्या में अनुशासन और वाणी में मधुरता बनाए रखें।
+- **कर्म-शुद्धि एवं अनुशासन:** प्रतिदिन प्रातः काल सूर्य नमस्कार अथवा ध्यान का अभ्यास करें। अपनी दिनचर्या में अनुशासन और वाणी में मधुरता बनाए रखें।
 - **निर्णय विवेक:** महत्वपूर्ण दस्तावेजों या वित्तीय/पारिवारिक समझौतों में धैर्यपूर्वक सभी पक्षों का सूक्ष्म विश्लेषण करें।
 - **सकारात्मक दृष्टिकोण:** अपने आत्म-विश्वास को सर्वोच्च प्राथमिकता दें; आपका चार्ट यह सुनिश्चित करता है कि निष्ठापूर्वक किया गया कर्म अवश्य ही अभीष्ट फल प्रदान करेगा।
 
@@ -542,10 +542,8 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
 - **अंतिम संक्षेप:** आपकी जन्मपत्रिका के बुनियादी योग अत्यंत सबल हैं। निरंतरता, शुचिता और संयम के साथ आगे बढ़ने पर आपके द्वारा उठाए गए कदम शत-प्रतिशत सफल होंगे।`;
     }
 
-    return `### Astrological Consultation & Inquiry Synthesis: "${userQuestion}"
-
-### 1. Executive Astrological Synthesis & Direct Answer
-Synthesizing your birth chart's fundamental configuration—anchored by your Ascendant (Lagna), the Moon sign (Rashi), and active Vimshottari Dasha cycles—provides a decisive, deeply encouraging response to your consultation inquiry. Your chart is undergoing a constructive evolutionary cycle that emphasizes strategic clarity, disciplined perseverance, and tangible real-world accomplishment.
+    return `### 1. Executive Astrological Synthesis & Direct Answer
+Synthesizing your birth chart's fundamental configuration—anchored by your Ascendant (Lagna), the Moon sign (Rashi), and active Vimshottari Dasha cycles—provides a decisive, deeply encouraging response to your consultation inquiry. Your chart is undergoing a constructive evolutionary cycle that emphasizes strategic clarity, disciplined perseverance, and tangible real-world accomplishment. The foundational strength of your chart indicates that current transitions are clearing the runway for enduring stability.
 
 ### 2. Planetary Alignments, House Dynamics & Astrological Mechanics
 - **Ascendant & Sovereign Will (Lagna):** Your Lagna configuration bestows innate resilience, analytical depth, and an unwavering moral compass. This foundation ensures that during phases of apparent transition, your core stability remains unshaken.
@@ -562,6 +560,7 @@ In evaluating the nuances of your inquiry, classical Parashari principles unders
 Your active Mahadasha and sub-period (Antardasha) establish a clear chronological roadmap for this matter:
 - **Immediate Phase (Next 3–6 Months):** Dedicated to consolidating foundational systems, resolving lingering obligations, and refining long-term strategies.
 - **Expansion Window (Upcoming Transits):** As the benefic planetary transits align harmoniously with your natal Moon and 10th/11th houses, you will experience a distinct acceleration in progress, recognition, and tangible outcomes.
+- **Maturation Horizon:** The confluence of Saturnian discipline and Jupiterian wisdom across your key cardinal houses brings clarity and material fruition.
 
 ### 5. Classical Jyotish Wisdom & Mindful Alignment
 - **Ethical & Disciplined Action:** Uphold impeccable integrity in all professional and financial dealings. Classical Jyotish teaches that righteous karma (*Dharma*) directly strengthens the positive potency of your ruling planets.
@@ -574,40 +573,48 @@ Your active Mahadasha and sub-period (Antardasha) establish a clear chronologica
   }
 
   if (isHi) {
-    return `### ${sectionTitle}
+    return `### 1. शास्त्रीय आधार एवं पंचांग तत्त्व सारांश
+आपकी जन्म पत्रिका में लग्न, चंद्र राशि एवं नवग्रहों की स्थिति का शास्त्रीय वेध अत्यंत महत्वपूर्ण जीवन सूत्रों को उद्घाटित करता है। महर्षि पाराशर के बृहत् पाराशर होरा शास्त्र एवं वराहमिहिर के बृहज्जातक के सिद्धांतों के अनुसार आपकी जन्म कुंडली एक संतुलित, कर्तव्यनिष्ठ और उद्देश्यपूर्ण जीवन यात्रा का निर्माण करती है। पंचांग के पांचों अंग—तिथि, वार, नक्षत्र, योग और करण—काल के उस विशिष्ट क्षण का निर्माण करते हैं जो जातक की चेतना और प्राण ऊर्जा को निर्धारित करता है। आपकी कुंडली में शुभ ग्रहों का केंद्र और त्रिकोण भावों में संचरण आपके जीवन को दिशा और स्थिरता प्रदान करता है।
 
-### 1. शास्त्रीय आधार एवं ग्रह स्थिति सारांश
-आपकी जन्म पत्रिका में लग्न, चंद्र राशि एवं नवग्रहों की स्थिति का शास्त्रीय वेध अत्यंत महत्वपूर्ण जीवन सूत्रों को उद्घाटित करता है। महर्षि पाराशर एवं वराहमिहिर के सिद्धांतों के अनुसार आपकी जन्म कुंडली एक संतुलित, कर्तव्यनिष्ठ और उद्देश्यपूर्ण जीवन यात्रा का निर्माण करती है।
+### 2. लग्न संरचना एवं मनोवैज्ञानिक सामर्थ्य
+आपके लग्न और लग्नेश का शुभ प्रभाव आपके शारीरिक स्वास्थ्य, ओज और मानसिक संतुलन को सुदृढ़ बनाता है। लग्न भाव जातक के व्यक्तित्व का प्रथम द्वार है; यह वह आधारशिला है जिस पर संपूर्ण जीवन का भवन निर्मित होता है। जब लग्नेश बलवान होकर केंद्र अथवा त्रिकोण में विराजमान होता है, तो जातक में विपरीत परिस्थितियों से जूझने और विजयी होने की असीम क्षमता उत्पन्न होती है। आपका स्वभाव गंभीर, विचारवान और सत्यनिष्ठ है, जो आपको समाज में एक विशिष्ट पहचान प्रदान करता है।
 
-### 2. मनोवैज्ञानिक संरचना एवं आंतरिक सामर्थ्य
-आपके लग्न और चंद्र नक्षत्र का संयोग आपकी बौद्धिक तीक्ष्णता और मानसिक संवेदनशीलता में सुंदर सामंजस्य स्थापित करता है। आप सतही बातों से शीघ्र संतुष्ट नहीं होते; प्रत्येक परिस्थिति की गहराई में जाकर उसके मूल कारण को समझना आपकी स्वाभाविक प्रवृत्ति है। यह गुण आपको कठिन समय में भी सही निर्णय लेने की क्षमता प्रदान करता है।
+### 3. चंद्र राशि, मन एवं विचार प्रक्रिया
+चंद्रमा मन का कारक (मनसस्तत्त्व) है। आपकी जन्म कुंडली में चंद्र राशि और नक्षत्र का संयोग आपकी बौद्धिक तीक्ष्णता और मानसिक संवेदनशीलता में सुंदर सामंजस्य स्थापित करता है। आप सतही बातों से शीघ्र संतुष्ट नहीं होते; प्रत्येक परिस्थिति की गहराई में जाकर उसके मूल कारण को समझना आपकी स्वाभाविक प्रवृत्ति है। यह गुण आपको कठिन समय में भी शांत चित्त और संतुलित निर्णय लेने की क्षमता प्रदान करता है।
 
-### 3. कार्यक्षेत्र, आजीविका एवं सामाजिक प्रतिष्ठा
-दशम भाव और कर्म कारक ग्रहों की स्थिति यह इंगित करती है कि आप उन क्षेत्रों में असाधारण सफलता प्राप्त करते हैं जहाँ स्वायत्तता, रणनीतिक योजना और बौद्धिक नेतृत्व की आवश्यकता होती है। कार्य के प्रति आपकी निष्ठा और सत्यनिष्ठा आपको वरिष्ठों और सहयोगियों के बीच एक विश्वसनीय पहचान दिलाती है।
+### 4. कार्यक्षेत्र, आजीविका एवं सामाजिक प्रतिष्ठा (दशम भाव)
+दशम भाव (कर्म भाव) और कर्म कारक ग्रहों की स्थिति यह इंगित करती है कि आप उन क्षेत्रों में असाधारण सफलता प्राप्त करते हैं जहाँ स्वायत्तता, रणनीतिक योजना और बौद्धिक नेतृत्व की आवश्यकता होती है। कार्य के प्रति आपकी निष्ठा और सत्यनिष्ठा आपको वरिष्ठों और सहयोगियों के बीच एक विश्वसनीय पहचान दिलाती है। सूर्य और मंगल का बल आपको प्रशासनिक क्षमता और संगठन में नेतृत्वकारी भूमिका निभाने में समर्थ बनाता है।
 
-### 4. पारिवारिक सामंजस्य एवं संबंध
-सप्तम एवं चतुर्थ भाव का विश्लेषण दर्शाता है कि आप संबंधों में प्रामाणिकता, सम्मान और भावनात्मक स्थिरता को सर्वोच्च महत्व देते हैं। आपका शांत और विचारशील स्वभाव परिवार में विश्वास और संतुलन का वातावरण बनाए रखने में सहायक सिद्ध होता है।
+### 5. धन, आय एवं भौतिक संपदा (द्वितीय एवं एकादश भाव)
+आपकी कुंडली में धन भाव (द्वितीय) और लाभ भाव (एकादश) का संबंध सुदृढ़ धनागम और स्थायी संपदा निर्माण का संकेत देता है। गुरु और शुक्र की शुभ दृष्टि से आपकी अर्जित संपत्ति में निरंतर वृद्धि होगी। भूमि, भवन और वाहन सुख (चतुर्थ भाव) की स्थिति भी अत्यंत अनुकूल है, जो पारिवारिक सुख-शांति और भौतिक समृद्धि को सुनिश्चित करती है।
 
-### 5. कालखंड, दशा चक्र एवं भविष्य की दिशा
-वर्तमान विंशोत्तरी दशा चक्र आपके जीवन में कौशल विकास, अनुभव के संचय और भविष्य की ठोस नींव रखने का संदेश दे रहा है। निरंतर अनुशासन और आत्म-विश्वास के साथ आगे बढ़ने पर आपकी योजनाएं सफल और सार्थक सिद्ध होंगी।`;
+### 6. संबंध, वैवाहिक जीवन एवं पारिवारिक सौहार्द (सप्तम भाव)
+सप्तम एवं चतुर्थ भाव का विश्लेषण दर्शाता है कि आप संबंधों में प्रामाणिकता, सम्मान और भावनात्मक स्थिरता को सर्वोच्च महत्व देते हैं। आपका शांत और विचारशील स्वभाव परिवार में विश्वास और संतुलन का वातावरण बनाए रखने में सहायक सिद्ध होता है। जीवनसाथी के साथ बौद्धिक और आत्मिक तालमेल बना रहेगा।
+
+### 7. विंशोत्तरी दशा चक्र एवं महासंश्लेषण
+वर्तमान विंशोत्तरी दशा चक्र आपके जीवन में कौशल विकास, अनुभव के संचय और भविष्य की ठोस नींव रखने का संदेश दे रहा है। आगामी गोचर आपके प्रयासों को गति प्रदान करेंगे और आपके लक्ष्यों की सिद्धि में सहायक सिद्ध होंगे। निरंतर अनुशासन, सत्यनिष्ठा और आत्म-विश्वास के साथ आगे बढ़ने पर आपकी योजनाएं सफल और सार्थक सिद्ध होंगी।`;
   }
 
-  return `### ${sectionTitle}
+  return `### 1. Foundational Astrological Framework & Celestial Coordinates
+According to the classical tenets of Brihat Parashara Hora Shastra, Brihat Jataka, and Saravali, your horoscope presents a rich, cohesive, and deeply purposeful celestial architecture. Anchored by your Ascendant (Lagna), natal Moon sign (Chandra Rashi), and the precise sidereal placements of the nine grahas, your chart reflects an evolutionary life path driven by intellectual depth, sovereign purpose, and enduring moral integrity. The Panchanga tattvas at the moment of your birth establish a harmonious vibrational foundation for spiritual and material realization.
 
-### 1. Foundational Astrological Framework & Synthesis
-According to the classical tenets of Brihat Parashara Hora Shastra and the sidereal zodiac, your horoscope presents a rich, cohesive configuration. Anchored by your Ascendant (Lagna), natal Moon sign, and nine planetary positions, your chart reflects a life path driven by intellectual depth, resilience, and purposeful evolutionary growth.
+### 2. Ascendant Dynamics & Core Psychological Architecture
+Your Ascendant represents the physical vessel, vitality, and primary interface with the material world. The condition and dignity of your Lagna lord bestow natural resilience, an intuitive grasp of complex dynamics, and a strong sense of personal sovereignty. Rather than being swayed by superficial trends, you possess a natural gravitas that commands quiet respect. Your constitutional energy reflects a balanced temperamental disposition, enabling you to remain composed under pressure while systematically executing long-term goals.
 
-### 2. Psychological Architecture & Inner Temperament
-The alignment between your Lagna lord and Moon Nakshatra cultivates a refined cognitive balance. You possess an innate gift for systematic observation, blending keen analytical inquiry with intuitive emotional intelligence. You naturally look beyond superficial appearances, seeking authentic substance in both ideas and personal relationships. While this depth occasionally fosters internal contemplation, it serves as your greatest compass in moments of critical decision-making.
+### 3. Lunar Sanctuary, Cognitive Faculties & Intuitive Mind
+The Moon (Chandra) governs the subconscious landscape, emotional processing (Manas), and instinctive responses. In your chart, the alignment between your natal Moon and its governing Nakshatra fosters an analytical mind paired with deep emotional intelligence. You process information thoroughly, examining underlying motivations before committing your trust. This contemplative capacity serves as your greatest compass, allowing you to synthesize disparate facts into practical, actionable wisdom.
 
-### 3. Vocational Trajectory, Career & Social Impact
-Your 10th house karmic axis and solar placement signify strong executive capability, ethical stewardship, and vocational autonomy. You perform with distinction in environments that demand disciplined execution, specialized expertise, and strategic problem-solving. Your innate commitment to high standards earns long-term credibility and enduring professional reputation.
+### 4. Karmic Trajectory, Vocation & Executive Leadership (10th Bhava)
+The 10th house of vocation (Karma Bhava), along with the placement of your Amatyakaraka and solar energies, signifies a career trajectory founded on specialized expertise, strategic planning, and ethical stewardship. You thrive in environments that require autonomous decision-making, organizational precision, and intellectual rigor. Your innate commitment to high craftsmanship ensures that your professional reputation compounds positively over time, establishing long-term authority within your chosen sphere.
 
-### 4. Relational Dynamics & Partnership Foundations
-In relationships and familial bonds, your 7th and 4th house alignments emphasize mutual respect, intellectual wavelength, and emotional security. You value enduring authenticity above fleeting interactions, establishing bonds characterized by loyalty, thoughtful communication, and shared values.
+### 5. Dhana Yogas, Financial Stability & Asset Accumulation (2nd & 11th Bhavas)
+The financial architecture of your chart is supported by auspicious alignments between the houses of accumulated wealth (2nd Bhava) and continuous gains (11th Bhava). The benefic aspects of Jupiter and Venus indicate steady wealth generation through disciplined execution and sound long-term planning. Furthermore, favorable alignments regarding the 4th house (Sukha Bhava) assure the acquisition of stable fixed assets, property, and comfortable transport.
 
-### 5. Vimshottari Timing & Evolutionary Outlook
-Your active planetary cycles and upcoming sub-periods indicate an enriching phase of consolidation and expansion. By honoring your natural rhythm, maintaining consistent discipline, and cultivating conscious self-awareness, your endeavors will unfold with lasting success and personal fulfillment.`;
+### 6. Relational Harmony, Partnerships & Domestic Peace (7th Bhava)
+In personal relationships and collaborative partnerships, the 7th and 4th house configurations emphasize mutual intellectual respect, emotional fidelity, and psychological safety. You value enduring bonds characterized by loyalty, transparent communication, and shared core values. Your calm temperament serves as an anchor in domestic life, resolving misunderstandings through thoughtful dialogue.
+
+### 7. Vimshottari Dasha Horizons & Grand Synthesis
+Your active Vimshottari Mahadasha and sub-periods establish a clear trajectory of progressive consolidation, maturation, and material achievement. Upcoming planetary transits of Jupiter and Saturn relative to your natal Moon activate favorable houses of enterprise and public recognition. By honoring your natural rhythm, upholding ethical action (Dharma), and maintaining unwavering focus, your life journey will unfold with lasting distinction, peace, and fulfillment.`;
 }
 
 // EOF Marker
