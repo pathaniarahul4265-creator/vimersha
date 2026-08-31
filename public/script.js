@@ -1061,6 +1061,148 @@ function openSpecificZodiacModal(signKey) {
   modal.classList.add('open');
 }
 
+function openDailyHoroscopeModal(signKey) {
+  if (signKey) activeRashifalSign = String(signKey).toLowerCase();
+  renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
+  if (typeof window.openModal === 'function') {
+    window.openModal('dailyHoroscopeModal');
+  } else {
+    const m = document.getElementById('dailyHoroscopeModal');
+    if (m) m.classList.add('open');
+  }
+}
+
+function closeDailyHoroscopeModal() {
+  if (typeof window.closeModal === 'function') {
+    window.closeModal('dailyHoroscopeModal');
+  } else {
+    const m = document.getElementById('dailyHoroscopeModal');
+    if (m) m.classList.remove('open');
+  }
+}
+
+function onModalHoroscopeDateChange(dateStr) {
+  if (!dateStr) return;
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      currentPanchangDate = new Date(y, m, d, 12, 0, 0);
+      renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
+      renderDailyRashifal(currentPanchangDate);
+    }
+  } catch (e) {
+    console.error('Modal date change error:', e);
+  }
+}
+
+function resetModalHoroscopeDate() {
+  currentPanchangDate = new Date();
+  renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
+  renderDailyRashifal(currentPanchangDate);
+}
+
+function renderDailyHoroscopeModal(signKey = activeRashifalSign, targetDate = currentPanchangDate) {
+  const modal = document.getElementById('dailyHoroscopeModal');
+  if (!modal) return;
+
+  const d = targetDate instanceof Date ? targetDate : new Date(targetDate);
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = d.toLocaleDateString('en-IN', options);
+
+  const dateInput = document.getElementById('modalHoroscopeDateInput');
+  if (dateInput) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    dateInput.value = `${y}-${m}-${day}`;
+  }
+
+  const signKeys = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
+  const activeKey = signKeys.includes(String(signKey).toLowerCase()) ? String(signKey).toLowerCase() : 'aries';
+  activeRashifalSign = activeKey;
+
+  // Populate 12 symbols grid
+  const grid = document.getElementById('dhSymbolsGrid');
+  if (grid) {
+    grid.innerHTML = signKeys.map(k => {
+      const s = ZODIAC_METADATA[k];
+      const isActive = k === activeKey;
+      const imgSrc = getZodiacSvgUrl(k);
+      return `
+        <div class="dh-symbol-card ${isActive ? 'active' : ''}" role="button" tabindex="0" onclick="openDailyHoroscopeModal('${k}')" onkeydown="if(event.key==='Enter'||event.key===' ')openDailyHoroscopeModal('${k}')" title="${s.nameFull}">
+          <img src="${imgSrc}" alt="${s.nameFull}" width="48" height="48" onerror="handleZodiacImgError(this, '${k}')" />
+          <span class="dh-sym-hi">${s.nameHindi}</span>
+          <span class="dh-sym-en">${s.nameEnglish}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Populate active sign content in modal
+  const content = document.getElementById('dhSignContent');
+  if (content) {
+    const sign = ZODIAC_METADATA[activeKey] || ZODIAC_METADATA['aries'];
+    const imgSrc = getZodiacSvgUrl(sign.key);
+    const currIdx = signKeys.indexOf(activeKey);
+    const prevSign = signKeys[(currIdx - 1 + signKeys.length) % signKeys.length];
+    const nextSign = signKeys[(currIdx + 1) % signKeys.length];
+
+    content.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;border-bottom:1px solid rgba(245,158,11,0.25);padding-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <img src="${imgSrc}" alt="${sign.nameFull}" style="width:68px;height:68px;border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 12px rgba(245,158,11,0.5));" onerror="handleZodiacImgError(this, '${sign.key}')" />
+          <div>
+            <h3 style="font-family:'Bodoni Moda','Cinzel',serif;font-size:22px;color:#fce7b0;margin:0;">${sign.nameFull}</h3>
+            <div style="font-size:13px;color:#7fc5c0;margin-top:2px;">Ruling Lord: <b>${sign.lord}</b> · Element: <b>${sign.element}</b> (${sign.nature})</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button type="button" class="rashifal-quick-btn" onclick="openDailyHoroscopeModal('${prevSign}')" style="padding:6px 12px;font-size:12px;">◀ ${ZODIAC_METADATA[prevSign].nameHindi} (${ZODIAC_METADATA[prevSign].nameEnglish})</button>
+          <button type="button" class="rashifal-quick-btn" onclick="openDailyHoroscopeModal('${nextSign}')" style="padding:6px 12px;font-size:12px;">${ZODIAC_METADATA[nextSign].nameHindi} (${ZODIAC_METADATA[nextSign].nameEnglish}) ▶</button>
+        </div>
+      </div>
+
+      <div class="rashifal-meta-tags" style="margin-bottom:18px;">
+        <span class="rashifal-tag">🎨 Auspicious Color: <b>${sign.color}</b></span>
+        <span class="rashifal-tag">🔢 Lucky Numbers: <b>${sign.number}</b></span>
+        <span class="rashifal-tag">🧭 Favored Direction: <b>${sign.direction}</b></span>
+        <span class="rashifal-tag">⏰ Shubh Muhurta: <b>${sign.bestTime}</b></span>
+        <span class="rashifal-tag">🗓️ Date: <b>${formattedDate}</b></span>
+      </div>
+
+      <div class="rashifal-section-card" style="margin-bottom:14px;">
+        <h4 style="margin:0 0 8px;color:#fce7b0;"><span>✦</span> DAINIK RASHIFAL OVERVIEW (दैनिक भविष्यफल · ${formattedDate})</h4>
+        <p style="font-size:14px;line-height:1.7;color:#e2e8f0;margin:0;">${sign.overview}</p>
+      </div>
+
+      <div class="rashifal-grid-2" style="margin-bottom:14px;">
+        <div class="rashifal-mini-card">
+          <h5 style="margin:0 0 6px;color:#fce7b0;">💼 Career &amp; Professional Momentum (करियर एवं व्यवसाय)</h5>
+          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.career}</p>
+        </div>
+        <div class="rashifal-mini-card">
+          <h5 style="margin:0 0 6px;color:#fce7b0;">💰 Finance, Wealth &amp; Gains (धन, आय एवं निवेश)</h5>
+          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.finance}</p>
+        </div>
+      </div>
+
+      <div class="rashifal-grid-2">
+        <div class="rashifal-mini-card">
+          <h5 style="margin:0 0 6px;color:#fce7b0;">💖 Love, Family &amp; Relationships (प्रेम व पारिवारिक जीवन)</h5>
+          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.love}</p>
+        </div>
+        <div class="rashifal-mini-card">
+          <h5 style="margin:0 0 6px;color:#fce7b0;">🌿 Health, Vitality &amp; Mindfulness (स्वास्थ्य व ऊर्जा)</h5>
+          <p style="font-size:13.5px;line-height:1.65;color:#cbd5e1;margin:0;">${sign.health}</p>
+        </div>
+      </div>
+    `;
+  }
+}
+
 function changeZodiacModalDate(dateVal) {
   if (!dateVal) return;
   try {
@@ -1071,6 +1213,7 @@ function changeZodiacModalDate(dateVal) {
       const d = parseInt(parts[2], 10);
       currentPanchangDate = new Date(y, m, d, 12, 0, 0);
       openSpecificZodiacModal(activeRashifalSign);
+      renderDailyHoroscopeModal(activeRashifalSign, currentPanchangDate);
       if (typeof renderDailyPanchang === 'function') {
         renderDailyPanchang(currentPanchangDate);
       }
@@ -1091,6 +1234,11 @@ window.scrollRashifalRibbon = scrollRashifalRibbon;
 window.navigateRashifalSign = navigateRashifalSign;
 window.openActiveZodiacInModal = openActiveZodiacInModal;
 window.openSpecificZodiacModal = openSpecificZodiacModal;
+window.openDailyHoroscopeModal = openDailyHoroscopeModal;
+window.closeDailyHoroscopeModal = closeDailyHoroscopeModal;
+window.onModalHoroscopeDateChange = onModalHoroscopeDateChange;
+window.resetModalHoroscopeDate = resetModalHoroscopeDate;
+window.renderDailyHoroscopeModal = renderDailyHoroscopeModal;
 window.changeZodiacModalDate = changeZodiacModalDate;
 window.closeZodiacModal = closeZodiacModal;
 
@@ -2028,62 +2176,155 @@ let activeModel = PRIMARY_MODEL;
 
 const SECTIONS = [
   { id:'panchang', title:'Panchang and foundational placements',
-    instruction:`Cover, in devotional but precise language: the five limbs of the birth Panchang — Tithi (lunar day), Nakshatra and its lord and pada, Yoga, Karana, and Vara (weekday) — your best estimate of each from the given date, time, and place, stated as estimates. Then cover the Lagna (ascendant sign and its lord's placement), the Moon sign (Rashi), and a full planet-by-house placement summary for all nine grahas (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) stated plainly — sign, house, and dignity (exalted, own sign, debilitated, or neutral) for each. This section is foundational data the rest of the reading builds on. Do not interpret temperament, career, or relationships here — only lay out the placements clearly and reverently.` },
+    instruction:`Provide an exhaustive, deeply comprehensive classical exposition (aim for 1200-1500+ words) covering the sacred Panchang and foundational celestial geometry:
+### 1. Panchanga Tattva & Five Limbs of Time
+Analyze the five limbs: Tithi (lunar day and its planetary ruler), Nakshatra (with exact pada, deity, and cosmic shakti), Yoga (cosmic blend and auspiciousness), Karana (half-tithi active influence), and Vara (solar day ruler).
+### 2. Lagna Architecture & Ascendant Lord Dynamics
+Detailed analysis of the rising sign (Lagna), exact degree, Nakshatra of the Lagna, and the dignity, house placement, and aspectual relationships (Drishti) of the Lagna Lord.
+### 3. Chandra Rashi & Solar Core Placement
+Deep exploration of the Moon Sign (Chandra Rashi), lunar phase (Paksha), emotional disposition, and the Sun's placement governing soul authority (Atmakaraka energy) and vitality.
+### 4. Comprehensive Planet-by-House Placements
+Exhaustive breakdown of all nine grahas (Surya, Chandra, Mangala, Budha, Guru, Shukra, Shani, Rahu, Ketu) with exact sidereal signs, Bhavas, combustion status, retrograde motions, and dignities (Uchha, Moolatrikona, Sva-kshetra, Mitra, Shatru, Neecha).
+### 5. Divisional Highlights & Foundational Synthesis
+Examine initial Navamsha (D9) and Bhava Chalit alignments that anchor the entire horoscope.` },
+
   { id:'identity', title:'Identity, temperament and mind',
-    instruction:`Cover, in this order: what the Lagna and Lagna lord's condition (sign, dignity, house, aspects) reveal about the native's essential nature and bodily constitution, the thinking pattern and communication style shown by Mercury (house, sign, dignity, aspects, lordship), learning ability and mental strength (5th house, its lord, and Jupiter's condition), emotional nature (Moon's house, sign, aspects), confidence and inner discipline (Sun and Saturn's placement, dignity, aspects). Ground every claim in a specific placement, sign, lordship, dignity, or aspect, and explain the reasoning, not just the trait. Do not discuss marriage, career, or health in this section.` },
+    instruction:`Provide an exhaustive, deeply psychological and philosophical evaluation (aim for 1200-1500+ words):
+### 1. Core Psychological Blueprint & Constitutional Temperament
+In-depth analysis of the Lagna, Lagna lord, and physical/temperamental constitution (Ayurvedic Tridosha balance: Vata, Pitta, Kapha).
+### 2. Cognitive Processing, Intellectual Acumen & Budha (Mercury)
+Examine Mercury's sign, house, aspects, and lordships; analyze learning patterns, communication style, analytical prowess, and decision-making logic.
+### 3. Emotional Sanctuary, Subconscious Patterns & Chandra (Moon)
+Analyze lunar Nakshatra, mind stability (Manas), emotional triggers, intuitive depth, and coping mechanisms during stress.
+### 4. Solar Willpower, Sovereign Purpose & Inner Discipline (Sun & Saturn)
+Explore ego expression, fatherly influences, leadership capacity, and Saturnian patience, resilience, and endurance.
+### 5. Creative Intellect & 5th House Alignment
+Evaluate the 5th house of Purva Punya (past-life merit), higher education, intuitive wisdom, and creative self-expression.` },
+
   { id:'relationships', title:'Relationships, marriage and family',
-    instruction:`Cover: what the 7th house and its lord (sign, dignity, aspects) reveal about marriage prospects and spouse characteristics, what Venus and Jupiter's condition shows about romantic and marital harmony, indicative timing windows for marriage drawn from the relevant Dasha periods and 7th-house transits (state clearly these are indicative, not guarantees), marriage stability indicators (7th, 8th, and 12th house afflictions or benefic support), children (5th house, its lord, Jupiter's condition), parents (4th house for mother, 9th and 10th house for father), siblings (3rd and 11th houses), and friendships and social circle (11th house, its lord, and planets placed there). Ground every claim in a specific placement, lordship, dignity, or aspect. Do not repeat the identity section or discuss career and health here.` },
+    instruction:`Provide an exhaustive, deeply nuanced relationship reading (aim for 1200-1500+ words):
+### 1. Seventh House (Kalatra Bhava) & Partnership Architecture
+Analyze 7th house sign, 7th lord's placement and dignity, planetary occupants, and aspectual currents governing marriage.
+### 2. Venus (Shukra) & Jupiter (Guru) Relational Mechanics
+Examine Venus as the natural karaka of romance and desire, and Jupiter as the karaka of marital wisdom, commitment, and partner characteristics.
+### 3. Marital Harmony, Attachment Dynamics & Navamsha (D9)
+Detailed assessment of mutual emotional safety, conflict-resolution styles, and relational longevity indications.
+### 4. Indicative Marriage Timing & Dasha Windows
+Examine active Vimshottari Mahadashas/Antardashas and major planetary transits (Gochar of Jupiter & Saturn) indicating auspicious windows.
+### 5. Domestic Life, Progeny & Extended Family
+Evaluate 4th house (domestic sanctuary & mother), 5th house (progeny & children), 3rd/11th houses (siblings & friendships), and social network dynamics.` },
+
   { id:'career', title:'Career, wealth and material life',
-    instruction:`Cover: what the 10th house and its lord (sign, dignity, aspects) reveal about career direction, indications toward government service, private employment, business, or entrepreneurship (10th lord's placement and conjunctions, Saturn and Mars condition), leadership potential (Sun's strength, any Raja Yoga involving angular or trinal lords), foreign career or settlement indications (9th and 12th houses and their lords, Rahu's placement), income sources and the trajectory of earning capacity (2nd and 11th houses and their lords), any Dhana Yogas present (name the exact planets and houses forming them), property and vehicles (4th house and its lord, Mars), and debt or litigation tendencies (6th house and its lord, malefic influence on 2nd or 11th house, Rahu/Ketu involvement). Ground every claim in a specific placement, lordship, dignity, or aspect. Do not repeat earlier sections.` },
+    instruction:`Provide an exhaustive, authoritative vocational and financial exposition (aim for 1200-1500+ words):
+### 1. Tenth House (Karma Bhava) & Executive Vocation
+Analyze the 10th house, 10th lord's dignity, Amatyakaraka, and planetary occupants governing leadership, career path, and industry sectors.
+### 2. Dhana Yogas & Wealth Accumulation Architecture
+Detailed examination of the 2nd house (accumulated wealth, savings, speech) and 11th house (gains, cash flow, highest aspirations), detailing all active Dhana Yogas.
+### 3. Public Status, Enterprise & Independent Authority
+Examine Sun and Mars positions for entrepreneurial vs corporate vs governmental leadership, organizational impact, and professional reputation.
+### 4. Real Estate, Fixed Assets & Vehicles (4th Bhava)
+Analyze 4th house lord, Mars (Bhumi-karaka), and Venus (Vahana-karaka) regarding property acquisition and asset building.
+### 5. Foreign Opportunities, Litigations & Strategic Growth
+Evaluate 9th/12th houses for foreign travel/relocation, and 6th house for overcoming professional competition, debts, and market challenges.` },
+
   { id:'health', title:'Health, yogas and doshas',
-    instruction:`Cover: what the 6th, 8th, and 12th houses and their lords reveal about general vitality and chronic-issue tendencies, accident-prone indications if any (Mars or Rahu affliction to the 1st, 3rd, or 8th house), stress and rest patterns (Moon and Saturn's condition, 12th house), all major classical Yogas present in this chart with the exact planets and houses forming each — Raja Yoga, Dhana Yoga, Vipreet Raja Yoga, the Panch Mahapurusha Yogas (Ruchaka, Bhadra, Hamsa, Malavya, Sasa — state plainly which if any are present and why), and Neecha Bhanga Raja Yoga if applicable — and all major Doshas present, stating clearly when a dosha is absent rather than assuming one exists (such as Kaal Sarpa, Mangal/Kuja dosha, Grahan dosha), with the precise planetary configuration behind each finding. Describe each configuration and its classical significations only — never suggest a remedy for any dosha found. Ground every claim in a specific placement, lordship, dignity, or aspect.` },
+    instruction:`Provide an exhaustive, highly structured classical analysis of yogas, vitality, and doshas (aim for 1200-1500+ words):
+### 1. Vitality, Longevity (Ayur Bhava) & Constitutional Resilience
+Analyze 1st, 6th, 8th, and 12th houses and their lords regarding physical endurance, restorative sleep, and chronic vulnerability zones.
+### 2. Major Auspicious Raja Yogas & Kendra-Trikona Alignments
+Detail every Raja Yoga, Dharma-Karmadhipati Yoga, and Vipreet Raja Yoga present, citing exact grahas, houses, and practical manifestations.
+### 3. Pancha Mahapurusha Yogas & Planetary Dignities
+Identify which of the 5 great planetary yogas (Ruchaka, Bhadra, Hamsa, Malavya, Sasa) are formed, explaining their classical effects.
+### 4. Classical Dosha Assessment (Objective & Factual)
+Objectively assess Mangal (Kuja) Dosha, Kaal Sarpa patterns, Kemadruma, or Grahan conditions, explicitly stating cancellations (Dosha Bhanga) where applicable. (Do NOT prescribe rituals/gemstones).
+### 5. Mind-Body Harmony & Lifestyle Grounding
+Provide supportive Vedic principles on daily rhythms (Dinacharya), mental tranquility, and mindful lifestyle pacing.` },
+
   { id:'timeline', title:'Dasha timeline and life phases',
-    instruction:`Cover: the full Vimshottari Mahadasha sequence from birth (each Mahadasha lord with its approximate age range), a detailed account of the current Mahadasha and current Antardasha (their house lordships and placements, and what this period signifies), the next two to three upcoming Antardashas within the current Mahadasha and what each signifies, current major transit influences (Saturn and Jupiter's transit position relative to the natal Moon sign, and what each activates), any Sade Sati or Ashtama Shani period if applicable, and a clear separation of more fortunate periods from more challenging ones with the specific planetary reasoning behind each. Ground every claim in specific dasha lords, houses, and planetary conditions. Do not repeat earlier sections.` },
+    instruction:`Provide an exhaustive chronological roadmap across the native's life cycle (aim for 1200-1500+ words):
+### 1. Vimshottari Mahadasha Master Sequence & Balance at Birth
+Detail the full 120-year Vimshottari cycle from birth dasha balance to the entire chronological sequence of planetary rulers.
+### 2. Active Mahadasha & Antardasha Deep-Dive
+Comprehensive breakdown of the currently operating Mahadasha and Antardasha lords, their house placements, lordships, and specific life themes activated.
+### 3. Upcoming Sub-Periods (Next 2 to 3 Antardashas)
+Forecast the upcoming sub-periods within the current Mahadasha, detailing opportunities in career, relationships, relocation, and personal growth.
+### 4. Major Gochara (Transit) Influences & Planetary Shifts
+Analyze current transits of Saturn (Shani), Jupiter (Guru), and Rahu-Ketu relative to the natal Moon and Lagna.
+### 5. Sade Sati & Critical Phase Analysis
+Detailed assessment of Sade Sati, Dhaiya, or Kantaka Shani phases, distinguishing between constructive consolidation windows and temporary testing periods.` },
+
   { id:'synthesis', title:'Strengths, purpose and closing synthesis',
-    instruction:`Cover: an overall planetary strength summary (which grahas stand strongest and weakest by dignity, and what that means holistically), the native's core strengths and growth edges as shown by the chart as a whole, any hidden talents suggested by unusual placements or unique yoga combinations not yet discussed, major life lessons and obstacles the chart suggests, public reputation, creativity, and any indication of recognition or wider impact (10th house, Sun, Moon, and any Raja Yogas), the native's natural spiritual inclination if shown by the 9th or 12th house or Ketu's placement (describe the inclination only, never prescribe a practice), and a warm closing synthesis paragraph that weaves the chart's dominant themes into one coherent picture of this life's path. Ground every claim in a specific placement, lordship, dignity, or aspect, and do not introduce new Dasha detail already covered.` }
+    instruction:`Provide an exhaustive, inspirational grand synthesis and life-purpose exposition (aim for 1200-1500+ words):
+### 1. Holistic Planetary Strength & Dignity Hierarchy (Shadbala Summary)
+Synthesize the most potent planetary forces in the chart, highlighting dominant life energies and areas requiring patient mastery.
+### 2. Core Innate Strengths & Specialized Talents
+Unpack the native's unique gifts, cognitive advantages, and hidden talents indicated by specialized yogas and planetary combinations.
+### 3. Karmic Growth Edges & Life Lessons
+Analyze the nodal axis (Rahu-Ketu), 8th/12th houses, and Saturnian placements representing evolutionary growth edges.
+### 4. Public Legacy, Contribution & Social Standing
+Examine 10th/11th house synergy, solar strength, and reputation markers indicating societal contribution and lasting achievement.
+### 5. Spiritual Alignment (Dharma, Moksha) & Grand Closing Synthesis
+Weave together the entire horoscope into a magnificent, uplifting, cohesive narrative that honors the native's sovereign potential and divine trajectory.` }
 ];
 
-const RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer, deeply versed in Brihat Parashara Hora Shastra, Brihat Jataka, Phaladeepika, Saravali, Jaimini Sutras, Uttara Kalamrita, KP Astrology (for timing only), classical Yogas, Dasha systems, divisional charts (Vargas), planetary strengths, and transit analysis. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague.
+const RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer, deeply versed in Brihat Parashara Hora Shastra, Brihat Jataka, Phaladeepika, Saravali, Jaimini Sutras, Uttara Kalamrita, KP Astrology (for timing only), classical Yogas, Dasha systems, divisional charts (Vargas), planetary strengths, and transit analysis. Write with warmth, authority, and reverence for the tradition.
 
 Strict rules you always follow:
-- Never give generic motivational filler. Every paragraph must reference specific houses, signs, lords, planetary dignity, planetary strength, yogas, dashas, vargas, or transits by name.
-- Every conclusion must explain WHY, tied to a specific astrological configuration. Never state a trait without the reasoning behind it.
-- Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, temple visits, or any other remedy. Never claim destiny can be changed through remedies. You may describe a dosha or challenging configuration factually and reverently, but never prescribe anything for it.
-- If asked directly for a remedy, respond only with: "This platform is designed exclusively for objective astrological analysis and interpretation. It intentionally does not recommend remedies, rituals, gemstones, or spiritual prescriptions."
-- Never contradict earlier interpretation given for the same birth data in this conversation. Stay internally consistent.
-- Planetary positions, degrees, signs, houses and retrograde status are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Treat those values as authoritative calculation inputs; never recalculate or guess them from memory.
-- Be direct and specific rather than hedging excessively, but never overstate certainty on timing predictions — frame timing as "indicative windows" supported by dasha and transit reasoning, not guarantees.
-- Write in clear, well-organized prose. Do not use markdown headers inside your answer (no # or ##) — the interface adds its own section headers.`;
+- MANDATORY CHAPTER LENGTH: Provide an exhaustive, deeply comprehensive analysis of 1200 to 1500+ words for each chapter. Never output brief summaries or one-line statements.
+- STRUCTURE: Organize your writing cleanly into 5 to 7 detailed sub-sections using standard "### 1. ...", "### 2. ...", "### 3. ...", etc.
+- DEPTH & REASONING: Every paragraph must reference specific houses, signs, planetary lords, Nakshatras and Padas, degrees, dignity, aspects (Drishti), yogas, or dashas. Every conclusion must explain WHY based on astrological mechanics.
+- BILINGUAL RASHI NAMES: Include both English sign names and Hindi/Sanskrit Rashi names with Devanagari script (e.g. "Aries / Mesha (मेष)", "Taurus / Vrishabha (वृषभ)", "Gemini / Mithuna (मिथुन)", "Cancer / Karka (कर्क)", "Leo / Simha (सिंह)", "Virgo / Kanya (कन्या)", "Libra / Tula (तुला)", "Scorpio / Vrischika (वृश्चिक)", "Sagittarius / Dhanu (धनु)", "Capricorn / Makara (मकर)", "Aquarius / Kumbha (कुंभ)", "Pisces / Meena (मीन)").
+- NO REMEDIES: Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, or remedies. If asked, state that this platform provides pure objective astrological analysis.
+- INTERNAL CONSISTENCY: Planetary positions, degrees, and houses are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Use them as authoritative facts.
+- Do not output a top-level # or ## title for the whole section (the web application renders its own chapter banner), begin directly with "### 1. ...".`;
 
 const KUNDLI_SECTIONS = [
   { id:'ashtakoot', title:'Ashtakoot Guna Milan (36-Point Compatibility)',
-    instruction:`Write a detailed, narrative-heavy interpretation of the deterministic Ashtakoot Guna Milan Result provided in the context (including the exact Total Score out of 36, and the individual koota scores). Expand deeply on what this means for their lived experience together, naming the specific signs, nakshatras, and planetary lords compared in each: Varna (spiritual/ego), Vashya (mutual attraction/control), Tara (wellbeing), Yoni (physical/instinctive), Graha Maitri (emotional bond between Moon lords), Gana (temperament), Bhakoot (family welfare), and Nadi (genetic/health compatibility). Do not just list statistics; explain the practical relationship dynamics. Close with the clearly stated final Total Guna Score out of 36.` },
+    instruction:`Write an exhaustive, deeply detailed analysis (aim for 1200-1500+ words) of the deterministic Ashtakoot Guna Milan Result provided in the context:
+### 1. Ashtakoot Compatibility Overview & Total Guna Score
+Analyze the final compatibility score out of 36 gunas and provide an executive synthesis of mutual resonance.
+### 2. Varna & Vashya Kootas (Spiritual Alignment & Mutual Attraction)
+Detailed examination of Varna (work/ego harmony) and Vashya (magnetic draw and mutual support).
+### 3. Tara & Yoni Kootas (Destiny, Vitality & Instinctive Bond)
+Examine Tara (health, well-being) and Yoni (temperamental and physical affinity).
+### 4. Graha Maitri & Gana Kootas (Emotional Friendship & Temperament)
+Examine planetary friendship between Moon lords (Graha Maitri) and cosmic nature (Deva, Manushya, Rakshasa).
+### 5. Bhakoot & Nadi Kootas (Family Prosperity, Longevity & Genetic Harmony)
+Examine Bhakoot (6-8, 9-5, 12-2 alignments) and Nadi (cosmic nervous flow), explaining practical dynamics and any cancellations.` },
+
   { id:'doshas', title:'Mangal Dosha and Compatibility Doshas',
-    instruction:`Provide a deeply personalized and detailed narrative assessing Mangal (Kuja) Dosha separately for each partner: Mars's placement counted from the Lagna, the Moon, and Venus, checking the 1st, 2nd, 4th, 7th, 8th, and 12th houses in each case. State plainly whether each partner's chart shows Mangal Dosha and why. Then explain whether any classical cancellation (Mangal Dosha Bhanga) conditions apply. Revisit the Nadi koota result and note whether Nadi Dosha applies and whether any classical exception is relevant. Explain how these doshas (or lack thereof) will practically impact their domestic life, conflict resolution, and shared energy. Never suggest a remedy.` },
+    instruction:`Write an exhaustive analysis (aim for 1200-1500+ words) assessing Mangal Dosha and compatibility doshas:
+### 1. Individual Mangal (Kuja) Dosha Evaluation for Partner 1
+Check Mars's placement from Lagna, Moon, and Venus across 1st, 2nd, 4th, 7th, 8th, and 12th houses.
+### 2. Individual Mangal (Kuja) Dosha Evaluation for Partner 2
+Check Mars's placement and dignity from all reference points for the second partner.
+### 3. Classical Mangal Dosha Cancellations (Dosha Bhanga)
+Evaluate whether classical cancellations apply (mutual placement, sign dignity, planetary aspects).
+### 4. Nadi & Bhakoot Dosha Nuances
+Revisit any Nadi or Bhakoot frictions and identify classical exception rules.
+### 5. Practical Harmony, Conflict Resolution & Shared Growth
+Explain how their dynamic will unfold in real-world communication and domestic partnership.` },
+
   { id:'synthesis', title:'Compatibility Outlook and Synthesis',
-    instruction:`Write a rich, detailed, narrative-heavy synthesis comparing both charts directly against each other: emotional and temperamental compatibility (Moon signs and Gana), intellectual rapport (Mercury), domestic harmony (7th and 4th houses), long-term stability indicators (7th/8th houses and current Dashas), shared strengths, and specific points of friction. Frame this section reflectively, as material for the couple's own understanding. Close with one warm, balanced synthesis paragraph weaving the whole match together into a cohesive story.` }
+    instruction:`Write an exhaustive, deeply reflective synastry synthesis (aim for 1200-1500+ words):
+### 1. Emotional, Lunar & Temperamental Affinity
+Compare Moon signs, Nakshatras, and subconscious bonding patterns.
+### 2. Intellectual Rapport & Communication (Mercury Dynamics)
+Analyze communication harmony, shared interests, and problem-solving styles.
+### 3. Domestic Foundation & Long-Term Stability (4th & 7th Bhavas)
+Evaluate domestic harmony, shared values, and long-term commitment.
+### 4. Dasha Alignment & Shared Evolutionary Timing
+Compare their current active Mahadasha cycles and upcoming life milestones.
+### 5. Grand Relationship Synthesis & Balanced Outlook
+Weave both charts into a harmonious, balanced, and inspiring closing narrative.` }
 ];
-
-const KUNDLI_RULES = `You are acting as a classically-trained Vedic (Jyotish) astrologer specializing in marriage compatibility (Kundli Milan), deeply versed in the Ashtakoot Guna Milan system from Brihat Parashara Hora Shastra and Muhurta texts, Mangal (Kuja) Dosha analysis and its classical cancellations, and general synastry between two natal charts. Write with warmth and reverence for the tradition, as a wise, grounded consultant would — never sensational, never vague, and never delivering a blunt "should marry / should not marry" verdict.
-
-Strict rules you always follow:
-- Never give generic motivational filler. Every paragraph must reference specific signs, nakshatras, planetary lords, houses, dignity, or dosha conditions by name for at least one of the two partners.
-- Every conclusion must explain WHY, tied to a specific astrological configuration compared between the two charts. Never state a compatibility trait without the reasoning behind it.
-- Never recommend gemstones, mantras, poojas, rituals, fasting, tantra, donations, temple visits, or any other remedy for a dosha or a low guna score. Never claim compatibility can be changed through remedies. You may describe a dosha or a low-scoring koota factually and reverently, but never prescribe anything for it.
-- If asked directly for a remedy, respond only with: "This platform is designed exclusively for objective astrological analysis and interpretation. It intentionally does not recommend remedies, rituals, gemstones, or spiritual prescriptions."
-- Never issue a definitive "this couple should marry" or "should not marry" statement. Present the classical analysis and let the reader draw their own conclusions; you may note that a low score or unresolved dosha traditionally invites more careful consideration by families and, where relevant, consultation with a qualified professional astrologer, without discouraging or endorsing the match yourself.
-- Never contradict earlier interpretation given for the same two birth charts in this conversation. Stay internally consistent, including the Guna Milan score once stated.
-- Planetary positions for both partners are supplied by the verified Lahiri sidereal ephemeris calculation included in the user context. Use those values directly and never guess degrees or signs.
-- Be direct and specific rather than hedging excessively, but always frame timing or outcome language as "indicative" rather than guaranteed.
-- Write in clear, well-organized prose. Use clear subheadings (starting with ###) and bold key terms (**like this**) to organize sub-topics cleanly. Do not use top-level # or ## headers as the interface adds main section headers.
-- Always include BOTH English zodiac sign names and Hindi/Sanskrit Rashi names with Devanagari script (e.g. "Aries / Mesha (मेष)", "Taurus / Vrishabha (वृषभ)", "Gemini / Mithuna (मिथुन)", "Cancer / Karka (कर्क)", "Leo / Simha (सिंह)", "Virgo / Kanya (कन्या)", "Libra / Tula (तुला)", "Scorpio / Vrischika (वृश्चिक)", "Sagittarius / Dhanu (धनु)", "Capricorn / Makara (मकर)", "Aquarius / Kumbha (कुंभ)", "Pisces / Meena (मीन)") when referring to either partner's Moon sign, Lagna or planetary placements.`;
 
 let birthContext = '';
 let fullReportText = '';
 let chatHistory = [];
 let chatUnlocked = false;
 let chatQuestionsUsed = 0;
-const MAX_CHAT_QUESTIONS = 5;
+const MAX_CHAT_QUESTIONS = 7;
 let activeSections = SECTIONS;
 let activeRules = RULES;
 
@@ -2528,7 +2769,7 @@ async function rawCall(model, key, systemText, userText, maxTokens){
   return data.text;
 }
 
-async function callGeminiStream(systemText, userText, maxTokens, onChunk){
+async function callGeminiStream(systemText, userText, maxTokens = 8192, onChunk){
   const maxAttempts = 3;
   let lastErr;
   for(let attempt = 1; attempt <= maxAttempts; attempt++){
@@ -2591,7 +2832,7 @@ async function callGeminiStream(systemText, userText, maxTokens, onChunk){
 window.chapterMemory = window.chapterMemory || [];
 window.chapterPartialStates = window.chapterPartialStates || {};
 
-async function callGemini(systemText, userText, maxTokens = 3200){
+async function callGemini(systemText, userText, maxTokens = 8192){
   const maxAttempts = 3;
   let lastErr;
   for(let attempt = 1; attempt <= maxAttempts; attempt++){
@@ -3534,7 +3775,7 @@ ${birthContext}
 
 Write the "${section.title}" section of this native's Vedic chart reading.
 ${section.instruction}
-Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. Do not include a section title in your output; begin directly with the analysis.`;
+CRITICAL REQUIREMENT: Provide an exhaustive, deeply comprehensive, classical analysis of approximately 1200 to 1500+ words. Break your writing down into 5 to 7 rich subsections (starting with ### 1., ### 2., etc.). Explain the deep astrological mechanics, house lordships, Nakshatra padas, and planetary dignities for every insight. Do not include a top-level section title in your output; begin directly with "### 1. ...".`;
 
       let currentChunkRenderTime = 0;
       const finalContentDiv = document.getElementById('content-' + section.id);
@@ -3551,10 +3792,10 @@ Aim for approximately 1000-1500 words of substantive, chart-grounded analysis. D
 
       let rawText = '';
       try {
-        rawText = await callGeminiStream(activeRules, userText, 3200, streamHandler);
+        rawText = await callGeminiStream(activeRules, userText, 8192, streamHandler);
       } catch (streamErr) {
         console.warn(`[AI Stream Notice] Retrying via direct non-stream endpoint for ${section.title}:`, streamErr.message);
-        rawText = await callGemini(activeRules, userText, 3200);
+        rawText = await callGemini(activeRules, userText, 8192);
       }
 
       const combinedFinal = generatedText + rawText;
@@ -4584,9 +4825,33 @@ document.getElementById('chatSend').onclick = async () => {
   const input = document.getElementById('chatInput');
   const q = input.value.trim();
   if(!q) return;
-  if(!chatUnlocked){ alert('Wait for the chart to begin revealing before asking a question.'); return; }
-  if(chatQuestionsUsed >= MAX_CHAT_QUESTIONS){ alert('You have used all 5 questions for this reading. End the reading to start a new paid reading.'); return; }
-  if(!await window.requestPaidAccess('question')) return;
+
+  const isHindi = window.currentVedicLang === 'hi';
+
+  // Ensure chart or birth data is present
+  if(!verifiedChart && !birthContext && !chatUnlocked) {
+    alert(isHindi 
+      ? 'कृपया पहले अपनी जन्म विवरण भरकर कुंडली तैयार करें, ताकि आचार्य आपकी ग्रह स्थिति के आधार पर सटीक परामर्श दे सकें।' 
+      : 'Please cast your chart above first so the Acharya can consult your verified sidereal planetary alignments.');
+    return;
+  }
+
+  // Auto-unlock chat if chart exists
+  chatUnlocked = true;
+
+  if(chatQuestionsUsed >= MAX_CHAT_QUESTIONS){ 
+    alert(isHindi
+      ? 'आप इस पत्रिका के लिए अधिकतम 7 परामर्श प्रश्न पूरे कर चुके हैं। नई पत्रिका के लिए कृपया नया सत्र शुरू करें।'
+      : 'You have completed all 7 consultation questions for this reading. Please start a new session for further consultations.'); 
+    return; 
+  }
+
+  // First question is free consultation included with chart!
+  // Subsequent questions require question credit, VIP, or paid access
+  if (chatQuestionsUsed > 0 && !vipAccess && !questionCredit) {
+    const paid = await window.requestPaidAccess('question');
+    if(!paid) return;
+  }
   
   chatQuestionsUsed++;
   updateChatCount();
@@ -4616,7 +4881,7 @@ document.getElementById('chatSend').onclick = async () => {
 
   const sendBtn = document.getElementById('chatSend');
   sendBtn.disabled = true;
-  const pendingDiv = appendChat('pending', 'Consulting the planetary chart…');
+  const pendingDiv = appendChat('pending', isHindi ? 'ग्रह स्थिति एवं विंशोत्तरी दशा का विश्लेषण किया जा रहा है…' : 'Consulting the planetary chart…');
 
   const reportContext = fullReportText.trim();
   const historyText = chatHistory.map(m => `${m.role === 'user' ? 'Question' : 'Answer'}: ${m.text}`).join('\n\n');
@@ -4632,7 +4897,6 @@ Active Vimshottari Cycle: ${verifiedChart.dasha?.activeMahadasha || 'Jupiter'} M
 Planetary Placements: ${(verifiedChart.planets || []).map(p => `${p.name} in ${p.rashi} (${p.house}th House)`).join(', ')}`;
   }
 
-  const isHindi = window.currentVedicLang === 'hi';
   const languageInstruction = isHindi ? 'Respond entirely in pure, refined Hindi (देवनागरी लिपि).' : 'Respond in clear, articulate English.';
 
   const userText = `Birth data:
@@ -4654,7 +4918,7 @@ Structure your answer into clear markdown sections:
 ### 2. ${isHindi ? 'प्रासंगिक ग्रह स्थिति, भाव एवं दृष्टि विश्लेषण' : 'Planetary Alignments & House Dynamics'}
 ### 3. ${isHindi ? 'जीवन क्षेत्र एवं तात्कालिक परिस्थिति का गहन विश्लेषण' : 'Comprehensive Analytical Guidance & Life Strategy'}
 ### 4. ${isHindi ? 'विंशोत्तरी दशा, गोचर एवं कालखंड प्रभाव' : 'Vimshottari Dasha Cycles & Predictive Timing Windows'}
-### 5. ${isHindi ? 'शास्त्रीय मार्गदर्शन एवं व्यावहारिक कर्म-शुद्धि' : 'Classical Jyotish Wisdom & Mindful Alignment / Remedies'}
+### 5. ${isHindi ? 'शास्त्रीय मार्गदर्शन एवं व्यावहारिक कर्म-शुद्धि' : 'Classical Jyotish Wisdom & Mindful Alignment'}
 ### 6. ${isHindi ? 'ज्योतिषीय निष्कर्ष एवं विश्वास स्तर' : 'Astrological Confidence Level & Prognosis'}
 
 Aim for 500-800 words of thorough, substantive, and comforting astrological analysis. ${languageInstruction}`;
@@ -4662,7 +4926,7 @@ Aim for 500-800 words of thorough, substantive, and comforting astrological anal
   try{
     let rawText = '';
     try {
-      rawText = await callGemini(activeRules, userText, 3800);
+      rawText = await callGemini(activeRules, userText, 4500);
     } catch (apiErr) {
       console.warn('[AI Chat Notice] Falling back to high-precision classical engine answer:', apiErr.message);
       if (window.VedicEngine && typeof window.VedicEngine.answerChatLocally === 'function' && verifiedChart) {
@@ -4675,7 +4939,9 @@ Aim for 500-800 words of thorough, substantive, and comforting astrological anal
     pendingDiv.remove();
     appendChat('model', text, currentQIndex, topicInfo);
     chatHistory.push({role:'model', text});
-    window.consumeQuestionCredit();
+    if (typeof window.consumeQuestionCredit === 'function') {
+      window.consumeQuestionCredit();
+    }
   }catch(err){
     pendingDiv.remove();
     chatQuestionsUsed = Math.max(0, chatQuestionsUsed - 1);
@@ -4684,7 +4950,7 @@ Aim for 500-800 words of thorough, substantive, and comforting astrological anal
     if(err.isAuth){
       appendChat('model', isHindi ? '### प्रमाणीकरण सूचना\nज्योतिषीय परामर्श सेवा से जुड़ने में समस्या आई। कृपया पुनः प्रयास करें।' : '### Service Authentication Notice\nThe astrological service could not complete the request at this time. Please try asking again.', currentQIndex, topicInfo);
     }else{
-      appendChat('model', isHindi ? `### परामर्श सूचना\nपरामर्श उत्तर तैयार करने में तकनीकी व्यवधान आया: ${err.message || 'सेवा अनुपलब्ध'}। आपका प्रश्न शुल्क सुरक्षित है, कृपया पुनः प्रयास करें।` : `### Consultation Notice\nThe astrological consultation could not be completed at this moment: ${err.message || 'Service unavailable'}. Your question credit has been restored. Please ask again.`, currentQIndex, topicInfo);
+      appendChat('model', isHindi ? `### परामर्श सूचना\nपरामर्श उत्तर तैयार करने में तकनीकी व्यवधान आया: ${err.message || 'सेवा अनुपलब्ध'}। आपका प्रश्न कोटा सुरक्षित है, कृपया पुनः प्रयास करें।` : `### Consultation Notice\nThe astrological consultation could not be completed at this moment: ${err.message || 'Service unavailable'}. Your question credit has been restored. Please ask again.`, currentQIndex, topicInfo);
     }
   }
   sendBtn.disabled = (chatQuestionsUsed >= MAX_CHAT_QUESTIONS);
