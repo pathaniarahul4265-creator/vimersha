@@ -426,52 +426,123 @@ export default async function handler(req,res){
     if(req.method==='GET'&&path==='/admin/promos'){
       let dbCodes = [];
       try { dbCodes = await db.select('promo_codes','select=*&order=created_at.desc&limit=500'); } catch {}
-      const merged = [...inMemoryPromoCodes, ...(Array.isArray(dbCodes) ? dbCodes : [])];
+      const dbArr = Array.isArray(dbCodes) ? dbCodes : [];
+      const seen = new Set();
+      const merged = [];
+      for (const item of [...inMemoryPromoCodes, ...dbArr]) {
+        if (!item || !item.id || seen.has(item.id)) continue;
+        seen.add(item.id);
+        merged.push(item);
+      }
       return json(res, 200, { promos: merged });
     }
     
     if(req.method==='POST'&&path==='/admin/promos'){
       const b = await readBody(req);
-      const plain = (b.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-      if (!plain) return json(res, 400, { error: 'Invalid promo code format.' });
+      const discount = Math.min(100, Math.max(1, Number(b.discount_percentage) || 50));
+      const description = clean(b.description || b.label || '', 120);
+      const max_uses = Number(b.max_uses) > 0 ? Number(b.max_uses) : null;
+      const count = Math.min(25, Math.max(1, Number(b.count) || 1));
       
-      const item = {
-        id: 'promo_' + Date.now(),
-        code: plain,
-        discount_percentage: Math.min(100, Math.max(0, Number(b.discount_percentage) || 0)),
-        active: true,
-        created_at: new Date().toISOString()
-      };
-      inMemoryPromoCodes.unshift(item);
+      const createdItems = [];
+      
+      for (let i = 0; i < count; i++) {
+        let plain = (b.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+        if (!plain || count > 1) {
+          const prefix = (b.prefix || (plain ? plain : 'JYOTISH')).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || 'JYOTISH';
+          const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
+          plain = `${prefix}${discount}_${rand}`;
+        }
+        
+        const item = {
+          id: 'promo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          code: plain,
+          discount_percentage: discount,
+          description: description || `${discount}% Discount Offer`,
+          max_uses: max_uses,
+          uses: 0,
+          active: b.active !== false && b.active !== '0',
+          created_at: new Date().toISOString()
+        };
+        
+        // Remove existing item with identical code if replacing
+        const existIdx = inMemoryPromoCodes.findIndex(x => x.code === plain);
+        if (existIdx >= 0) {
+          inMemoryPromoCodes.splice(existIdx, 1);
+        }
+        
+        inMemoryPromoCodes.unshift(item);
+        createdItems.push(item);
+        try { await db.insert('promo_codes', item); } catch {}
+      }
+      
       saveJsonFile('promo_codes.json', inMemoryPromoCodes);
-      try { await db.insert('promo_codes', item); } catch {}
-      return json(res, 200, { ok: true, promo: item });
+      return json(res, 200, { ok: true, promo: createdItems[0], promos: createdItems });
+    }
+
+    const pToggle = path.match(/^\/admin\/promos\/([^/]+)\/toggle$/);
+    if ((req.method === 'POST' || req.method === 'PATCH') && pToggle) {
+      const id = pToggle[1];
+      const item = inMemoryPromoCodes.find(x => x.id === id || x.code === id);
+      if (item) {
+        item.active = !item.active;
+        saveJsonFile('promo_codes.json', inMemoryPromoCodes);
+        try { await db.update('promo_codes', `id=eq.${encodeURIComponent(id)}`, { active: item.active }); } catch {}
+        return json(res, 200, { ok: true, active: item.active, promo: item });
+      }
+      return json(res, 404, { error: 'Promo code not found' });
     }
     
     const pdel = path.match(/^\/admin\/promos\/([^/]+)$/);
     if(req.method==='DELETE'&&pdel){
        const id = pdel[1];
-       const idx = inMemoryPromoCodes.findIndex(x => x.id === id);
-       if (idx >= 0) { inMemoryPromoCodes.splice(idx, 1); saveJsonFile('promo_codes.json', inMemoryPromoCodes); }
+       const idx = inMemoryPromoCodes.findIndex(x => x.id === id || x.code === id);
+       if (idx >= 0) { 
+         inMemoryPromoCodes.splice(idx, 1); 
+         saveJsonFile('promo_codes.json', inMemoryPromoCodes); 
+       }
        try { await db.delete('promo_codes', `id=eq.${encodeURIComponent(id)}`); } catch {}
        return json(res, 200, { ok: true });
     }
 
-    if (req.method==='POST'&&path==='/verify-promo') {
-       const b = await readBody(req);
-       const codeStr = (b.code || '').trim();
-       const upperCode = codeStr.toUpperCase();
+    if ((req.method==='POST'&&path==='/verify-promo') || (req.method==='GET'&&path==='/promo-code')) {
+       let codeStr = '';
+       if (req.method === 'GET') {
+         codeStr = String((req.query && req.query.code) || (req.url && new URL(req.url, 'http://localhost').searchParams.get('code')) || '').trim();
+       } else {
+         const b = await readBody(req);
+         codeStr = String(b.code || '').trim();
+       }
+       const upperCode = codeStr.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+       
+       if (!upperCode) {
+         return json(res, 400, { valid: false, error: 'Please enter a promo code.' });
+       }
        
        // 1. Try finding as active promo code
-       let found = inMemoryPromoCodes.find(x => x.code === upperCode && x.active);
+       let found = inMemoryPromoCodes.find(x => x.code === upperCode && x.active !== false);
        if (!found) {
          try { 
            const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&limit=1`);
            if (data && data[0]) found = data[0];
          } catch {}
        }
+       
        if (found) {
-         return json(res, 200, { valid: true, code: found.code, discount_percentage: found.discount_percentage, message: "Promo code applied successfully!" });
+         if (found.max_uses && found.uses && found.uses >= found.max_uses) {
+           return json(res, 400, { valid: false, error: 'This promo code usage limit has been reached.' });
+         }
+         const discountPct = Number(found.discount_percentage) || 0;
+         return json(res, 200, { 
+           valid: true, 
+           promo: found,
+           code: found.code, 
+           discount_percentage: discountPct, 
+           description: found.description || `${discountPct}% Discount`,
+           message: discountPct === 100 
+             ? `🎉 Promo Code "${found.code}" applied: 100% Free Full Access!` 
+             : `✓ Promo Code "${found.code}" applied: ${discountPct}% Discount applied!` 
+         });
        }
 
        // 2. Try finding as active VIP code

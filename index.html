@@ -15231,15 +15231,6 @@ window.toggleMobileSection = function(targetId, triggerEl) {
     }
   }));
 
-  $("generatePromoBtn")?.addEventListener("click", () => {
-    const prefix = $("promoPrefix").value || "PROMO";
-    const code = prefix.toUpperCase() + "-" + Math.random().toString(36).substring(2, 9).toUpperCase();
-    const promoCodes = JSON.parse(localStorage.getItem("jyotish_promo_codes") || "[]");
-    promoCodes.push(code);
-    localStorage.setItem("jyotish_promo_codes", JSON.stringify(promoCodes));
-    $("promoResult").textContent = "Generated Code: " + code;
-  });
-  
   function loadAdmin() {
     return __async(this, null, function* () {
       var _a3;
@@ -15983,60 +15974,303 @@ ${item.message}`);
   }
   function renderPromos(rows) {
     const container = $("adminPromo");
-    const renderTable = (items) => {
-      return `
-      <div class="admin-setting-card" style="margin-bottom:14px;background:rgba(216,160,76,0.03);">
-        <h3 style="margin-top:0;">Generate New Promo Code</h3>
-        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
-          <div><label>Custom Code (Optional)</label><input id="newPromoCode" placeholder="e.g. DIWALI50" style="width:160px;"></div>
-          <div><label>Discount %</label><input id="newPromoDiscount" type="number" min="0" max="100" value="50" style="width:100px;"></div>
-          <div><label>Free Chat Mins</label><input id="newPromoChat" type="number" min="0" value="0" style="width:120px;"></div>
-          <button id="generatePromoBtn" type="button" class="small" style="height:36px;">Create Code</button>
+    if (!container) return;
+
+    let promoList = Array.isArray(rows) ? rows : [];
+
+    const draw = () => {
+      const searchVal = ($("promoSearchInput")?.value || "").toLowerCase().trim();
+      const filtered = promoList.filter(r => 
+        !searchVal || 
+        (r.code && r.code.toLowerCase().includes(searchVal)) || 
+        (r.description && r.description.toLowerCase().includes(searchVal))
+      );
+
+      const totalCount = promoList.length;
+      const activeCount = promoList.filter(r => r.active !== false).length;
+      const freeCount = promoList.filter(r => Number(r.discount_percentage) === 100).length;
+
+      container.innerHTML = `
+        <div class="admin-setting-card" style="margin-bottom:18px;background:rgba(216,160,76,0.04);border:1px solid rgba(216,160,76,0.22);padding:18px;border-radius:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0 0 4px;color:#fce7b0;font-size:18px;display:flex;align-items:center;gap:8px;">
+                <span>🎟️</span> Promo Code Generator &amp; Discount Manager
+              </h3>
+              <p style="margin:0;font-size:12.5px;color:var(--muted);">Create custom promo codes with any percentage discount (1%–100% Free), usage limits, or generate random batch codes.</p>
+            </div>
+            <div style="display:flex;gap:12px;font-size:12px;">
+              <span style="background:rgba(255,255,255,0.06);padding:4px 10px;border-radius:16px;color:#d8a04c;">Total: <b>${totalCount}</b></span>
+              <span style="background:rgba(46,204,113,0.12);padding:4px 10px;border-radius:16px;color:#2ecc71;">Active: <b>${activeCount}</b></span>
+              <span style="background:rgba(241,196,15,0.12);padding:4px 10px;border-radius:16px;color:#f1c40f;">100% Free: <b>${freeCount}</b></span>
+            </div>
+          </div>
+
+          <!-- Promo Code Generation Form -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px;">
+            <div>
+              <label style="display:block;font-size:12px;margin-bottom:5px;color:#e8dcc4;font-weight:600;">Custom Promo Code</label>
+              <div style="display:flex;gap:6px;">
+                <input id="newPromoCode" placeholder="e.g. DIWALI50, VEDIC100, SPECIAL75" style="flex:1;text-transform:uppercase;font-family:monospace;font-weight:700;letter-spacing:0.5px;" value="">
+                <button type="button" id="btnRandomPromoCode" title="Generate a random memorable code" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#d8a04c;padding:0 10px;font-size:14px;border-radius:6px;cursor:pointer;">🎲</button>
+              </div>
+              <small style="color:var(--muted);font-size:11px;margin-top:3px;display:block;">Leave blank to auto-generate code automatically.</small>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:12px;margin-bottom:5px;color:#e8dcc4;font-weight:600;">Discount Percentage (%)</label>
+              <input id="newPromoDiscount" type="number" min="1" max="100" value="50" style="font-weight:700;color:#f1c40f;">
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+                <button type="button" class="promo-preset-btn" data-pct="10" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8dcc4;cursor:pointer;">10%</button>
+                <button type="button" class="promo-preset-btn" data-pct="25" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8dcc4;cursor:pointer;">25%</button>
+                <button type="button" class="promo-preset-btn" data-pct="30" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8dcc4;cursor:pointer;">30%</button>
+                <button type="button" class="promo-preset-btn" data-pct="50" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(216,160,76,0.25);border:1px solid #d8a04c;color:#fce7b0;cursor:pointer;font-weight:700;">50%</button>
+                <button type="button" class="promo-preset-btn" data-pct="75" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8dcc4;cursor:pointer;">75%</button>
+                <button type="button" class="promo-preset-btn" data-pct="90" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8dcc4;cursor:pointer;">90%</button>
+                <button type="button" class="promo-preset-btn" data-pct="100" style="padding:2px 7px;font-size:11px;border-radius:4px;background:rgba(46,204,113,0.2);border:1px solid #2ecc71;color:#2ecc71;cursor:pointer;font-weight:700;">100% FREE</button>
+              </div>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:12px;margin-bottom:5px;color:#e8dcc4;font-weight:600;">Campaign Note / Label</label>
+              <input id="newPromoDesc" placeholder="e.g. Festival Launch, VIP Referral" value="Promotional Offer">
+              <small style="color:var(--muted);font-size:11px;margin-top:3px;display:block;">Optional note to identify the campaign purpose.</small>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:12px;margin-bottom:5px;color:#e8dcc4;font-weight:600;">Usage Limit &amp; Quantity</label>
+              <div style="display:flex;gap:8px;">
+                <input id="newPromoMaxUses" type="number" min="0" placeholder="Max uses (0=∞)" style="flex:1;">
+                <select id="newPromoCount" style="width:110px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px;">
+                  <option value="1">1 Code</option>
+                  <option value="5">5 Codes</option>
+                  <option value="10">10 Codes</option>
+                </select>
+              </div>
+              <small style="color:var(--muted);font-size:11px;margin-top:3px;display:block;">Set 0 or empty for unlimited redemption uses.</small>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
+            <button id="btnCreatePromoSubmit" type="button" style="background:linear-gradient(135deg,#d8a04c,#b88230);color:#121820;font-weight:700;padding:9px 22px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <span>✨</span> Create Promo Code
+            </button>
+            <span id="promoCreateStatus" style="font-size:12px;color:#2ecc71;display:none;"></span>
+          </div>
         </div>
-      </div>
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr><th>Promo Code</th><th>Discount</th><th>Free Chat Mins</th><th>Active</th><th>Action</th></tr>
-          </thead>
-          <tbody>
-            ${items.length ? items.map((r) => `
+
+        <!-- Filter & Search Bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="promoSearchInput" placeholder="🔍 Search promo code or note…" value="${esc(searchVal)}" style="max-width:320px;font-size:13px;padding:8px 12px;">
+          <button type="button" id="btnRefreshPromos" class="small secondary" style="display:inline-flex;align-items:center;gap:5px;">
+            <span>🔄</span> Refresh List
+          </button>
+        </div>
+
+        <!-- Promo Codes Table -->
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
               <tr>
-                <td><b>${esc(r.code)}</b></td>
-                <td><span class="admin-badge">${r.discount_percentage}% OFF</span></td>
-                <td>${r.free_chat_minutes > 0 ? `<span class="admin-badge paid">${r.free_chat_minutes} Mins</span>` : '-'}</td>
-                <td>${r.active ? '<span class="admin-status-pill ok">Yes</span>' : '<span class="admin-status-pill err">No</span>'}</td>
-                <td><button class="small secondary delete-promo-btn" data-id="${r.id}" style="color:#ff6b6b;border-color:rgba(255,100,100,0.3);">🗑</button></td>
+                <th>Promo Code</th>
+                <th>Discount</th>
+                <th>Campaign Note</th>
+                <th>Uses</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            `).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No promo codes found</td></tr>'}
-          </tbody>
-        </table>
-      </div>`;
-    };
-    container.innerHTML = renderTable(rows);
-    
-    $("generatePromoBtn")?.addEventListener("click", async () => {
-       const code = $("newPromoCode").value.trim();
-       const discount_percentage = parseInt($("newPromoDiscount").value) || 0;
-       const free_chat_minutes = parseInt($("newPromoChat").value) || 0;
-       try {
-         await adminFetch("/api/admin/promos", {
-           method: "POST",
-           body: JSON.stringify({ code, discount_percentage, free_chat_minutes })
-         });
-         loadAdmin();
-       } catch (e) { alert(e.message); }
-    });
-    
-    document.querySelectorAll(".delete-promo-btn").forEach(b => {
-      b.onclick = async () => {
-        if(!confirm("Delete this promo code?")) return;
+            </thead>
+            <tbody>
+              ${filtered.length ? filtered.map((r) => {
+                const isFull = Number(r.discount_percentage) === 100;
+                const badgeStyle = isFull 
+                  ? 'background:rgba(46,204,113,0.2);color:#2ecc71;border:1px solid rgba(46,204,113,0.4);font-weight:700;' 
+                  : 'background:rgba(216,160,76,0.18);color:#fce7b0;border:1px solid rgba(216,160,76,0.3);';
+                const usesText = r.max_uses ? `${r.uses || 0} / ${r.max_uses}` : `${r.uses || 0} / ∞`;
+                const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
+                const isActive = r.active !== false;
+
+                return `
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <code style="font-size:13px;font-weight:700;color:#fce7b0;background:rgba(0,0,0,0.3);padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);">${esc(r.code)}</code>
+                        <button type="button" class="copy-promo-btn" data-code="${esc(r.code)}" title="Copy code" style="background:transparent;border:none;color:#d8a04c;cursor:pointer;font-size:14px;padding:2px 4px;">📋</button>
+                      </div>
+                    </td>
+                    <td><span class="admin-badge" style="${badgeStyle}">${r.discount_percentage}% OFF ${isFull ? '🔥' : ''}</span></td>
+                    <td style="color:#d5dfdf;font-size:12.5px;">${esc(r.description || '-')}</td>
+                    <td style="font-size:12px;color:var(--muted);">${usesText}</td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap;">${dateStr}</td>
+                    <td>
+                      <button type="button" class="toggle-promo-btn" data-id="${esc(r.id)}" title="Click to enable or disable" style="cursor:pointer;background:transparent;border:none;padding:0;">
+                        ${isActive ? '<span class="admin-status-pill ok" style="cursor:pointer;">● Active</span>' : '<span class="admin-status-pill err" style="cursor:pointer;opacity:0.7;">○ Disabled</span>'}
+                      </button>
+                    </td>
+                    <td>
+                      <button type="button" class="small secondary delete-promo-btn" data-id="${esc(r.id)}" style="color:#ff6b6b;border-color:rgba(255,100,100,0.3);" title="Delete promo code">🗑</button>
+                    </td>
+                  </tr>
+                `;
+              }).join("") : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No promo codes match your query.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // Preset discount chips listeners
+      container.querySelectorAll('.promo-preset-btn').forEach(btn => {
+        btn.onclick = () => {
+          const pct = btn.dataset.pct;
+          const input = $("newPromoDiscount");
+          if (input) input.value = pct;
+          container.querySelectorAll('.promo-preset-btn').forEach(b => {
+            b.style.borderColor = (b === btn) ? '#d8a04c' : 'rgba(255,255,255,0.1)';
+            b.style.background = (b === btn) ? 'rgba(216,160,76,0.25)' : 'rgba(255,255,255,0.05)';
+          });
+        };
+      });
+
+      // Random promo code generator helper
+      $("btnRandomPromoCode")?.addEventListener("click", () => {
+        const disc = parseInt($("newPromoDiscount")?.value, 10) || 50;
+        const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const codeInput = $("newPromoCode");
+        if (codeInput) {
+          codeInput.value = `JYOTISH${disc}_${rand}`;
+          codeInput.focus();
+        }
+      });
+
+      // Search input live filtering
+      $("promoSearchInput")?.addEventListener("input", () => {
+        draw();
+        const el = $("promoSearchInput");
+        if (el) {
+          el.focus();
+          el.selectionStart = el.selectionEnd = el.value.length;
+        }
+      });
+
+      // Refresh button
+      $("btnRefreshPromos")?.addEventListener("click", async () => {
         try {
-           await adminFetch("/api/admin/promos/" + b.dataset.id, { method: "DELETE" });
-           loadAdmin();
-        } catch(e) { alert(e.message); }
-      };
-    });
+          const res = await adminFetch("/api/admin/promos");
+          promoList = res.promos || [];
+          draw();
+        } catch (e) {
+          alert("Refresh failed: " + e.message);
+        }
+      });
+
+      // Copy Promo Code
+      container.querySelectorAll('.copy-promo-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const code = btn.dataset.code;
+          try {
+            await navigator.clipboard.writeText(code);
+            const oldText = btn.textContent;
+            btn.textContent = '✓';
+            btn.style.color = '#2ecc71';
+            setTimeout(() => {
+              btn.textContent = oldText;
+              btn.style.color = '#d8a04c';
+            }, 1800);
+          } catch (e) {
+            prompt("Copy code:", code);
+          }
+        };
+      });
+
+      // Toggle Active / Disabled
+      container.querySelectorAll('.toggle-promo-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          try {
+            const res = await adminFetch(`/api/admin/promos/${encodeURIComponent(id)}/toggle`, { method: "POST" });
+            const item = promoList.find(x => x.id === id);
+            if (item && res) item.active = res.active;
+            draw();
+          } catch (e) {
+            alert("Could not update status: " + e.message);
+          }
+        };
+      });
+
+      // Delete Promo Code
+      container.querySelectorAll('.delete-promo-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          if (!confirm("Are you sure you want to permanently delete this promo code?")) return;
+          try {
+            await adminFetch("/api/admin/promos/" + encodeURIComponent(id), { method: "DELETE" });
+            promoList = promoList.filter(x => x.id !== id);
+            draw();
+          } catch (e) {
+            alert("Delete failed: " + e.message);
+          }
+        };
+      });
+
+      // Create Promo Code Submit Handler
+      $("btnCreatePromoSubmit")?.addEventListener("click", async () => {
+        const codeInput = $("newPromoCode");
+        const discountInput = $("newPromoDiscount");
+        const descInput = $("newPromoDesc");
+        const maxUsesInput = $("newPromoMaxUses");
+        const countSelect = $("newPromoCount");
+        const statusEl = $("promoCreateStatus");
+
+        const code = (codeInput?.value || "").trim();
+        const discount_percentage = parseInt(discountInput?.value, 10) || 50;
+        const description = (descInput?.value || "").trim();
+        const max_uses = parseInt(maxUsesInput?.value, 10) || 0;
+        const count = parseInt(countSelect?.value, 10) || 1;
+
+        if (discount_percentage < 1 || discount_percentage > 100) {
+          alert("Discount percentage must be between 1% and 100%.");
+          return;
+        }
+
+        const submitBtn = $("btnCreatePromoSubmit");
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const payload = {
+            code,
+            discount_percentage,
+            description,
+            max_uses: max_uses > 0 ? max_uses : null,
+            count
+          };
+
+          const res = await adminFetch("/api/admin/promos", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+
+          if (statusEl) {
+            statusEl.style.display = "inline";
+            statusEl.textContent = count > 1 ? `✓ ${count} promo codes generated!` : `✓ Promo code created successfully!`;
+            setTimeout(() => { statusEl.style.display = "none"; }, 3000);
+          }
+
+          if (codeInput) codeInput.value = "";
+          
+          // Refresh list from server
+          const refreshed = await adminFetch("/api/admin/promos");
+          promoList = refreshed.promos || [];
+          draw();
+        } catch (e) {
+          alert("Failed to create promo code: " + e.message);
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    };
+
+    draw();
   }
 
   function renderSettings(s) {

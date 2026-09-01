@@ -1,2 +1,32 @@
 [
+  {
+    "id": "promo_diwali50",
+    "code": "DIWALI50",
+    "discount_percentage": 50,
+    "description": "Diwali Festival 50% Off",
+    "max_uses": null,
+    "uses": 0,
+    "active": true,
+    "created_at": "2026-09-01T05:30:00.000Z"
+  },
+  {
+    "id": "promo_vedic25",
+    "code": "VEDIC25",
+    "discount_percentage": 25,
+    "description": "Vedic Special 25% Off",
+    "max_uses": 100,
+    "uses": 0,
+    "active": true,
+    "created_at": "2026-09-01T05:30:00.000Z"
+  },
+  {
+    "id": "promo_free100",
+    "code": "JYOTISH100",
+    "discount_percentage": 100,
+    "description": "100% Free Full Access Promo",
+    "max_uses": null,
+    "uses": 0,
+    "active": true,
+    "created_at": "2026-09-01T05:30:00.000Z"
+  }
 ]
