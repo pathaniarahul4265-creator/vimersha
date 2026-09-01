@@ -8075,14 +8075,7 @@ p,
     <div id="adminFeedback" class="admin-view"></div>
     <div id="adminPayments" class="admin-view"></div>
     <div id="adminVip" class="admin-view"></div>
-    <div id="adminPromo" class="admin-view">
-      <h3>Promo Code Generator</h3>
-      <div class="admin-form">
-        <input id="promoPrefix" placeholder="Prefix (e.g. JYOTISH)" class="admin-input" style="padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.05); color: var(--ivory);">
-        <button id="generatePromoBtn" class="admin-btn" style="padding: 8px 16px; background: var(--gold-soft); border: none; border-radius: 6px; color: var(--cosmic); cursor:pointer;">Generate</button>
-      </div>
-      <p id="promoResult" style="margin-top: 15px; font-weight: bold; color: var(--gold-soft); font-size: 1.1em;"></p>
-    </div>
+    <div id="adminPromo" class="admin-view"></div>
     <div id="adminAudit" class="admin-view"></div>
     <div id="adminSettings" class="admin-view"></div>
   </div>
@@ -8101,6 +8094,7 @@ p,
 <div class="fixed-utility-bar" aria-label="Quick Actions">
   <button type="button" class="utility-btn mystic-sound-btn" id="mysticSoundBtn" onclick="OmChantEngine.toggle()" title="Toggle ambient 432Hz cosmic resonance">✦ Resonate with Universe (OFF)</button>
   <button type="button" class="utility-btn feedback-always" id="feedbackBtnFixed" onclick="openFeedbackModal()" title="Share feedback or inquiries with us">✦ Feedback</button>
+  <button type="button" class="utility-btn" id="accessBtnFixed" onclick="openAccessModal()" title="Open VIP Access &amp; Administration Console" style="background:rgba(216,160,76,0.12);border-color:rgba(216,160,76,0.35);color:#fce8bd;">🔒 Admin Portal</button>
 </div>
 <footer>
   <div style="font-size:16px;color:#d8a04c;font-family:'Cinzel',serif;letter-spacing:0.06em;margin-bottom:12px;">ॐ शान्तिः शान्तिः शान्तिः</div>
@@ -15302,6 +15296,7 @@ window.toggleMobileSection = function(targetId, triggerEl) {
       }
     });
   }
+  window.loadAdmin = loadAdmin;
   function renderAuditLogs(rows) {
     const container = $("adminAudit");
     if (!container)
@@ -20109,8 +20104,11 @@ document.addEventListener("visibilitychange", () => {
 window.openAdminPortal = function() {
   if (window.adminToken) {
     window.openModal("adminModal");
-    if (typeof loadAdmin === "function")
+    if (typeof window.loadAdmin === "function") {
+      window.loadAdmin();
+    } else if (typeof loadAdmin === "function") {
       loadAdmin();
+    }
   } else {
     window.openModal("accessModal");
   }

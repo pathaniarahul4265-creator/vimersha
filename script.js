@@ -4757,6 +4757,7 @@ window.closeCompanyModal = function() {
       }
     }
   }
+  window.loadAdmin = loadAdmin;
 
   function renderAuditLogs(rows){
     const container = $('adminAudit');
