@@ -10955,7 +10955,10 @@ document.addEventListener("pointermove", (e) => {
 document.getElementById("advToggle").onclick = () => {
   document.getElementById("advBody").classList.toggle("open");
 };
-let currentMode = "individual";
+window.currentMode = "individual";
+var currentMode = "individual";
+window.entitlements = window.entitlements || { reveal: false, match: false, vip: false, premium: false };
+var entitlements = window.entitlements;
 window.openLiveConsultation = function() {
   const chatCard = document.getElementById("chatCard");
   if (chatCard) {
@@ -10974,6 +10977,7 @@ document.querySelectorAll(".mode-tab").forEach((tab) => {
     if (mode === currentMode)
       return;
     currentMode = mode;
+    window.currentMode = mode;
     document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t.getAttribute("data-mode") === mode));
     
     if (mode === "consultation") {
@@ -13890,13 +13894,14 @@ function renderGunaMilanResultCard(milanResult) {
 }
 window.unlockDetailedKundliReport = function() {
   return __async(this, null, function* () {
-    if (!entitlements.match && !window.isVipActive()) {
+    window.entitlements = window.entitlements || { reveal: false, match: false, vip: false, premium: false };
+    if (!window.entitlements.match && !window.isVipActive()) {
       const payOk = yield window.requestPaidAccess("match", 99);
       if (!payOk)
         return;
     }
     window.matchDetailedUnlocked = true;
-    entitlements.match = true;
+    window.entitlements.match = true;
     const gate = document.getElementById("matchPremiumGate");
     if (gate)
       gate.style.display = "none";
@@ -14974,7 +14979,7 @@ window.toggleMobileSection = function(targetId, triggerEl) {
       window.enableVipAccess();
       if (st) {
         st.className = "coord-status ok";
-        st.textContent = "\u2728 VIP access unlocked successfully!";
+        st.textContent = "✨ VIP access unlocked successfully! Casting chart…";
       }
       setTimeout(() => {
         close("accessModal");
@@ -14982,7 +14987,10 @@ window.toggleMobileSection = function(targetId, triggerEl) {
           st.style.display = "none";
           st.textContent = "";
         }
-      }, 1e3);
+        if (typeof window.triggerReportGenerationAfterPayment === "function") {
+          window.triggerReportGenerationAfterPayment((window.currentMode === "match") ? "match" : "reveal");
+        }
+      }, 600);
     } catch (err) {
       if (st) {
         st.className = "coord-status err";

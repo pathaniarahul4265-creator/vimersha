@@ -3,16 +3,16 @@
     "index": 0,
     "label": "Primary (Key 1)",
     "masked": "AQ.Ab8...JShg",
-    "day": "2026-08-26",
-    "requestsToday": 25,
+    "day": "2026-09-01",
+    "requestsToday": 1,
     "recentTimestamps": [
-      1787759256543
+      1788274395339
     ],
-    "estimatedTokensToday": 2879,
-    "totalSuccess": 47,
+    "estimatedTokensToday": 24,
+    "totalSuccess": 48,
     "totalFailures": 45,
-    "exhaustedUntil": 1787745030483,
+    "exhaustedUntil": 0,
     "exhaustionReason": "",
-    "lastUsed": "2026-08-26T15:47:36.543Z"
+    "lastUsed": "2026-09-01T14:53:15.339Z"
   }
 }
