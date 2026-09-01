@@ -42,11 +42,76 @@ const inMemorySettings = loadJsonFile('settings.json', {
   offer_label: ''
 });
 
+function applyLocalFilter(list, queryParams = '') {
+  if (!Array.isArray(list)) return [];
+  if (!queryParams) return list;
+
+  let result = [...list];
+  const parts = queryParams.split('&');
+  let limit = null;
+  let orderField = null;
+  let orderDesc = false;
+
+  for (const part of parts) {
+    if (!part) continue;
+    const eqIdx = part.indexOf('=');
+    if (eqIdx <= 0) continue;
+    const rawKey = part.substring(0, eqIdx);
+    const rawVal = part.substring(eqIdx + 1);
+    const key = decodeURIComponent(rawKey).trim();
+    const val = rawVal ? decodeURIComponent(rawVal).trim() : '';
+
+    if (key === 'select') {
+      continue;
+    } else if (key === 'limit') {
+      const num = parseInt(val, 10);
+      if (!isNaN(num)) limit = num;
+    } else if (key === 'order') {
+      const [field, dir] = val.split('.');
+      orderField = field;
+      orderDesc = (dir === 'desc');
+    } else if (val.startsWith('eq.')) {
+      const targetVal = val.slice(3);
+      result = result.filter(item => {
+        if (!item) return false;
+        const itemVal = item[key];
+        if (targetVal === 'true') return itemVal === true || itemVal === 'true' || itemVal === '1' || itemVal === 1;
+        if (targetVal === 'false') return itemVal === false || itemVal === 'false' || itemVal === '0' || itemVal === 0;
+        if (typeof itemVal === 'number') return itemVal === Number(targetVal);
+        return String(itemVal !== undefined && itemVal !== null ? itemVal : '').trim().toUpperCase() === targetVal.trim().toUpperCase();
+      });
+    } else if (val.startsWith('neq.')) {
+      const targetVal = val.slice(4);
+      result = result.filter(item => {
+        if (!item) return false;
+        const itemVal = item[key];
+        return String(itemVal !== undefined && itemVal !== null ? itemVal : '').trim().toUpperCase() !== targetVal.trim().toUpperCase();
+      });
+    }
+  }
+
+  if (orderField) {
+    result.sort((a, b) => {
+      const va = a ? a[orderField] : '';
+      const vb = b ? b[orderField] : '';
+      if (va < vb) return orderDesc ? 1 : -1;
+      if (va > vb) return orderDesc ? -1 : 1;
+      return 0;
+    });
+  }
+
+  if (limit !== null && limit >= 0) {
+    result = result.slice(0, limit);
+  }
+
+  return result;
+}
+
 export const db = {
   async select(table, queryParams = '') {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    if (!url || !key) return loadJsonFile(`${table}.json`, []);
+    if (!url || !key) return applyLocalFilter(loadJsonFile(`${table}.json`, []), queryParams);
     try {
       const endpoint = `${url}/rest/v1/${table}${queryParams ? `?${queryParams}` : ''}`;
       const res = await fetch(endpoint, {
@@ -55,7 +120,7 @@ export const db = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
-    return loadJsonFile(`${table}.json`, []);
+    return applyLocalFilter(loadJsonFile(`${table}.json`, []), queryParams);
   },
 
   async insert(table, record) {
@@ -93,9 +158,23 @@ export const db = {
   },
   async update(table, patch, filter) {
     try {
-      const list = loadJsonFile(`${table}.json`, []);
+      let list = loadJsonFile(`${table}.json`, []);
       if (Array.isArray(list)) {
-        // Apply patch locally if matching record found
+        if (filter) {
+          const parts = filter.split('&');
+          for (const part of parts) {
+            const [k, v] = part.split('=eq.');
+            if (k && v) {
+              const val = decodeURIComponent(v).trim();
+              list = list.map(item => {
+                if (String(item[k] || '').trim().toUpperCase() === val.toUpperCase()) {
+                  return { ...item, ...patch };
+                }
+                return item;
+              });
+            }
+          }
+        }
         saveJsonFile(`${table}.json`, list);
       }
     } catch (e) {}
@@ -124,6 +203,21 @@ export const db = {
     }
   },
   async delete(table, filter) {
+    try {
+      let list = loadJsonFile(`${table}.json`, []);
+      if (Array.isArray(list) && filter) {
+        const parts = filter.split('&');
+        for (const part of parts) {
+          const [k, v] = part.split('=eq.');
+          if (k && v) {
+            const val = decodeURIComponent(v).trim();
+            list = list.filter(item => String(item[k] || '').trim().toUpperCase() !== val.toUpperCase());
+          }
+        }
+        saveJsonFile(`${table}.json`, list);
+      }
+    } catch (e) {}
+
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;

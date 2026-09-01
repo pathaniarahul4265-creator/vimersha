@@ -5713,7 +5713,17 @@ window.closeCompanyModal = function() {
       });
     }catch(err){alert(err.message+' Please try again.');return false;}
   }
-  window.requestPaidAccess=pay; window.consumeQuestionCredit=()=>{return false;}; window.resetPaymentSession=()=>{entitlements.reveal=false;entitlements.match=false;vipAccess=false;window.vipAccess=false;window.matchDetailedUnlocked=false;try{localStorage.removeItem('jyotish_vip_unlocked');}catch(e){}}; window.enableVipAccess=()=>{vipAccess=true;window.vipAccess=true;entitlements.reveal=true;entitlements.match=true;window.matchDetailedUnlocked=true;document.body.classList.add('vip-active');try{localStorage.setItem('jyotish_vip_unlocked','1');}catch(e){}if(typeof updateVipUi==='function')updateVipUi();};
+  window.requestPaidAccess = function(plan, customAmount, customPrefill) {
+    if (typeof window.isVipActive === 'function' && window.isVipActive() && plan !== 'dakshina') return Promise.resolve(true);
+    if (window.activePromoCode && (window.activePromoCode.is_vip || window.activePromoCode.discount_percentage >= 100) && plan !== 'dakshina') {
+      if (typeof window.enableVipAccess === 'function') window.enableVipAccess();
+      return Promise.resolve(true);
+    }
+    if (plan === 'reveal' && entitlements.reveal) return Promise.resolve(true);
+    if (plan === 'match' && entitlements.match) return Promise.resolve(true);
+    return pay(plan, customAmount, customPrefill);
+  };
+  window.consumeQuestionCredit=()=>{return false;}; window.resetPaymentSession=()=>{entitlements.reveal=false;entitlements.match=false;vipAccess=false;window.vipAccess=false;window.matchDetailedUnlocked=false;try{localStorage.removeItem('jyotish_vip_unlocked');}catch(e){}}; window.enableVipAccess=()=>{vipAccess=true;window.vipAccess=true;entitlements.reveal=true;entitlements.match=true;window.matchDetailedUnlocked=true;document.body.classList.add('vip-active');try{localStorage.setItem('jyotish_vip_unlocked','1');}catch(e){}if(typeof updateVipUi==='function')updateVipUi();};
 })();
 function updateVipUi(){
   const isVip = Boolean(window.vipAccess || document.body.classList.contains('vip-active'));
@@ -6741,8 +6751,43 @@ window.selectPaymentPlan = function(plan) {
   window.activePaymentPlan = plan;
   window.activePaymentAmount = amt;
 
+  if (typeof window.updatePaymentButtonText === 'function') {
+    window.updatePaymentButtonText(amt);
+  } else {
+    const btn = document.getElementById('payProceedBtn');
+    if (btn) btn.textContent = `Proceed to Secure Payment (₹${amt})`;
+  }
+};
+
+window.updatePaymentButtonText = function(amount) {
   const btn = document.getElementById('payProceedBtn');
-  if (btn) btn.textContent = `Proceed to Secure Payment (₹${amt})`;
+  if (!btn) return;
+  let baseAmt = Number(amount || window.activePaymentAmount || 59);
+  let discountPct = 0;
+  if (typeof window.isVipActive === 'function' && window.isVipActive()) {
+    discountPct = 100;
+  } else if (window.activePromoCode) {
+    discountPct = Number(window.activePromoCode.discount_percentage) || 0;
+    if (window.activePromoCode.is_vip) discountPct = 100;
+  }
+  
+  if (discountPct >= 100) {
+    btn.textContent = '✨ Unlock 100% Free VIP Access (₹0)';
+    btn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+    btn.style.color = '#ffffff';
+    btn.style.fontWeight = '700';
+  } else if (discountPct > 0) {
+    const finalAmt = Math.max(1, Math.round(baseAmt * (1 - discountPct / 100)));
+    btn.textContent = `Proceed with ${discountPct}% OFF (₹${finalAmt})`;
+    btn.style.background = 'linear-gradient(135deg, #d8a04c, #b98132)';
+    btn.style.color = '#070e1c';
+    btn.style.fontWeight = '600';
+  } else {
+    btn.textContent = `Proceed to Secure Payment (₹${baseAmt})`;
+    btn.style.background = 'linear-gradient(135deg, #d8a04c, #b98132)';
+    btn.style.color = '#070e1c';
+    btn.style.fontWeight = '600';
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -6760,10 +6805,52 @@ document.addEventListener('DOMContentLoaded', () => {
       chip.classList.add('active');
       const val = parseInt(chip.dataset.val, 10) || 251;
       window.activePaymentAmount = val;
-      const btn = document.getElementById('payProceedBtn');
-      if (btn) btn.textContent = `Proceed to Secure Payment (₹${val})`;
+      window.updatePaymentButtonText(val);
     });
   });
+
+  const applyPromoBtn = document.getElementById('applyPaymentPromoBtn');
+  if (applyPromoBtn) {
+    applyPromoBtn.addEventListener('click', async () => {
+      const input = document.getElementById('paymentPromoInput');
+      const st = document.getElementById('paymentPromoStatus');
+      if (!input || !st) return;
+      const code = input.value.trim();
+      if (!code) return;
+      st.style.display = 'block';
+      st.style.background = 'rgba(216,160,76,0.15)';
+      st.style.color = '#fce7b0';
+      st.textContent = 'Verifying code...';
+      try {
+        const r = await fetch(`/api/promo-code?code=${encodeURIComponent(code)}`);
+        const j = await r.json();
+        if (j && j.valid) {
+          const promoObj = j.promo || { code: j.code || code, discount_percentage: j.discount_percentage, is_vip: j.is_vip };
+          window.activePromoCode = promoObj;
+          if (promoObj.discount_percentage >= 100 || promoObj.is_vip) {
+            window.lastVipCode = promoObj.code || code;
+            if (typeof window.enableVipAccess === 'function') window.enableVipAccess();
+            st.style.background = 'rgba(46,204,113,0.2)';
+            st.style.color = '#2ecc71';
+            st.textContent = `🎉 VIP / 100% Free Code "${promoObj.code}" Applied! Everything is unlocked for free!`;
+          } else {
+            st.style.background = 'rgba(46,204,113,0.2)';
+            st.style.color = '#2ecc71';
+            st.textContent = `✓ Promo Code "${promoObj.code}" applied! ${promoObj.discount_percentage}% discount active.`;
+          }
+          window.updatePaymentButtonText(window.activePaymentAmount);
+        } else {
+          st.style.background = 'rgba(231,76,60,0.2)';
+          st.style.color = '#e74c3c';
+          st.textContent = j.error || 'Invalid or expired code.';
+        }
+      } catch (err) {
+        st.style.background = 'rgba(231,76,60,0.2)';
+        st.style.color = '#e74c3c';
+        st.textContent = 'Could not verify code. Please check connection.';
+      }
+    });
+  }
 
   // Pay Proceed button
   document.getElementById('payProceedBtn')?.addEventListener('click', async () => {

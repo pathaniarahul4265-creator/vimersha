@@ -75,7 +75,7 @@ function json(res, status, body) {
 }
 function readBody(req) {
   if (req.body !== undefined && req.body !== null && typeof req.body === 'object') return Promise.resolve(req.body);
-  if (typeof req.on !== 'function') return Promise.resolve(req.body || {});
+  if (req.complete || req._body || typeof req.on !== 'function') return Promise.resolve(req.body || {});
   return new Promise((resolve, reject) => {
     let raw='';
     req.on('data', c => { raw += c; if (raw.length > 8e6) reject(new Error('payload too large')); });
@@ -487,7 +487,7 @@ export default async function handler(req,res){
       if (item) {
         item.active = !item.active;
         saveJsonFile('promo_codes.json', inMemoryPromoCodes);
-        try { await db.update('promo_codes', `id=eq.${encodeURIComponent(id)}`, { active: item.active }); } catch {}
+        try { await db.update('promo_codes', { active: item.active }, `id=eq.${encodeURIComponent(id)}`); } catch {}
         return json(res, 200, { ok: true, active: item.active, promo: item });
       }
       return json(res, 404, { error: 'Promo code not found' });
@@ -516,39 +516,14 @@ export default async function handler(req,res){
        const upperCode = codeStr.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
        
        if (!upperCode) {
-         return json(res, 400, { valid: false, error: 'Please enter a promo code.' });
-       }
-       
-       // 1. Try finding as active promo code
-       let found = inMemoryPromoCodes.find(x => x.code === upperCode && x.active !== false);
-       if (!found) {
-         try { 
-           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&limit=1`);
-           if (data && data[0]) found = data[0];
-         } catch {}
-       }
-       
-       if (found) {
-         if (found.max_uses && found.uses && found.uses >= found.max_uses) {
-           return json(res, 400, { valid: false, error: 'This promo code usage limit has been reached.' });
-         }
-         const discountPct = Number(found.discount_percentage) || 0;
-         return json(res, 200, { 
-           valid: true, 
-           promo: found,
-           code: found.code, 
-           discount_percentage: discountPct, 
-           description: found.description || `${discountPct}% Discount`,
-           message: discountPct === 100 
-             ? `🎉 Promo Code "${found.code}" applied: 100% Free Full Access!` 
-             : `✓ Promo Code "${found.code}" applied: ${discountPct}% Discount applied!` 
-         });
+         return json(res, 400, { valid: false, error: 'Please enter a promo or VIP code.' });
        }
 
-       // 2. Try finding as active VIP code
+       // 1. Try finding as active VIP code FIRST
        const hUpper = hashCode(upperCode);
        const hRaw = hashCode(codeStr);
        let isVipValid = false;
+       let vipAssignee = '';
        
        try {
          const data = await db.rpc('consume_vip_code', { p_hash: hUpper });
@@ -572,6 +547,7 @@ export default async function handler(req,res){
            memCode.uses = (memCode.uses || 0) + 1;
            saveJsonFile('vip_codes.json', inMemoryVipCodes);
            isVipValid = true;
+           vipAssignee = memCode.assigned_to || '';
          }
        }
 
@@ -581,11 +557,53 @@ export default async function handler(req,res){
            code: upperCode, 
            discount_percentage: 100, 
            is_vip: true, 
-           message: "✨ VIP Access Code applied successfully!" 
+           promo: {
+             code: upperCode,
+             discount_percentage: 100,
+             is_vip: true,
+             description: vipAssignee ? `VIP Access (Assigned to ${vipAssignee})` : "100% Free VIP Access",
+             active: true
+           },
+           message: "✨ VIP Access Code applied: 100% Free Full Access!" 
+         });
+       }
+       
+       // 2. Try finding as active promo code
+       let found = inMemoryPromoCodes.find(x => x.code && x.code.toUpperCase() === upperCode && x.active !== false);
+       if (!found) {
+         try { 
+           const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&limit=1`);
+           if (data && data[0] && data[0].code && String(data[0].code).toUpperCase() === upperCode && data[0].active !== false) {
+             found = data[0];
+           }
+         } catch {}
+       }
+       
+       if (found) {
+         if (found.max_uses && found.uses && found.uses >= found.max_uses) {
+           return json(res, 400, { valid: false, error: 'This promo code usage limit has been reached.' });
+         }
+         const discountPct = Number(found.discount_percentage) || 0;
+         const is100Pct = discountPct >= 100;
+         return json(res, 200, { 
+           valid: true, 
+           promo: {
+             ...found,
+             code: found.code,
+             discount_percentage: discountPct,
+             is_vip: is100Pct
+           },
+           code: found.code, 
+           discount_percentage: discountPct, 
+           is_vip: is100Pct,
+           description: found.description || `${discountPct}% Discount`,
+           message: is100Pct
+             ? `🎉 Promo Code "${found.code}" applied: 100% Free Full Access!` 
+             : `✓ Promo Code "${found.code}" applied: ${discountPct}% Discount applied!` 
          });
        }
 
-       return json(res, 400, { valid: false, error: 'Invalid or expired promo code.' });
+       return json(res, 400, { valid: false, error: 'Invalid or expired promo/VIP code.' });
     }
 
     if(req.method==='POST'&&path==='/create-order'){
@@ -606,41 +624,59 @@ export default async function handler(req,res){
           return json(res, 403, { error: 'This feature is currently unavailable.' });
         }
 
-        if (!amount) {
+        let baseAmt = (amount || 0);
+        if (!baseAmt) {
           if (!map[plan]) return json(res, 400, { error: 'Invalid plan specified.' });
           const cfg = pricing(s);
-          let baseAmt = (cfg.prices[plan] || 59) * 100;
-          if (b.promoCode) {
-            const codeStr = b.promoCode.toUpperCase().trim();
-            let found = inMemoryPromoCodes.find(x => x.code === codeStr && x.active);
+          baseAmt = (cfg.prices[plan] || 59) * 100;
+        }
+
+        if (b.promoCode) {
+          const codeStr = b.promoCode.toUpperCase().trim();
+          let isVip = false;
+          const hUpper = hashCode(codeStr);
+          const memVip = inMemoryVipCodes.find(x => (x.display_code && x.display_code.toUpperCase() === codeStr) || x.code_hash === hUpper || (x.id && String(x.id).toUpperCase() === codeStr));
+          if (memVip && memVip.active !== false) {
+            isVip = true;
+          }
+
+          let found = null;
+          if (!isVip) {
+            found = inMemoryPromoCodes.find(x => x.code && x.code.toUpperCase() === codeStr && x.active !== false);
             if (!found) {
               try { 
                 const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(codeStr)}&active=eq.true&limit=1`);
-                if (data && data[0]) found = data[0];
+                if (data && data[0] && data[0].code && String(data[0].code).toUpperCase() === codeStr && data[0].active !== false) {
+                  found = data[0];
+                }
               } catch {}
             }
-            if (found && found.discount_percentage > 0) {
-               baseAmt = baseAmt * (1 - (found.discount_percentage / 100));
-            }
           }
-          amount = Math.max(100, Math.round(baseAmt));
+
+          if (isVip || (found && Number(found.discount_percentage) >= 100)) {
+            baseAmt = 0;
+          } else if (found && Number(found.discount_percentage) > 0) {
+            baseAmt = baseAmt * (1 - (Number(found.discount_percentage) / 100));
+          }
         }
 
-        if (isNaN(amount) || amount < 100) {
-          return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
-        }
+        amount = Math.round(baseAmt);
 
-
-        // If 100% free due to promo code or base price
-        if (amount <= 100 && b.promoCode) {
+        // If 100% free due to VIP code or 100% promo code
+        if (amount <= 0) {
            const sessionToken = crypto.randomBytes(32).toString('hex');
            return json(res, 200, {
              id: 'free_order_' + Date.now(),
              amount: 0,
              currency: 'INR',
              sessionToken,
-             isDemo: true // We can use the demo flow to auto-verify it on frontend
+             isFree: true,
+             isDemo: true
            });
+        }
+
+        if (isNaN(amount) || amount < 100) {
+          return json(res, 400, { error: 'Amount must be at least 100 paise (₹1).' });
         }
         
         const key_id = getRazorpayKeyId();
@@ -888,11 +924,13 @@ export default async function handler(req,res){
       const hRaw = hashCode(rawCode);
 
       // Check for Promo codes that grant 100% discount
-      let foundPromo = inMemoryPromoCodes.find(x => x.code === upperCode && x.active && x.discount_percentage === 100);
+      let foundPromo = inMemoryPromoCodes.find(x => x.code && x.code.toUpperCase() === upperCode && x.active !== false && Number(x.discount_percentage) === 100);
       if (!foundPromo) {
          try {
            const data = await db.select('promo_codes', `code=eq.${encodeURIComponent(upperCode)}&active=eq.true&discount_percentage=eq.100&limit=1`);
-           if (data && data[0]) foundPromo = data[0];
+           if (data && data[0] && data[0].code && String(data[0].code).toUpperCase() === upperCode && data[0].active !== false && Number(data[0].discount_percentage) === 100) {
+             foundPromo = data[0];
+           }
          } catch {}
       }
       if (foundPromo) {
