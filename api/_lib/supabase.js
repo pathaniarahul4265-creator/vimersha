@@ -35,10 +35,8 @@ function saveJsonFile(filename, data) {
 const inMemorySettings = loadJsonFile('settings.json', {
   reveal_price: '59',
   match_price: '99',
-  question_price: '19',
   reveal_enabled: '1',
   match_enabled: '1',
-  question_enabled: '1',
   offer_enabled: '0',
   offer_percent: '0',
   offer_label: ''
@@ -182,17 +180,15 @@ export async function getSettings() {
 export function pricing(s = {}) {
   const basePrices = {
     reveal: Number(s.reveal_price) || 59,
-    match: Number(s.match_price) || 99,
-    question: Number(s.question_price) || 19
+    match: Number(s.match_price) || 99
   };
   const isOffer = s.offer_enabled === '1' && Number(s.offer_percent) > 0;
-  const pct = isOffer ? Math.min(100, Math.max(0, Number(s.offer_percent))) : 0;
-  const discount = (p) => isOffer ? Math.max(0, Math.round(p * (1 - pct / 100))) : p;
+  const pct = isOffer ? Math.min(90, Math.max(0, Number(s.offer_percent))) : 0;
+  const discount = (p) => isOffer ? Math.max(1, Math.round(p * (1 - pct / 100))) : p;
   return {
     prices: {
       reveal: discount(basePrices.reveal),
-      match: discount(basePrices.match),
-      question: discount(basePrices.question)
+      match: discount(basePrices.match)
     },
     basePrices,
     offer: {
@@ -202,10 +198,7 @@ export function pricing(s = {}) {
     },
     features: {
       reveal: s.reveal_enabled !== '0',
-      match: s.match_enabled !== '0',
-      question: s.question_enabled !== '0',
-      chat: s.question_enabled !== '0',
-      question_enabled: s.question_enabled !== '0'
+      match: s.match_enabled !== '0'
     }
   };
 }

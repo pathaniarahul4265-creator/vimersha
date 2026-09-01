@@ -264,9 +264,7 @@ export async function aiCall({systemText, userText, maxTokens, sessionToken, vip
   if (requestedModel) addCandidate(requestedModel);
   addCandidate(primaryModel);
   addCandidate('gemini-3.6-flash');
-  addCandidate('gemini-3.5-flash');
   addCandidate('gemini-3.5-flash-lite');
-  addCandidate('gemini-2.5-flash');
   addCandidate(fallbackModel);
 
   let lastErr = null;
@@ -404,31 +402,6 @@ function generateDeterministicAstrologySection(userText = '', systemText = '') {
     if (titleMatch && titleMatch[1]) {
       sectionTitle = titleMatch[1];
     }
-  }
-  
-  const isChat = userText.includes('Conversation so far:') || userText.includes("Answer the native's latest question") || userText.includes('Question:') || userText.includes('Inquiry from the native:');
-  
-  if (isChat) {
-    let userQuestion = 'Life trajectory & planetary alignment';
-    const qMatches = [...userText.matchAll(/(?:Question:|Inquiry from the native:\s*"?)\s*([^\n"]+)/gi)];
-    if (qMatches.length > 0) userQuestion = qMatches[qMatches.length - 1][1].trim();
-
-    if (isHi) {
-      return `### ज्योतिषीय परामर्श: "${userQuestion}"
-
-### 1. मुख्य सारांश
-आपकी जन्म कुंडली में लग्न एवं चंद्र राशि के आधार पर आपके इस प्रश्न का स्पष्ट, प्रामाणिक और सकारात्मक समाधान प्राप्त होता है। यह कालखंड आपके लिए आंतरिक परिपक्वता का है।
-
-### 2. मनोवैज्ञानिक विवेचना
-आपके लग्नेश की स्थिति दर्शाती है कि जब आप बाह्य दबाव के स्थान पर अपने आत्म-विश्वास के साथ कार्य करते हैं, तो अनुकूल परिणाम स्वतः निर्मित होते हैं।`;
-    }
-    return `### Astrological Consultation: "${userQuestion}"
-
-### 1. Executive Summary & Core Impact
-Based on your natal chart, your inquiry reveals a strong, constructive planetary momentum. The astrological indications point to focused personal maturation and tangible real-world progress.
-
-### 2. Psychological Insight & Lived Reality
-Your Lagna disposition indicates that clarity and internal conviction are your greatest assets. When you operate from core values rather than external uncertainty, decisions align smoothly.`;
   }
 
   if (isHi) {

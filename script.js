@@ -58,32 +58,28 @@ window.PAYWALL_CONFIG = {
   verifyPaymentEndpoint: '/api/verify-payment',
   plans: {
     reveal: { amountINR: 59, title: 'Reveal your chart', description: 'Unlock the complete individual chart reading, visual Kundli, Yogas, Dashas and life interpretation.' },
-    match: { amountINR: 99, title: 'Kundli Matching', description: 'Unlock the complete 36-point compatibility reading, Mangal analysis and relationship synthesis.' },
-    question: { amountINR: 29, title: 'Ask the Chart', description: 'Ask one detailed, chart-grounded question. Up to 5 paid questions are available per reading.' }
+    match: { amountINR: 99, title: 'Kundli Matching', description: 'Unlock the complete 36-point compatibility reading, Mangal analysis and relationship synthesis.' }
   }
 };
 
 window.applyPricingToUI = function(cfg) {
   const c = cfg || window.SERVER_CONFIG || {
-    prices: { reveal: 59, match: 99, question: 29 },
-    basePrices: { reveal: 59, match: 99, question: 29 },
+    prices: { reveal: 59, match: 99 },
+    basePrices: { reveal: 59, match: 99 },
     offer: { enabled: false, percent: 0, label: '' },
-    features: { reveal: true, match: true, chat: true }
+    features: { reveal: true, match: true }
   };
   
   const pReveal = Number(c.prices?.reveal ?? 59);
   const pMatch = Number(c.prices?.match ?? 99);
-  const pQuestion = Number(c.prices?.question ?? 29);
   const isOffer = Boolean(c.offer?.enabled && Number(c.offer?.percent) > 0);
   const baseReveal = Number(c.basePrices?.reveal || pReveal);
   const baseMatch = Number(c.basePrices?.match || pMatch);
-  const baseQuestion = Number(c.basePrices?.question || pQuestion);
 
   // Update PAYWALL_CONFIG
   if (window.PAYWALL_CONFIG && window.PAYWALL_CONFIG.plans) {
     if (window.PAYWALL_CONFIG.plans.reveal) window.PAYWALL_CONFIG.plans.reveal.amountINR = pReveal;
     if (window.PAYWALL_CONFIG.plans.match) window.PAYWALL_CONFIG.plans.match.amountINR = pMatch;
-    if (window.PAYWALL_CONFIG.plans.question) window.PAYWALL_CONFIG.plans.question.amountINR = pQuestion;
   }
 
   // Update Individual Chart Reveal button
@@ -103,15 +99,6 @@ window.applyPricingToUI = function(cfg) {
     matchBtn.textContent = `${baseText} · ₹${pMatch}`;
   }
 
-  // Update Ask the Chart status hint
-  const chatHintSpan = document.querySelector('.chat-status span');
-  if (chatHintSpan) {
-    const isHi = window.currentVedicLang === 'hi';
-    chatHintSpan.textContent = isHi
-      ? `कुंडली, दशा, योग, संबंध, करियर या जीवन के चरणों के बारे में प्रश्न पूछें। प्रत्येक प्रश्न का मूल्य ₹${pQuestion} है।`
-      : `Ask specific questions about the chart, Dasha, Yogas, relationships, career, or life phases. Each question costs ₹${pQuestion}.`;
-  }
-
   // Update Payment Modal plan cards
   const planCards = document.querySelectorAll('#paymentPlansGrid .plan-card');
   planCards.forEach(card => {
@@ -120,7 +107,6 @@ window.applyPricingToUI = function(cfg) {
     let basePrice = 59;
     if (plan === 'reveal') { price = pReveal; basePrice = baseReveal; }
     else if (plan === 'match') { price = pMatch; basePrice = baseMatch; }
-    else if (plan === 'question') { price = pQuestion; basePrice = baseQuestion; }
     else if (plan === 'dakshina') { price = 251; basePrice = 251; }
 
     card.dataset.amount = price;
@@ -154,7 +140,7 @@ window.applyPricingToUI = function(cfg) {
     window.applyPricingToUI(c);
     window.dispatchEvent(new CustomEvent('server-config-ready',{detail:c}));
   }catch(e){
-    window.SERVER_CONFIG={features:{reveal:true,match:true,chat:true},prices:{reveal:59,match:99,question:29},basePrices:{reveal:59,match:99,question:29},offer:{enabled:false,percent:0,label:''}};
+    window.SERVER_CONFIG={features:{reveal:true,match:true},prices:{reveal:59,match:99},basePrices:{reveal:59,match:99},offer:{enabled:false,percent:0,label:''}};
     window.applyPricingToUI(window.SERVER_CONFIG);
   }
 })();
@@ -4314,60 +4300,15 @@ function renderReadingNavigator() {
     }).join('');
   }
 
-  // 2. Render Consultation Questions Log
-  const qList = document.getElementById('navQuestionsList');
-  const qEmpty = document.getElementById('navQuestionsEmpty');
-  if (qList) {
-    if (consultationQuestionsLog.length === 0) {
-      if (qEmpty) qEmpty.style.display = 'block';
-    } else {
-      if (qEmpty) qEmpty.style.display = 'none';
-      const existingCards = qList.querySelectorAll('.nav-question-card');
-      existingCards.forEach(c => c.remove());
-      
-      consultationQuestionsLog.forEach(qItem => {
-        const card = document.createElement('div');
-        card.className = 'nav-question-card';
-        card.innerHTML = `
-          <div class="nav-q-head">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="nav-q-badge">Q${qItem.id}</span>
-              <span class="nav-q-topic">✦ ${isHi ? escapeHtml(qItem.topicHi || qItem.topic) : escapeHtml(qItem.topic)}</span>
-            </div>
-            <span class="nav-q-time">${escapeHtml(qItem.timestamp)}</span>
-          </div>
-          <div class="nav-q-text">"${escapeHtml(qItem.question)}"</div>
-          <div class="nav-q-actions">
-            <button type="button" class="nav-q-btn btn-answer" onclick="jumpToChatQuestion(${qItem.id})" title="Jump down to full consultation response">
-              <span>💬</span> ${isHi ? 'परामर्श उत्तर देखें' : 'View In-Depth Answer'} ↗
-            </button>
-            <button type="button" class="nav-q-btn btn-evidence" onclick="jumpToReportSection('${qItem.relatedSectionId}', 'Astrological Evidence for Question #${qItem.id}')" title="Scroll to and highlight the supporting astrological report chapter">
-              <span>📜</span> ${isHi ? 'कुंडली अध्याय हाइलाइट करें:' : 'Highlight Chart Evidence:'} <b>${escapeHtml(qItem.relatedSectionTitle)}</b> 🔍
-            </button>
-          </div>
-        `;
-        qList.appendChild(card);
-      });
-    }
   }
 }
 
 function renderChatQuestionsRibbon() {
   const ribbon = document.getElementById('chatQuestionsRibbon');
-  if (!ribbon) return;
-  if (consultationQuestionsLog.length === 0) {
+  if (ribbon) {
     ribbon.style.display = 'none';
     ribbon.innerHTML = '';
-    return;
   }
-  ribbon.style.display = 'flex';
-  const isHi = window.currentVedicLang === 'hi';
-  ribbon.innerHTML = `<span style="font-size:11.5px;color:#d8a04c;font-family:'Cinzel',serif;font-weight:700;display:inline-flex;align-items:center;gap:4px;padding:4px 6px;white-space:nowrap;"><span>📑</span> ${isHi ? 'पूछे गए प्रश्न:' : 'Asked Questions:'}</span>` +
-    consultationQuestionsLog.map(q => `
-      <button type="button" class="chat-q-chip" onclick="jumpToChatQuestion(${q.id})" title="${escapeHtml(q.question)}">
-        <b>Q${q.id}:</b> ${escapeHtml(q.question.length > 28 ? q.question.slice(0, 26) + '…' : q.question)}
-      </button>
-    `).join('');
 }
 
 function jumpToReportSection(sectionId, customNotice) {
@@ -4399,45 +4340,31 @@ function jumpToReportSection(sectionId, customNotice) {
   }, 3600);
 }
 
-function jumpToChatQuestion(qId) {
-  const chatCard = document.getElementById('chatCard');
-  if (chatCard && chatCard.style.display === 'none') {
-    chatCard.style.display = 'block';
-  }
-  
-  const target = document.getElementById('chat-ans-' + qId) || document.getElementById('chat-q-' + qId);
-  if (!target) {
-    chatCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
+function jumpToChatQuestion(qId) {}
 
-  document.querySelectorAll('.chat-msg-highlight').forEach(el => el.classList.remove('chat-msg-highlight'));
-  target.classList.add('chat-msg-highlight');
-  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-  setTimeout(() => {
-    target.classList.remove('chat-msg-highlight');
-  }, 3600);
+const endReadingBtnEl = document.getElementById('endReadingBtn');
+if (endReadingBtnEl) {
+  endReadingBtnEl.onclick = () => {
+    if(!confirm('End this reading and clear the current chart session?')) return;
+    const progressCard = document.getElementById('progressCard');
+    if (progressCard) progressCard.style.display='none';
+    const reportCard = document.getElementById('reportCard');
+    if (reportCard) reportCard.style.display='none';
+    const chatCard = document.getElementById('chatCard');
+    if (chatCard) chatCard.style.display='none';
+    const premGate = document.getElementById('premiumGate');
+    if (premGate) premGate.style.display='none';
+    const gunaCard = document.getElementById('gunaMilanResultCard');
+    if (gunaCard) { gunaCard.style.display = 'none'; gunaCard.innerHTML = ''; }
+    const reportBody = document.getElementById('reportBody');
+    if (reportBody) reportBody.innerHTML='';
+    fullReportText=''; birthContext=''; chatHistory=[]; chatQuestionsUsed=0; chatUnlocked=false;
+    consultationQuestionsLog = [];
+    if(window.resetPaymentSession) window.resetPaymentSession();
+    renderReadingNavigator();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
 }
-
-document.getElementById('endReadingBtn').onclick = () => {
-  if(!confirm('End this reading and clear the current chart session?')) return;
-  document.getElementById('progressCard').style.display='none';
-  document.getElementById('reportCard').style.display='none';
-  document.getElementById('chatCard').style.display='none';
-  document.getElementById('premiumGate').style.display='none';
-  const gunaCard = document.getElementById('gunaMilanResultCard');
-  if (gunaCard) { gunaCard.style.display = 'none'; gunaCard.innerHTML = ''; }
-  document.getElementById('reportBody').innerHTML='';
-  document.getElementById('chatLog').innerHTML='<div class="empty-hint">Your next reading will begin a fresh paid session.</div>';
-  fullReportText=''; birthContext=''; chatHistory=[]; chatQuestionsUsed=0; chatUnlocked=false;
-  consultationQuestionsLog = [];
-  if(window.resetPaymentSession) window.resetPaymentSession();
-  updateChatCount();
-  renderReadingNavigator();
-  renderChatQuestionsRibbon();
-  window.scrollTo({top:0,behavior:'smooth'});
-};
 
 document.getElementById('expandAllSectionsBtn')?.addEventListener('click', () => {
   document.querySelectorAll('.report-section-block').forEach(b => {
@@ -4464,143 +4391,17 @@ document.querySelectorAll('.chart-tab').forEach(btn=>{
   });
 });
 
-function appendChat(role, text, qIndex, topicInfo){
-  const log = document.getElementById('chatLog');
-  const div = document.createElement('div');
-  div.className = 'msg ' + (role === 'user' ? 'user' : role === 'pending' ? 'model pending' : 'model');
-  
-  const idx = qIndex || chatQuestionsUsed || 1;
-  if(role === 'user'){
-    div.id = 'chat-q-' + idx;
-    div.textContent = text;
-  } else if(role === 'pending'){
-    div.innerHTML = `<div class="chat-pending-wrap"><span class="pulse-gem">✦</span><span class="chat-pending-text">${escapeHtml(text || 'Consulting the planetary chart…')}</span></div>`;
-  } else if(role === 'model'){
-    div.id = 'chat-ans-' + idx;
-    let mainHtml = formatChatResponseHtml(text);
-    
-    // Add interactive evidence callout at the bottom of the answer
-    if(topicInfo && topicInfo.sectionId){
-      const isHi = window.currentVedicLang === 'hi';
-      mainHtml += `
-        <div class="chat-evidence-callout">
-          <div class="chat-evidence-left">
-            <span style="color:#d8a04c;font-size:14px;">📜</span>
-            <span>${isHi ? 'कुंडली का प्रासंगिक अध्याय:' : 'Supporting Chart Chapter:'} <b>${escapeHtml(topicInfo.sectionTitle)}</b></span>
-          </div>
-          <button type="button" class="chat-evidence-jump-btn" onclick="jumpToReportSection('${topicInfo.sectionId}', 'Highlighting Astrological Basis for Question #${idx}')">
-            ${isHi ? 'अध्याय हाइलाइट करें' : 'Highlight Report Chapter'} 🔍
-          </button>
-        </div>
-      `;
-    }
-    div.innerHTML = mainHtml;
-  }
-  
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  return div;
+function appendChat(role, text, qIndex, topicInfo) { return null; }
+
+const chatSendBtn = document.getElementById('chatSend');
+if (chatSendBtn) {
+  chatSendBtn.onclick = () => {};
 }
 
-document.getElementById('chatSend').onclick = async () => {
-  const input = document.getElementById('chatInput');
-  const q = input.value.trim();
-  if(!q) return;
-  if(!chatUnlocked){ alert('Wait for the chart to begin revealing before asking a question.'); return; }
-  if(chatQuestionsUsed >= MAX_CHAT_QUESTIONS){ alert('You have used all 5 questions for this reading. End the reading to start a new paid reading.'); return; }
-  if(!await window.requestPaidAccess('question')) return;
-  
-  chatQuestionsUsed++;
-  updateChatCount();
-  input.value = '';
-  
-  const currentQIndex = chatQuestionsUsed;
-  const topicInfo = classifyQuestionTopic(q);
-  
-  appendChat('user', q, currentQIndex);
-  chatHistory.push({role:'user', text:q});
-  
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
-  consultationQuestionsLog.push({
-    id: currentQIndex,
-    question: q,
-    topic: topicInfo.topic,
-    topicHi: topicInfo.topicHi,
-    relatedSectionId: topicInfo.sectionId,
-    relatedSectionTitle: topicInfo.sectionTitle,
-    timestamp: timeStr
-  });
-  
-  renderReadingNavigator();
-  renderChatQuestionsRibbon();
-
-  const sendBtn = document.getElementById('chatSend');
-  sendBtn.disabled = true;
-  const pendingDiv = appendChat('pending', 'Consulting the planetary chart…');
-
-  const reportContext = fullReportText.trim();
-  const historyText = chatHistory.map(m => `${m.role === 'user' ? 'Question' : 'Answer'}: ${m.text}`).join('\n\n');
-  const contextLabel = currentMode === 'kundli' ? 'Both partners\' birth data' : 'Birth data';
-  
-  // Extract astrological parameters for maximum precision
-  let astroDetails = '';
-  if(verifiedChart){
-    astroDetails = `Ascendant (Lagna): ${verifiedChart.ascSign} at ${verifiedChart.ascDeg?.toFixed(1)}°
-Moon: ${verifiedChart.moonRashi} (${verifiedChart.nakshatra} Nakshatra, Pada ${verifiedChart.pada})
-Sun: ${verifiedChart.sunRashi}
-Active Vimshottari Cycle: ${verifiedChart.dasha?.activeMahadasha || 'Jupiter'} Mahadasha / ${verifiedChart.dasha?.activeAntardasha || 'Saturn'} Antardasha
-Planetary Placements: ${(verifiedChart.planets || []).map(p => `${p.name} in ${p.rashi} (${p.house}th House)`).join(', ')}`;
-  }
-
-  const isHindi = window.currentVedicLang === 'hi';
-  const languageInstruction = isHindi ? 'Respond entirely in pure, refined Hindi (देवनागरी लिपि).' : 'Respond in clear, articulate English.';
-
-  const userText = `Birth data:
-${birthContext}
-
-Summary of the chart reading generated so far for this native:
-${reportSummary || reportContext}
-
-Conversation so far:
-${historyText}
-
-Answer the native's latest question using only this chart. Structure your answer with: a short summary, detailed analysis, the relevant houses/signs/planets involved, relevant yogas or doshas if any, the current Mahadasha/Antardasha context if relevant to timing, and an overall conclusion with a stated confidence level (low, medium, or high). Aim for at least 600 words.`;
-
-  try{
-    const rawText = await callGemini(activeRules, userText, 2800);
-    const text = cleanAstroText(rawText);
-    pendingDiv.remove();
-    appendChat('model', text, currentQIndex, topicInfo);
-    chatHistory.push({role:'model', text});
-    window.consumeQuestionCredit();
-  }catch(err){
-    pendingDiv.remove();
-    chatQuestionsUsed = Math.max(0, chatQuestionsUsed - 1);
-    updateChatCount();
-    consultationQuestionsLog = consultationQuestionsLog.filter(x => x.id !== currentQIndex);
-    if(err.isAuth){
-      appendChat('model', isHindi ? '### प्रमाणीकरण सूचना\nज्योतिषीय परामर्श सेवा से जुड़ने में समस्या आई। कृपया पुनः प्रयास करें।' : '### Service Authentication Notice\nThe astrological service could not complete the request at this time. Please try asking again.', currentQIndex, topicInfo);
-    }else{
-      appendChat('model', isHindi ? `### परामर्श सूचना\nपरामर्श उत्तर तैयार करने में तकनीकी व्यवधान आया: ${err.message || 'सेवा अनुपलब्ध'}। आपका प्रश्न शुल्क सुरक्षित है, कृपया पुनः प्रयास करें।` : `### Consultation Notice\nThe astrological consultation could not be completed at this moment: ${err.message || 'Service unavailable'}. Your question credit has been restored. Please ask again.`, currentQIndex, topicInfo);
-    }
-  }
-  sendBtn.disabled = (chatQuestionsUsed >= MAX_CHAT_QUESTIONS);
-  renderReadingNavigator();
-  renderChatQuestionsRibbon();
-};
-
-document.getElementById('chatInput').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    document.getElementById('chatSend').click();
-  }
-});
 // --- Reading protection: Strict prevention of copying, cutting, printing, and context menu ---
 ['copy', 'cut', 'contextmenu', 'dragstart', 'selectstart'].forEach(evtName => {
   document.addEventListener(evtName, e => {
-    if(e.target && e.target.closest && e.target.closest('.report, .visual-card, .chatlog, #reportCard, #kundliVisualCard, .report-section-block, .report-insight-card')) {
+    if(e.target && e.target.closest && e.target.closest('.report, .visual-card, #reportCard, #kundliVisualCard, .report-section-block, .report-insight-card')) {
       e.preventDefault();
       return false;
     }
@@ -4616,12 +4417,13 @@ window.addEventListener('keydown', e => {
   }
   if((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
     const sel = window.getSelection ? window.getSelection() : null;
-    if(sel && sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest('.report, .visual-card, .chatlog, #reportCard')) {
+    if(sel && sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest('.report, .visual-card, #reportCard')) {
       e.preventDefault();
       e.stopPropagation();
       return false;
     }
   }
+});
 }, { capture: true });
 
 
@@ -5450,7 +5252,6 @@ window.closeCompanyModal = function() {
         <div class="admin-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
           <label>Reveal chart · ₹<input id="setReveal" type="number" min="1" value="${esc(s.reveal_price)}"></label>
           <label>Kundli match · ₹<input id="setMatch" type="number" min="1" value="${esc(s.match_price)}"></label>
-          <label>Ask Question · ₹<input id="setQuestion" type="number" min="1" value="${esc(s.question_price)}"></label>
         </div>
       </div>
       <div class="admin-setting-card">
@@ -5469,13 +5270,9 @@ window.closeCompanyModal = function() {
           <label style="margin:0;">Individual chart generation</label>
           <input id="setRevealEnabled" type="checkbox" ${s.reveal_enabled === '1' ? 'checked' : ''} style="width:auto;">
         </div>
-        <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;">
           <label style="margin:0;">Kundli Matching (Guna Milan)</label>
           <input id="setMatchEnabled" type="checkbox" ${s.match_enabled === '1' ? 'checked' : ''} style="width:auto;">
-        </div>
-        <div class="toggle-row" style="display:flex;justify-content:space-between;padding:10px 0;">
-          <label style="margin:0;">Ask the Chart (Chat)</label>
-          <input id="setChatEnabled" type="checkbox" ${s.chat_enabled === '1' ? 'checked' : ''} style="width:auto;">
         </div>
       </div>
       <button id="saveSettingsAdmin" type="button" style="margin-top:12px;padding:12px 24px;">Save pricing & feature settings</button>
@@ -5487,13 +5284,11 @@ window.closeCompanyModal = function() {
         const payload = {
           reveal_price: $('setReveal').value,
           match_price: $('setMatch').value,
-          question_price: $('setQuestion').value,
           offer_enabled: $('setOfferEnabled').checked ? '1' : '0',
           offer_percent: $('setOfferPercent').value,
           offer_label: $('setOfferLabel').value,
           reveal_enabled: $('setRevealEnabled').checked ? '1' : '0',
-          match_enabled: $('setMatchEnabled').checked ? '1' : '0',
-          chat_enabled: $('setChatEnabled').checked ? '1' : '0'
+          match_enabled: $('setMatchEnabled').checked ? '1' : '0'
         };
         await adminFetch('/api/admin/settings', { method: 'POST', body: JSON.stringify(payload) });
         window.SERVER_CONFIG = null;
@@ -5513,25 +5308,24 @@ window.closeCompanyModal = function() {
       }
     };
   }
-  function applyFeatureVisibility(){const f=window.SERVER_CONFIG?.features||{};const revealBtn=$('genBtn'),matchBtn=$('matchBtn'),chat=$('chatCard'),matchTab=$('tabKundli');if(revealBtn)revealBtn.disabled=f.reveal===false;if(matchBtn)matchBtn.disabled=f.match===false;if(matchTab)matchTab.style.display=f.match===false?'none':'';if(chat&&f.chat===false)chat.style.display='none';}
+  function applyFeatureVisibility(){const f=window.SERVER_CONFIG?.features||{};const revealBtn=$('genBtn'),matchBtn=$('matchBtn'),matchTab=$('tabKundli');if(revealBtn)revealBtn.disabled=f.reveal===false;if(matchBtn)matchBtn.disabled=f.match===false;if(matchTab)matchTab.style.display=f.match===false?'none':'';}
   function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
   window.applyFeatureVisibility=applyFeatureVisibility;
   window.addEventListener('server-config-ready',applyFeatureVisibility);
 })();
 // Direct Razorpay checkout: paid actions open Razorpay immediately.
 (function(){
-  const cfg=window.PAYWALL_CONFIG; const entitlements={reveal:false,match:false}; let questionCredit=false; let vipAccess=false;
-  function enabled(plan){const f=window.SERVER_CONFIG?.features||{};return plan==='reveal'?f.reveal!==false:plan==='match'?f.match!==false:f.chat!==false;}
+  const cfg=window.PAYWALL_CONFIG; const entitlements={reveal:false,match:false}; let vipAccess=false;
+  function enabled(plan){const f=window.SERVER_CONFIG?.features||{};return plan==='reveal'?f.reveal!==false:f.match!==false;}
   async function pay(plan, customAmount, customPrefill){
     if(vipAccess && plan !== 'dakshina') return true;
     if(!enabled(plan) && plan !== 'dakshina'){ alert('This feature is temporarily unavailable.'); return false; }
     if(plan==='reveal'&&entitlements.reveal) return true;
     if(plan==='match'&&entitlements.match) return true;
-    if(plan==='question'&&questionCredit) return true;
     const p = cfg.plans[plan] || { title: 'Voluntary Sacred Dakshina', amountINR: customAmount || 251 };
     try{
       const payload = { plan };
-      if (customAmount !== undefined) payload.amount = Math.round(customAmount * 100);
+      if (customAmount) payload.amount = Math.round(customAmount * 100);
       const r = await fetch(cfg.createOrderEndpoint||'/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -5614,7 +5408,7 @@ window.closeCompanyModal = function() {
       });
     }catch(err){alert(err.message+' Please try again.');return false;}
   }
-  window.requestPaidAccess=pay; window.consumeQuestionCredit=()=>{if(!questionCredit)return false;questionCredit=false;return true;}; window.resetPaymentSession=()=>{entitlements.reveal=false;entitlements.match=false;questionCredit=false;vipAccess=false;window.vipAccess=false;window.matchDetailedUnlocked=false;try{localStorage.removeItem('jyotish_vip_unlocked');}catch(e){}}; window.enableVipAccess=()=>{vipAccess=true;window.vipAccess=true;entitlements.reveal=true;entitlements.match=true;questionCredit=true;window.matchDetailedUnlocked=true;document.body.classList.add('vip-active');try{localStorage.setItem('jyotish_vip_unlocked','1');}catch(e){}if(typeof updateVipUi==='function')updateVipUi();};
+  window.requestPaidAccess=pay; window.consumeQuestionCredit=()=>{return false;}; window.resetPaymentSession=()=>{entitlements.reveal=false;entitlements.match=false;vipAccess=false;window.vipAccess=false;window.matchDetailedUnlocked=false;try{localStorage.removeItem('jyotish_vip_unlocked');}catch(e){}}; window.enableVipAccess=()=>{vipAccess=true;window.vipAccess=true;entitlements.reveal=true;entitlements.match=true;window.matchDetailedUnlocked=true;document.body.classList.add('vip-active');try{localStorage.setItem('jyotish_vip_unlocked','1');}catch(e){}if(typeof updateVipUi==='function')updateVipUi();};
 })();
 function updateVipUi(){
   const isVip = Boolean(window.vipAccess || document.body.classList.contains('vip-active'));
@@ -5632,10 +5426,6 @@ function updateVipUi(){
   const unlockMatchBtn = document.getElementById('unlockMatchBtn');
   if(unlockMatchBtn){
     unlockMatchBtn.textContent = 'Unlock detailed match (VIP Unlocked)';
-  }
-  const chatStatusSpan = document.querySelector('.chat-status span');
-  if(chatStatusSpan){
-    chatStatusSpan.textContent = 'Ask specific questions about the chart, Dasha, Yogas, relationships, career, or life phases. VIP Access Unlocked — Unlimited questions included.';
   }
 }
 window.updateVipUi = updateVipUi;
@@ -7191,39 +6981,19 @@ window.setVedicLanguage = function(lang) {
   const gateP = document.querySelector('.premium-gate p:not(.premium-note)');
   if (gateP) {
     gateP.textContent = isHi
-      ? 'विस्तृत राजयोग, संपूर्ण 120-वर्षीय विंशोत्तरी दशा अनुक्रम, जीवन-चरण विश्लेषण, सूक्ष्म काल-निर्धारण और संपूर्ण प्रश्न-उत्तर अनुभव प्राप्त करें।'
-      : 'Unlock the extended interpretation including detailed Yogas, full Vimshottari Dasha sequencing, life-phase analysis, advanced timing, deeper relationship patterns and the complete Ask the Chart experience.';
+      ? 'विस्तृत राजयोग, संपूर्ण 120-वर्षीय विंशोत्तरी दशा अनुक्रम, जीवन-चरण विश्लेषण, सूक्ष्म काल-निर्धारण और संपूर्ण शास्त्रीय विवेचन प्राप्त करें।'
+      : 'Unlock the extended interpretation including detailed Yogas, full Vimshottari Dasha sequencing, life-phase analysis, advanced timing, deeper relationship patterns and complete planetary synthesis.';
   }
   const gatePoints = document.querySelector('.premium-gate .gate-points');
   if (gatePoints) {
     gatePoints.innerHTML = isHi
-      ? '<span>विस्तृत राजयोग</span><span>महादशा व अंतर्दशा</span><span>जीवन-चरण फल</span><span>सटीक काल-निर्धारण</span><span>असीमित प्रश्न-उत्तर</span>'
-      : '<span>Detailed Yogas</span><span>Mahadasha &amp; Antardasha</span><span>Life-phase interpretation</span><span>Advanced timing</span><span>Full Ask the Chart</span>';
+      ? '<span>विस्तृत राजयोग</span><span>महादशा व अंतर्दशा</span><span>जीवन-चरण फल</span><span>सटीक काल-निर्धारण</span><span>संपूर्ण विश्लेषण</span>'
+      : '<span>Detailed Yogas</span><span>Mahadasha &amp; Antardasha</span><span>Life-phase interpretation</span><span>Advanced timing</span><span>Complete Synthesis</span>';
   }
   const premUnlockBtn = document.getElementById('premiumUnlockBtn');
   if (premUnlockBtn) premUnlockBtn.textContent = isHi ? 'प्रीमियम अध्ययन अनलॉक करें · ₹59' : 'Unlock Premium Reading';
 
-  // 19. Chat Card
-  const chatHead = document.getElementById('chatHeading');
-  if (chatHead) chatHead.textContent = isHi ? 'अपनी कुंडली से जुड़े प्रश्न पूछें' : 'Ask about this reading';
-  const chatStatusSpan = document.querySelector('.chat-status > span:first-child');
-  if (chatStatusSpan) {
-    chatStatusSpan.textContent = isHi
-      ? 'कुंडली, दशा, योग, संबंध, करियर या जीवन चरणों के बारे में विशिष्ट प्रश्न पूछें।'
-      : 'Ask specific questions about the chart, Dasha, Yogas, relationships, career, or life phases. Each question costs ₹29.';
-  }
-  const chatInput = document.getElementById('chatInput');
-  if (chatInput) chatInput.placeholder = isHi ? 'अपनी कुंडली से संबंधित प्रश्न यहाँ लिखें…' : 'Type a question about your chart…';
-  const chatSendBtn = document.getElementById('chatSend');
-  if (chatSendBtn) chatSendBtn.textContent = isHi ? 'पूछें' : 'Ask';
-  const chatHint = document.getElementById('chatHint');
-  if (chatHint) {
-    chatHint.textContent = isHi
-      ? 'कुंडली की गणना हो रही है — पहला खंड प्रकट होते ही आप अपने प्रश्न पूछ सकते हैं।'
-      : 'The chart is being cast — you can start asking questions the moment the first section appears above.';
-  }
-
-  // 20. End Reading Button & Bottom Actions
+  // 19. End Reading Button & Bottom Actions
   const endReadingBtn = document.getElementById('endReadingBtn');
   if (endReadingBtn) endReadingBtn.textContent = isHi ? 'नया अध्ययन प्रारंभ करें' : 'End reading';
   const mysticBtn = document.getElementById('mysticSoundBtn');
