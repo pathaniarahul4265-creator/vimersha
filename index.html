@@ -13374,91 +13374,114 @@ function runFrom(startIndex, reportBody, stepListEl, progressErrorEl, endIndex =
     }
   });
 }
-document.getElementById("genBtn").onclick = () => __async(this, null, function* () {
-  const fDob = document.getElementById("f_dob");
-  const fTob = document.getElementById("f_tob");
-  const fPob = document.getElementById("f_pob");
-  const fLat = document.getElementById("f_lat");
-  const fLon = document.getElementById("f_lon");
-  const fConsent = document.getElementById("f_consent");
+window.startChartGeneration = function() {
+  return __async(this, null, function* () {
+    const fDob = document.getElementById("f_dob");
+    const fTob = document.getElementById("f_tob");
+    const fPob = document.getElementById("f_pob");
+    const fLat = document.getElementById("f_lat");
+    const fLon = document.getElementById("f_lon");
+    const fConsent = document.getElementById("f_consent");
 
-  if (!fDob.value) {
-    fDob.value = "1995-10-15";
-    const dDisp = document.getElementById("f_dob_display");
-    if (dDisp) dDisp.innerHTML = `<span>1995-10-15</span><span class="picker-icon">📅</span>`;
-  }
-  if (!fTob.value) {
-    fTob.value = "10:30:00";
-    const tDisp = document.getElementById("f_tob_display");
-    if (tDisp) tDisp.innerHTML = `<span>10:30:00</span><span class="picker-icon">🕐</span>`;
-  }
-  if (!fPob.value) {
-    fPob.value = "New Delhi, Delhi, India";
-  }
-  if (!fLat.value) fLat.value = "28.6139";
-  if (!fLon.value) fLon.value = "77.2090";
-  if (fConsent && !fConsent.checked) fConsent.checked = true;
-
-  if (window.isGeneratingReport) {
-    const pc = document.getElementById("progressCard");
-    if (pc) {
-      pc.style.display = "block";
-      pc.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (fDob && !fDob.value) {
+      fDob.value = "1995-10-15";
+      const dDisp = document.getElementById("f_dob_display");
+      if (dDisp) dDisp.innerHTML = `<span>1995-10-15</span><span class="picker-icon">📅</span>`;
     }
-    return;
-  }
+    if (fTob && !fTob.value) {
+      fTob.value = "10:30:00";
+      const tDisp = document.getElementById("f_tob_display");
+      if (tDisp) tDisp.innerHTML = `<span>10:30:00</span><span class="picker-icon">🕐</span>`;
+    }
+    if (fPob && !fPob.value) {
+      fPob.value = "New Delhi, Delhi, India";
+    }
+    if (fLat && !fLat.value) fLat.value = "28.6139";
+    if (fLon && !fLon.value) fLon.value = "77.2090";
+    if (fConsent && !fConsent.checked) fConsent.checked = true;
 
-  const payApproved = yield window.requestPaidAccess("reveal");
-  if (!payApproved)
-    return;
+    if (window.isGeneratingReport) {
+      const pc = document.getElementById("progressCard");
+      if (pc) {
+        pc.style.display = "block";
+        pc.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
 
-  window.isGeneratingReport = true;
-  try {
-    activeSections = SECTIONS;
-    activeRules = RULES;
-    birthContext = buildBirthContext();
-    fullReportText = "";
-    chatHistory = [];
-    chatQuestionsUsed = 0;
-    chatUnlocked = false;
-    consultationQuestionsLog = [];
-    activeKey = EMBEDDED_KEY;
-    window.chapterMemory = [];
-    window.chapterPartialStates = {};
-    document.getElementById("progressHeading").textContent = "Casting the chart";
-    document.getElementById("reportHeading").textContent = "Your reading";
-    document.getElementById("chatHeading").textContent = "Ask the chart";
-    document.getElementById("progressCard").style.display = "block";
-    document.getElementById("reportCard").style.display = "block";
-    document.getElementById("chatCard").style.display = "none";
-    const dpb = document.getElementById("dailyPanchangBar");
-    if (dpb) dpb.style.display = "none";
-    const drs = document.getElementById("dailyRashifalSection");
-    if (drs) drs.style.display = "none";
-    const stepList = document.getElementById("stepList");
-    stepList.innerHTML = activeSections.map((s) => `<li id="step-${s.id}"><span class="dot"></span>${s.title}</li>`).join("");
-    const reportBody = document.getElementById("reportBody");
-    reportBody.innerHTML = "";
-    const ptc = document.getElementById("placementTableCard");
-    if (ptc)
-      ptc.style.display = "none";
-    const itc = document.getElementById("interpretationTableCard");
-    if (itc)
-      itc.style.display = "none";
-    const chartWrap = document.getElementById("kundliChartWrap");
-    if (chartWrap)
-      chartWrap.dataset.chartMode = "north";
-    renderKundliVisuals();
-    renderReadingNavigator();
-    renderChatQuestionsRibbon();
-    const chatLog = document.getElementById("chatLog");
-    chatLog.innerHTML = '<div class="empty-hint" id="chatHint">The chart is being cast — you can start asking questions the moment the first section appears above.</div>';
-    document.getElementById("progressCard").scrollIntoView({ behavior: "smooth", block: "start" });
-    yield runFrom(0, reportBody, stepList, document.getElementById("progressError"));
-  } finally {
-    window.isGeneratingReport = false;
-  }
-});
+    const payApproved = yield window.requestPaidAccess("reveal");
+    if (!payApproved)
+      return;
+
+    window.isGeneratingReport = true;
+    try {
+      activeSections = SECTIONS;
+      activeRules = RULES;
+      birthContext = buildBirthContext();
+      fullReportText = "";
+      chatHistory = [];
+      chatQuestionsUsed = 0;
+      chatUnlocked = false;
+      consultationQuestionsLog = [];
+      activeKey = EMBEDDED_KEY;
+      window.chapterMemory = [];
+      window.chapterPartialStates = {};
+      const ph = document.getElementById("progressHeading");
+      if (ph) ph.textContent = "Casting the chart";
+      const rh = document.getElementById("reportHeading");
+      if (rh) rh.textContent = "Your reading";
+      const ch = document.getElementById("chatHeading");
+      if (ch) ch.textContent = "Ask the chart";
+      const pc = document.getElementById("progressCard");
+      if (pc) pc.style.display = "block";
+      const rc = document.getElementById("reportCard");
+      if (rc) rc.style.display = "block";
+      const cc = document.getElementById("chatCard");
+      if (cc) cc.style.display = "none";
+      const dpb = document.getElementById("dailyPanchangBar");
+      if (dpb) dpb.style.display = "none";
+      const drs = document.getElementById("dailyRashifalSection");
+      if (drs) drs.style.display = "none";
+      const stepList = document.getElementById("stepList");
+      if (stepList) {
+        stepList.innerHTML = activeSections.map((s) => `<li id="step-${s.id}"><span class="dot"></span>${s.title}</li>`).join("");
+      }
+      const reportBody = document.getElementById("reportBody");
+      if (reportBody) reportBody.innerHTML = "";
+      const ptc = document.getElementById("placementTableCard");
+      if (ptc) ptc.style.display = "none";
+      const itc = document.getElementById("interpretationTableCard");
+      if (itc) itc.style.display = "none";
+      const chartWrap = document.getElementById("kundliChartWrap");
+      if (chartWrap) chartWrap.dataset.chartMode = "north";
+      renderKundliVisuals();
+      renderReadingNavigator();
+      renderChatQuestionsRibbon();
+      const chatLog = document.getElementById("chatLog");
+      if (chatLog) {
+        chatLog.innerHTML = '<div class="empty-hint" id="chatHint">The chart is being cast — you can start asking questions the moment the first section appears above.</div>';
+      }
+      if (pc) pc.scrollIntoView({ behavior: "smooth", block: "start" });
+      yield runFrom(0, reportBody, stepList, document.getElementById("progressError"));
+    } catch (err) {
+      console.error("Report generation error:", err);
+      const pe = document.getElementById("progressError");
+      if (pe) {
+        pe.innerHTML = `<div class="error" style="padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;color:#ef4444;font-size:13px;">Notice: ${escapeHtml(err.message || "Synthesis error")}. <button type="button" onclick="window.startChartGeneration()" style="margin-left:8px;padding:4px 10px;font-size:12px;cursor:pointer;background:#b99355;color:#fff;border:none;border-radius:4px;">Retry</button></div>`;
+      }
+    } finally {
+      window.isGeneratingReport = false;
+      const gb = document.getElementById("genBtn");
+      if (gb) gb.disabled = false;
+      const mb = document.getElementById("matchBtn");
+      if (mb) mb.disabled = false;
+    }
+  });
+};
+const genBtnEl = document.getElementById("genBtn");
+if (genBtnEl) {
+  genBtnEl.onclick = () => window.startChartGeneration();
+}
 const GUNA_NAKSHATRAS = [
   { name: "Ashwini", hindi: "\u0905\u0936\u094D\u0935\u093F\u0928\u0940", lord: "Ketu", gana: "Deva", yoni: "Horse", nadi: "Adi" },
   { name: "Bharani", hindi: "\u092D\u0930\u0923\u0940", lord: "Venus", gana: "Manushya", yoni: "Elephant", nadi: "Madhya" },
@@ -17125,7 +17148,13 @@ var __async = (__this, __arguments, generator) => {
 };
 (function() {
   const cfg = window.PAYWALL_CONFIG;
-  const entitlements = { reveal: false, match: false };
+  window.entitlements = window.entitlements || {
+    reveal: Boolean(typeof localStorage !== "undefined" && localStorage.getItem("jyotish_reveal_unlocked") === "1"),
+    match: Boolean(typeof localStorage !== "undefined" && localStorage.getItem("jyotish_match_unlocked") === "1"),
+    vip: Boolean(typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1"),
+    premium: Boolean(typeof localStorage !== "undefined" && localStorage.getItem("jyotish_vip_unlocked") === "1")
+  };
+  const entitlements = window.entitlements;
 
   window.isVipActive = function() {
     try {
@@ -17190,16 +17219,15 @@ var __async = (__this, __arguments, generator) => {
 
   function pay(plan, customAmount, customPrefill) {
     return __async(this, null, function* () {
-      // Remove bypass for real payments
       if (window.isVipActive() && plan !== "dakshina")
         return true;
       if (!enabled(plan) && plan !== "dakshina") {
         alert("This feature is temporarily unavailable.");
         return false;
       }
-      if (plan === "reveal" && entitlements.reveal)
+      if (plan === "reveal" && window.entitlements.reveal)
         return true;
-      if (plan === "match" && entitlements.match)
+      if (plan === "match" && window.entitlements.match)
         return true;
 
       const p = cfg.plans[plan] || { title: plan === "questions_pack" ? "5 Questions Value Pack" : "Voluntary Sacred Dakshina", amountINR: customAmount || (plan === "questions_pack" ? 100 : 251) };
@@ -17255,21 +17283,28 @@ var __async = (__this, __arguments, generator) => {
               else if (plan === "questions_pack")
                 window.addQuestionCredits(5);
               else if (plan === "vip" || plan === "premium") {
-                entitlements.reveal = true;
-                entitlements.match = true;
-                entitlements.vip = true;
-                entitlements.premium = true;
+                window.entitlements.reveal = true;
+                window.entitlements.match = true;
+                window.entitlements.vip = true;
+                window.entitlements.premium = true;
+                try {
+                  localStorage.setItem("jyotish_reveal_unlocked", "1");
+                  localStorage.setItem("jyotish_match_unlocked", "1");
+                  localStorage.setItem("jyotish_vip_unlocked", "1");
+                } catch (e) {}
                 window.vipAccess = true;
                 window.isVipUser = true;
                 document.body.classList.add("vip-active");
                 if (typeof updateVipUi === "function") updateVipUi();
               } else if (plan === "match") {
-                entitlements.match = true;
+                window.entitlements.match = true;
                 window.matchDetailedUnlocked = true;
+                try { localStorage.setItem("jyotish_match_unlocked", "1"); } catch (e) {}
               } else if (plan === "reveal") {
-                entitlements.reveal = true;
+                window.entitlements.reveal = true;
+                try { localStorage.setItem("jyotish_reveal_unlocked", "1"); } catch (e) {}
               } else if (plan !== "dakshina")
-                entitlements[plan] = true;
+                window.entitlements[plan] = true;
               window.lastPaymentRef = "pay_demo_verified";
               window.lastSessionToken = sessionToken;
               window.dispatchEvent(new CustomEvent("premium-unlocked", { detail: { plan } }));
@@ -17286,21 +17321,28 @@ var __async = (__this, __arguments, generator) => {
           else if (plan === "questions_pack")
             window.addQuestionCredits(5);
           else if (plan === "vip" || plan === "premium") {
-            entitlements.reveal = true;
-            entitlements.match = true;
-            entitlements.vip = true;
-            entitlements.premium = true;
+            window.entitlements.reveal = true;
+            window.entitlements.match = true;
+            window.entitlements.vip = true;
+            window.entitlements.premium = true;
+            try {
+              localStorage.setItem("jyotish_reveal_unlocked", "1");
+              localStorage.setItem("jyotish_match_unlocked", "1");
+              localStorage.setItem("jyotish_vip_unlocked", "1");
+            } catch (e) {}
             window.vipAccess = true;
             window.isVipUser = true;
             document.body.classList.add("vip-active");
             if (typeof updateVipUi === "function") updateVipUi();
           } else if (plan === "match") {
-            entitlements.match = true;
+            window.entitlements.match = true;
             window.matchDetailedUnlocked = true;
+            try { localStorage.setItem("jyotish_match_unlocked", "1"); } catch (e) {}
           } else if (plan === "reveal") {
-            entitlements.reveal = true;
+            window.entitlements.reveal = true;
+            try { localStorage.setItem("jyotish_reveal_unlocked", "1"); } catch (e) {}
           } else if (plan !== "dakshina")
-            entitlements[plan] = true;
+            window.entitlements[plan] = true;
           return true;
         }
         return yield new Promise((resolve) => {
@@ -17357,21 +17399,28 @@ var __async = (__this, __arguments, generator) => {
                 else if (plan === "questions_pack")
                   window.addQuestionCredits(5);
                 else if (plan === "vip" || plan === "premium") {
-                  entitlements.reveal = true;
-                  entitlements.match = true;
-                  entitlements.vip = true;
-                  entitlements.premium = true;
+                  window.entitlements.reveal = true;
+                  window.entitlements.match = true;
+                  window.entitlements.vip = true;
+                  window.entitlements.premium = true;
+                  try {
+                    localStorage.setItem("jyotish_reveal_unlocked", "1");
+                    localStorage.setItem("jyotish_match_unlocked", "1");
+                    localStorage.setItem("jyotish_vip_unlocked", "1");
+                  } catch (e) {}
                   window.vipAccess = true;
                   window.isVipUser = true;
                   document.body.classList.add("vip-active");
                   if (typeof updateVipUi === "function") updateVipUi();
                 } else if (plan === "match") {
-                  entitlements.match = true;
+                  window.entitlements.match = true;
                   window.matchDetailedUnlocked = true;
+                  try { localStorage.setItem("jyotish_match_unlocked", "1"); } catch (e) {}
                 } else if (plan === "reveal") {
-                  entitlements.reveal = true;
+                  window.entitlements.reveal = true;
+                  try { localStorage.setItem("jyotish_reveal_unlocked", "1"); } catch (e) {}
                 } else if (plan !== "dakshina")
-                  entitlements[plan] = true;
+                  window.entitlements[plan] = true;
                 window.lastPaymentRef = resp.razorpay_payment_id;
                 window.lastSessionToken = sessionToken;
                 window.dispatchEvent(new CustomEvent("premium-unlocked", { detail: { plan } }));
@@ -17406,8 +17455,8 @@ var __async = (__this, __arguments, generator) => {
       if (typeof window.enableVipAccess === "function") window.enableVipAccess();
       return Promise.resolve(true);
     }
-    if (plan === "reveal" && entitlements.reveal) return Promise.resolve(true);
-    if (plan === "match" && entitlements.match) return Promise.resolve(true);
+    if (plan === "reveal" && window.entitlements && window.entitlements.reveal) return Promise.resolve(true);
+    if (plan === "match" && window.entitlements && window.entitlements.match) return Promise.resolve(true);
     
     // Directly initiate checkout for the specific plan without intermediate plans modal popup
     return pay(plan, customAmount, customPrefill);
@@ -17415,19 +17464,28 @@ var __async = (__this, __arguments, generator) => {
 
   window.triggerReportGenerationAfterPayment = function(plan) {
     console.log("[Payment Flow] triggerReportGenerationAfterPayment called for plan:", plan);
-    if (plan === "match" || currentMode === "match") {
+    window.entitlements = window.entitlements || { reveal: false, match: false, vip: false, premium: false };
+    if (plan === "match" || window.currentMode === "match") {
       window.matchDetailedUnlocked = true;
-      entitlements.match = true;
+      window.entitlements.match = true;
+      try { localStorage.setItem("jyotish_match_unlocked", "1"); } catch (e) {}
       const gate = document.getElementById("matchPremiumGate");
       if (gate) gate.style.display = "none";
       if (!window.isGeneratingReport && typeof window.unlockDetailedKundliReport === "function") {
         window.unlockDetailedKundliReport();
       }
-    } else if (plan === "reveal" || plan === "premium" || plan === "vip" || currentMode === "individual") {
-      entitlements.reveal = true;
+    } else if (plan === "reveal" || plan === "premium" || plan === "vip" || window.currentMode === "individual" || !window.currentMode) {
+      window.entitlements.reveal = true;
+      try { localStorage.setItem("jyotish_reveal_unlocked", "1"); } catch (e) {}
       if (plan === "vip" || plan === "premium") {
         window.vipAccess = true;
         window.isVipUser = true;
+        window.entitlements.vip = true;
+        window.entitlements.match = true;
+        try {
+          localStorage.setItem("jyotish_match_unlocked", "1");
+          localStorage.setItem("jyotish_vip_unlocked", "1");
+        } catch (e) {}
         document.body.classList.add("vip-active");
         if (typeof updateVipUi === "function") updateVipUi();
       }
@@ -17445,10 +17503,14 @@ var __async = (__this, __arguments, generator) => {
       if (rc) rc.style.display = "block";
 
       if (!window.isGeneratingReport) {
-        const genBtn = document.getElementById("genBtn");
-        if (genBtn) {
-          genBtn.disabled = false;
-          genBtn.click();
+        if (typeof window.startChartGeneration === "function") {
+          window.startChartGeneration();
+        } else {
+          const genBtn = document.getElementById("genBtn");
+          if (genBtn) {
+            genBtn.disabled = false;
+            genBtn.click();
+          }
         }
       }
     } else if (plan === "question" || plan === "questions_pack") {
@@ -17463,12 +17525,14 @@ var __async = (__this, __arguments, generator) => {
   };
 
   window.resetPaymentSession = () => {
-    entitlements.reveal = false;
-    entitlements.match = false;
+    window.entitlements.reveal = false;
+    window.entitlements.match = false;
     window.vipAccess = false;
     window.isVipUser = false;
     window.matchDetailedUnlocked = false;
     try {
+      localStorage.removeItem("jyotish_reveal_unlocked");
+      localStorage.removeItem("jyotish_match_unlocked");
       localStorage.removeItem("jyotish_vip_unlocked");
       localStorage.removeItem("jyotish_question_credits");
     } catch (e) {
@@ -17478,11 +17542,13 @@ var __async = (__this, __arguments, generator) => {
   window.enableVipAccess = () => {
     window.vipAccess = true;
     window.isVipUser = true;
-    entitlements.reveal = true;
-    entitlements.match = true;
+    window.entitlements.reveal = true;
+    window.entitlements.match = true;
     window.matchDetailedUnlocked = true;
     document.body.classList.add("vip-active");
     try {
+      localStorage.setItem("jyotish_reveal_unlocked", "1");
+      localStorage.setItem("jyotish_match_unlocked", "1");
       localStorage.setItem("jyotish_vip_unlocked", "1");
       if (window.lastVipCode) localStorage.setItem("jyotish_vip_code", window.lastVipCode);
     } catch (e) {
